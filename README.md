@@ -35,6 +35,33 @@ Open:
 http://localhost:3000
 ```
 
+## Deploying online
+
+This app is best deployed as a Dockerized Node service because it uses Playwright.
+
+Included deployment files:
+
+- `Dockerfile`
+- `.dockerignore`
+- `railway.json`
+
+Recommended hosted env vars:
+
+```bash
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@example.com
+SMTP_PASS=your-app-password
+SMTP_FROM="CourtTrack <your-email@example.com>"
+SMTP_REPLY_TO=your-email@example.com
+APP_LOGIN_USERNAME=admin
+APP_LOGIN_PASSWORD=change-this-password
+DB_PATH=/app/data/db.json
+```
+
+If you deploy on Railway, mount a persistent volume to `/app/data` so the JSON database survives restarts.
+
 Login defaults to `admin` / `courttrack123` unless you set:
 
 ```bash

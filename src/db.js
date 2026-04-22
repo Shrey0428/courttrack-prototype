@@ -2,7 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const { formatReminderEmails, parseReminderEmails } = require('./reminderEmails');
 
-const DB_PATH = path.join(__dirname, '..', 'data', 'db.json');
+const DB_PATH = process.env.DB_PATH
+  ? path.resolve(process.env.DB_PATH)
+  : path.join(__dirname, '..', 'data', 'db.json');
 
 const initialDb = {
   trackedCases: [],
