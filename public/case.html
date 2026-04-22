@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Case Details</title>
+    <style>
+      :root {
+        --bg: #eef2f7;
+        --panel: #ffffff;
+        --ink: #132238;
+        --muted: #66758f;
+        --line: #d9e1ec;
+        --accent: #0f62fe;
+        --accent-soft: #e8f0ff;
+        --success: #0c7a43;
+        --danger: #b42318;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: Georgia, "Times New Roman", serif; background:
+        radial-gradient(circle at top left, rgba(15,98,254,.08), transparent 32%),
+        linear-gradient(180deg, #f7f9fc 0%, var(--bg) 100%); color: var(--ink); }
+      .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 48px; }
+      .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+      .eyebrow { letter-spacing: .08em; text-transform: uppercase; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+      h1, h2, h3 { margin: 0 0 10px; font-weight: 600; }
+      p { margin: 0 0 10px; }
+      .muted { color: var(--muted); }
+      .grid { display: grid; grid-template-columns: 1.3fr .7fr; gap: 18px; }
+      .stack { display: grid; gap: 18px; }
+      .card { background: rgba(255,255,255,.94); border: 1px solid rgba(217,225,236,.9); border-radius: 18px; padding: 20px; box-shadow: 0 18px 40px rgba(29,43,70,.08); }
+      .big-date { font-size: 38px; line-height: 1; margin-bottom: 10px; }
+      .meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+      .meta { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: #fbfcfe; }
+      .meta strong { display: block; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+      .toolbar { display: flex; gap: 10px; flex-wrap: wrap; }
+      button, input, textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); font: inherit; }
+      textarea { min-height: 108px; resize: vertical; }
+      button { width: auto; cursor: pointer; color: white; background: linear-gradient(135deg, #0f62fe, #0043ce); border: none; }
+      button.secondary { background: white; color: var(--accent); border: 1px solid var(--line); }
+      button.danger { background: #d92d20; }
+      label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+      .form-row { display: grid; gap: 12px; }
+      .status { margin-top: 12px; min-height: 20px; color: var(--muted); }
+      .status.success { color: var(--success); }
+      .status.error { color: var(--danger); }
+      .list { display: grid; gap: 12px; }
+      .item { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: #fbfcfe; }
+      .item time { display: block; color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+      .pill { display: inline-block; padding: 4px 9px; border-radius: 999px; font-size: 12px; background: var(--accent-soft); color: var(--accent); }
+      a { color: var(--accent); }
+      @media (max-width: 900px) {
+        .grid, .meta-grid { grid-template-columns: 1fr; }
+        .big-date { font-size: 30px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">CourtTrack</div>
+          <h1 id="pageTitle">Case details</h1>
+          <p class="muted" id="pageSubtitle">Loading case data...</p>
+        </div>
+        <div class="toolbar">
+          <button class="secondary" id="logoutBtn" type="button">Logout</button>
+          <button class="secondary" onclick="window.location.href='/'">Back to home</button>
+          <button class="secondary" id="refreshBtn" type="button">Refresh case</button>
+          <button class="danger" id="deleteBtn" type="button">Delete case</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="stack">
+          <section class="card">
+            <div class="eyebrow">Next hearing</div>
+            <div class="big-date" id="hearingDate">-</div>
+            <p id="caseTitle">Loading...</p>
+            <p class="muted" id="caseNumber">-</p>
+            <div class="meta-grid" id="metaGrid"></div>
+          </section>
+
+          <section class="card">
+            <h2>Official documents</h2>
+            <p class="muted" id="documentLinks">-</p>
+          </section>
+
+          <section class="card">
+            <h2>Events</h2>
+            <div class="list" id="eventsList"></div>
+          </section>
+
+          <section class="card">
+            <h2>Recent sync runs</h2>
+            <div class="list" id="runsList"></div>
+          </section>
+        </div>
+
+        <div class="stack">
+          <section class="card">
+            <h2>Email reminders</h2>
+            <p class="muted" id="reminderStatusText">Loading reminder status...</p>
+            <div class="form-row" style="margin-top: 16px;">
+              <div>
+                <label for="reminderEmails">Reminder emails</label>
+                <textarea id="reminderEmails" placeholder="person1@example.com, person2@example.com"></textarea>
+              </div>
+              <button id="saveReminderBtn" type="button">Save reminder settings</button>
+              <button id="testReminderBtn" class="secondary" type="button">Send test email</button>
+              <button id="runReminderBtn" class="secondary" type="button">Run reminder check now</button>
+            </div>
+            <div class="status" id="reminderFeedback"></div>
+            <div class="list" id="reminderSweepResults" style="margin-top: 14px;"></div>
+          </section>
+
+          <section class="card">
+            <h2>Reminder history</h2>
+            <div class="list" id="reminderHistory"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const caseId = new URLSearchParams(window.location.search).get('id');
+      let currentCase = null;
+      let reminderStatus = null;
+
+      async function api(url, options = {}) {
+        const response = await fetch(url, {
+          headers: { 'Content-Type': 'application/json' },
+          ...options
+        });
+        if (response.status === 401) {
+          window.location.href = `/login.html?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+          throw new Error('Authentication required.');
+        }
+        const data = await response.json();
+        if (!response.ok) {
+          const error = new Error(data.error || data.message || 'Request failed');
+          Object.assign(error, data);
+          throw error;
+        }
+        return data;
+      }
+
+      function setReminderFeedback(message, cls = '') {
+        const el = document.getElementById('reminderFeedback');
+        el.className = `status ${cls}`.trim();
+        el.textContent = message || '';
+      }
+
+      function renderSweepResults(results) {
+        const el = document.getElementById('reminderSweepResults');
+        if (!results || !results.length) {
+          el.innerHTML = '';
+          return;
+        }
+
+        el.innerHTML = '';
+        for (const item of results) {
+          const div = document.createElement('div');
+          div.className = 'item';
+          div.innerHTML = `
+            <div><strong>${escapeHtml(item.caseNumber || item.caseId || 'Case')}</strong></div>
+            <p class="muted">${item.sent ? `Email sent to ${escapeHtml(item.email || '-')}` : escapeHtml(item.reason || 'No action taken.')}</p>
+          `;
+          el.appendChild(div);
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+      }
+
+      function renderDocumentLinks(caseData) {
+        const links = [];
+        if (caseData?.latestOrdersUrl || caseData?.snapshots?.[0]?.payload?.ordersUrl) {
+          const url = caseData.latestOrdersUrl || caseData.snapshots[0].payload.ordersUrl;
+          links.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">Orders</a>`);
+        }
+        if (caseData?.latestJudgmentsUrl || caseData?.snapshots?.[0]?.payload?.judgmentsUrl) {
+          const url = caseData.latestJudgmentsUrl || caseData.snapshots[0].payload.judgmentsUrl;
+          links.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">Judgments</a>`);
+        }
+        return links.length ? links.join(' | ') : '-';
+      }
+
+      function renderList(el, items, formatter, emptyText) {
+        el.innerHTML = '';
+        if (!items.length) {
+          el.innerHTML = `<div class="item muted">${emptyText}</div>`;
+          return;
+        }
+        for (const item of items) {
+          const div = document.createElement('div');
+          div.className = 'item';
+          div.innerHTML = formatter(item);
+          el.appendChild(div);
+        }
+      }
+
+      function renderCase(caseData) {
+        currentCase = caseData;
+
+        document.title = `${caseData.latestCaseNumber || caseData.displayLabel} | CourtTrack`;
+        document.getElementById('pageTitle').textContent = caseData.latestCaseTitle || caseData.displayLabel;
+        document.getElementById('pageSubtitle').textContent = `${caseData.latestCaseNumber || caseData.caseLookup || '-'} | ${caseData.provider}`;
+        document.getElementById('hearingDate').textContent = caseData.latestNextHearingDate || 'No hearing date yet';
+        document.getElementById('caseTitle').textContent = caseData.latestCaseTitle || caseData.displayLabel;
+        document.getElementById('caseNumber').textContent = caseData.latestCaseNumber || caseData.caseLookup || '-';
+        document.getElementById('documentLinks').innerHTML = renderDocumentLinks(caseData);
+        document.getElementById('reminderEmails').value = caseData.reminderEmailsLabel || caseData.reminderEmail || '';
+
+        const metaGrid = document.getElementById('metaGrid');
+        metaGrid.innerHTML = [
+          ['Court', caseData.latestCourtName || '-'],
+          ['Court number', caseData.latestCourtNumber || '-'],
+          ['Status', caseData.latestStatus || '-'],
+          ['Official source', caseData.officialSourceUrl ? `<a href="${caseData.officialSourceUrl}" target="_blank" rel="noopener noreferrer">Open source</a>` : '-'],
+          ['Case type / lookup', caseData.queryMeta?.caseType ? `${escapeHtml(caseData.queryMeta.caseType)} ${escapeHtml(caseData.queryMeta.caseNumber || '')}/${escapeHtml(caseData.queryMeta.year || '')}` : escapeHtml(caseData.displayLabel || '-')],
+          ['Reminder emails', escapeHtml(caseData.reminderEmailsLabel || 'Not configured')]
+        ].map(([label, value]) => `<div class="meta"><strong>${label}</strong><div>${value}</div></div>`).join('');
+
+        renderList(
+          document.getElementById('eventsList'),
+          caseData.events || [],
+          (event) => `<time>${new Date(event.createdAt).toLocaleString()}</time><div>${escapeHtml(event.message)}</div>`,
+          'No events recorded yet.'
+        );
+
+        renderList(
+          document.getElementById('runsList'),
+          caseData.scrapeRuns || [],
+          (run) => `<time>${new Date(run.createdAt).toLocaleString()}</time><div><span class="pill">${escapeHtml(run.status)}</span></div><p>${escapeHtml(run.message)}</p>`,
+          'No sync runs yet.'
+        );
+
+        renderList(
+          document.getElementById('reminderHistory'),
+          caseData.reminderDeliveries || [],
+          (delivery) => `
+            <time>${new Date(delivery.createdAt).toLocaleString()}</time>
+            <div><span class="pill">${escapeHtml(delivery.status)}</span></div>
+            <p>${escapeHtml(delivery.email || '-')}</p>
+            <p class="muted">Days until hearing: ${escapeHtml(delivery.daysUntilHearing ?? '-')}</p>
+            ${delivery.error ? `<p class="muted">${escapeHtml(delivery.error)}</p>` : ''}
+          `,
+          'No reminder emails have been attempted yet.'
+        );
+
+        const refreshBtn = document.getElementById('refreshBtn');
+        refreshBtn.disabled = caseData.provider === 'delhiManualCaptcha';
+        refreshBtn.textContent = caseData.provider === 'delhiManualCaptcha' ? 'Refresh via home page CAPTCHA' : 'Refresh case';
+      }
+
+      async function loadReminderStatus() {
+        reminderStatus = await api('/api/reminders/status');
+        const text = reminderStatus.configured
+          ? `SMTP is configured via ${reminderStatus.host}:${reminderStatus.port}. Daily reminders will go out between D-3 and D-0.`
+          : 'SMTP is not configured yet. Save one or more emails now if you want, but reminders will only start sending after the SMTP env vars are set.';
+        document.getElementById('reminderStatusText').textContent = text;
+      }
+
+      async function loadCase() {
+        if (!caseId) {
+          document.getElementById('pageTitle').textContent = 'Case not found';
+          document.getElementById('pageSubtitle').textContent = 'No case id was provided.';
+          return;
+        }
+
+        const caseData = await api(`/api/cases/${caseId}`);
+        renderCase(caseData);
+      }
+
+      async function saveReminderSettings() {
+        if (!currentCase) return;
+        const reminderEmails = document.getElementById('reminderEmails').value.trim();
+        const response = await api(`/api/cases/${currentCase.id}/reminders`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            reminderEmails,
+            reminderEnabled: Boolean(reminderEmails)
+          })
+        });
+        setReminderFeedback(reminderEmails ? 'Reminder emails saved for this case.' : 'Reminder emails cleared for this case.', 'success');
+        reminderStatus = response.reminderStatus;
+        await loadCase();
+      }
+
+      async function runReminderCheck() {
+        const result = await api('/api/reminders/run', { method: 'POST' });
+        const sentCount = (result.results || []).filter((item) => item.sent).length;
+        const caseResult = (result.results || []).find((item) => item.caseId === currentCase?.id);
+        setReminderFeedback(
+          result.skipped
+            ? result.reason
+            : caseResult
+              ? caseResult.sent
+                ? `Reminder sweep finished. Reminder emails were sent for this case.`
+                : `Reminder sweep finished. ${caseResult.reason}`
+              : `Reminder sweep finished. ${sentCount} email${sentCount === 1 ? '' : 's'} sent.`,
+          result.skipped ? 'error' : 'success'
+        );
+        renderSweepResults(result.results || []);
+        await loadCase();
+      }
+
+      async function sendTestEmail() {
+        if (!currentCase) return;
+        const result = await api(`/api/cases/${currentCase.id}/reminders/test`, { method: 'POST' });
+        setReminderFeedback(`Test email sent to ${result.email}.`, 'success');
+        await loadCase();
+      }
+
+      async function refreshCase() {
+        if (!currentCase) return;
+        if (currentCase.provider === 'delhiManualCaptcha') {
+          window.location.href = '/';
+          return;
+        }
+        await api(`/api/cases/${currentCase.id}/refresh`, { method: 'POST' });
+        await loadCase();
+      }
+
+      async function deleteCase() {
+        if (!currentCase) return;
+        await api(`/api/cases/${currentCase.id}`, { method: 'DELETE' });
+        window.location.href = '/';
+      }
+
+      document.getElementById('saveReminderBtn').addEventListener('click', () => {
+        saveReminderSettings().catch((error) => setReminderFeedback(error.message, 'error'));
+      });
+      document.getElementById('runReminderBtn').addEventListener('click', () => {
+        runReminderCheck().catch((error) => setReminderFeedback(error.message, 'error'));
+      });
+      document.getElementById('testReminderBtn').addEventListener('click', () => {
+        sendTestEmail().catch((error) => setReminderFeedback(error.message, 'error'));
+      });
+      document.getElementById('refreshBtn').addEventListener('click', () => {
+        refreshCase().catch((error) => setReminderFeedback(error.message, 'error'));
+      });
+      document.getElementById('deleteBtn').addEventListener('click', () => {
+        deleteCase().catch((error) => setReminderFeedback(error.message, 'error'));
+      });
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        try {
+          await fetch('/auth/logout', { method: 'POST' });
+        } finally {
+          window.location.href = '/login.html';
+        }
+      });
+
+      Promise.all([loadReminderStatus(), loadCase()]).catch((error) => {
+        setReminderFeedback(error.message, 'error');
+      });
+    </script>
+  </body>
+</html>

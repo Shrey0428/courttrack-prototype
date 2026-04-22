@@ -1,0 +1,542 @@
+{
+  "trackedCases": [
+    {
+      "reminderEmails": [
+        "info@amitguptaadvocate.com"
+      ],
+      "reminderEmail": "info@amitguptaadvocate.com",
+      "reminderEnabled": true,
+      "latestOrdersUrl": "https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6Ilp0aXRhWUhGTW9nYkZ5R1FoSDRNNkE9PSIsInZhbHVlIjoiNlJiSXE2NENQQ2pMRDEzN3poL2ZSQT09IiwibWFjIjoiYmNjYjY2MWVjMGM3ZmM4MzU3YTdlOThmMjIwZGIzODM2ZDBiM2FmMzNjOTU5MmM5MmYwNTI5MzA4Y2Q2YmMwMCIsInRhZyI6IiJ9/eyJpdiI6IlZhcHFIZjlTTkFBVXp2alk0aE9HYmc9PSIsInZhbHVlIjoiWkRRTEdkSXA2blhzQWdjckVFaFJidz09IiwibWFjIjoiYmQwOGRjMmUwOTJkZWU5OWQ5ZDQ1MjNiNDgxMjY4ZGM2M2ZlMzYyNmVhMzQxYTE1ZTQ5YzkyOTE2NjBkZjRkYyIsInRhZyI6IiJ9/eyJpdiI6IitIQmxZZ2JQbU9jdmxSNmJSazNpNlE9PSIsInZhbHVlIjoiRHVFTnAxUWE3MWYycWtWendJRWtLQT09IiwibWFjIjoiYmQwNWI2ZmE3NDU0YTAwYTdlOTUwNjRhYTdlZjVlMWEzMTY4NWExYTEwYjllZjliNWQxMjA4ZjRlYjBlNjNhMyIsInRhZyI6IiJ9",
+      "latestJudgmentsUrl": "https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6Ilp0aXRhWUhGTW9nYkZ5R1FoSDRNNkE9PSIsInZhbHVlIjoiNlJiSXE2NENQQ2pMRDEzN3poL2ZSQT09IiwibWFjIjoiYmNjYjY2MWVjMGM3ZmM4MzU3YTdlOThmMjIwZGIzODM2ZDBiM2FmMzNjOTU5MmM5MmYwNTI5MzA4Y2Q2YmMwMCIsInRhZyI6IiJ9/eyJpdiI6IlZhcHFIZjlTTkFBVXp2alk0aE9HYmc9PSIsInZhbHVlIjoiWkRRTEdkSXA2blhzQWdjckVFaFJidz09IiwibWFjIjoiYmQwOGRjMmUwOTJkZWU5OWQ5ZDQ1MjNiNDgxMjY4ZGM2M2ZlMzYyNmVhMzQxYTE1ZTQ5YzkyOTE2NjBkZjRkYyIsInRhZyI6IiJ9/eyJpdiI6IitIQmxZZ2JQbU9jdmxSNmJSazNpNlE9PSIsInZhbHVlIjoiRHVFTnAxUWE3MWYycWtWendJRWtLQT09IiwibWFjIjoiYmQwNWI2ZmE3NDU0YTAwYTdlOTUwNjRhYTdlZjVlMWEzMTY4NWExYTEwYjllZjliNWQxMjA4ZjRlYjBlNjNhMyIsInRhZyI6IiJ9",
+      "id": "case_1776839151388_ytu9bp",
+      "provider": "delhiManualCaptcha",
+      "cnrNumber": "",
+      "caseLookup": "CS(OS) 347/2026",
+      "displayLabel": "CS(OS) 347/2026",
+      "queryMeta": {
+        "caseType": "CS(OS)",
+        "caseNumber": "347",
+        "year": "2026"
+      },
+      "latestCaseTitle": "ARVINDER SINGH SAWHNEY VS. TARLOK SINGH SAWHNEY",
+      "latestCourtName": "High Court of Delhi",
+      "latestCaseNumber": "CS(OS) 347/2026",
+      "latestNextHearingDate": "20-07-2026",
+      "latestCourtNumber": "NA",
+      "latestStatus": "PENDING",
+      "officialSourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+      "lastCheckedAt": "2026-04-22T08:26:24.004Z",
+      "createdAt": "2026-04-22T06:25:51.389Z",
+      "updatedAt": "2026-04-22T13:45:17.873Z",
+      "reminderEmailsLabel": "info@amitguptaadvocate.com"
+    },
+    {
+      "reminderEmails": [
+        "info@amitguptaadvocate.com"
+      ],
+      "reminderEmail": "info@amitguptaadvocate.com",
+      "reminderEnabled": true,
+      "latestOrdersUrl": "https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6IlZBN3FNT3I0OXRxNVdRSDY0Rk1USmc9PSIsInZhbHVlIjoiTHZEMWFCbUgzdHZkYW56N3E2SmtMdz09IiwibWFjIjoiYTYyZDAxZDY3M2ZhOTI0ZmQ3OWI4N2NkMTE1OWQzNGU5NWE5M2EwZDgyNmM2MDhlMWU3NjgzYWVlNWE2NmVmYiIsInRhZyI6IiJ9/eyJpdiI6ImJIS0ppY1E4QWkwTEtVYndaU2tsV2c9PSIsInZhbHVlIjoiSHZOUUpTVzFORm9XdVQ0dFN6aDFwdz09IiwibWFjIjoiNmM4OWY2NDE4NGIzOTYzMjYwYTgxODdkMjNmODk4ODRhMGI4MzA3ZDVmNDM1MDlkZjZlZDcxZjUxYzIwMjgxOCIsInRhZyI6IiJ9/eyJpdiI6IkdTTHN0MDlsZ3NXOWFLd2NkV09RMlE9PSIsInZhbHVlIjoicDdITmFhVENFa0pFQVlBMUNGclJJZz09IiwibWFjIjoiZjQ5ODAzYmE4NzVmOWJjODVlMjlmODY0ZDhkN2M5NjRjYzgxMWI1Yzk4N2I4YzU0ODYzMGI0MTc0YjNlOTQwMiIsInRhZyI6IiJ9",
+      "latestJudgmentsUrl": "https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6IlZBN3FNT3I0OXRxNVdRSDY0Rk1USmc9PSIsInZhbHVlIjoiTHZEMWFCbUgzdHZkYW56N3E2SmtMdz09IiwibWFjIjoiYTYyZDAxZDY3M2ZhOTI0ZmQ3OWI4N2NkMTE1OWQzNGU5NWE5M2EwZDgyNmM2MDhlMWU3NjgzYWVlNWE2NmVmYiIsInRhZyI6IiJ9/eyJpdiI6ImJIS0ppY1E4QWkwTEtVYndaU2tsV2c9PSIsInZhbHVlIjoiSHZOUUpTVzFORm9XdVQ0dFN6aDFwdz09IiwibWFjIjoiNmM4OWY2NDE4NGIzOTYzMjYwYTgxODdkMjNmODk4ODRhMGI4MzA3ZDVmNDM1MDlkZjZlZDcxZjUxYzIwMjgxOCIsInRhZyI6IiJ9/eyJpdiI6IkdTTHN0MDlsZ3NXOWFLd2NkV09RMlE9PSIsInZhbHVlIjoicDdITmFhVENFa0pFQVlBMUNGclJJZz09IiwibWFjIjoiZjQ5ODAzYmE4NzVmOWJjODVlMjlmODY0ZDhkN2M5NjRjYzgxMWI1Yzk4N2I4YzU0ODYzMGI0MTc0YjNlOTQwMiIsInRhZyI6IiJ9",
+      "id": "case_1776843978000_21yk68",
+      "provider": "delhiManualCaptcha",
+      "cnrNumber": "",
+      "caseLookup": "W.P.(C) 27/2025",
+      "displayLabel": "W.P.(C) 27/2025",
+      "queryMeta": {
+        "caseType": "W.P.(C)",
+        "caseNumber": "27",
+        "year": "2025"
+      },
+      "latestCaseTitle": "RITA BAGGA VS. GOVT. OF NCT OF DELHI & ORS.",
+      "latestCourtName": "High Court of Delhi",
+      "latestCaseNumber": "W.P.(C) 27/2025",
+      "latestNextHearingDate": "06-04-2026",
+      "latestCourtNumber": "NA",
+      "latestStatus": "DISPOSED",
+      "officialSourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+      "lastCheckedAt": "2026-04-22T08:07:30.178Z",
+      "createdAt": "2026-04-22T07:46:18.000Z",
+      "updatedAt": "2026-04-22T13:45:39.299Z",
+      "reminderEmailsLabel": "info@amitguptaadvocate.com"
+    },
+    {
+      "reminderEmails": [
+        "info@amitguptaadvocate.com"
+      ],
+      "reminderEmail": "info@amitguptaadvocate.com",
+      "reminderEnabled": true,
+      "latestOrdersUrl": "https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6InBMQ01ja3hheVZYbmNEd0lLb1N6VVE9PSIsInZhbHVlIjoiV0xoNitpMHd1Q2VlNC9lM0NLbUd0dz09IiwibWFjIjoiNGI3MTM2NTNhMWNmY2U3ZTNjY2IzMzBiZjc3ZmYxNjc2MTQwMWI5MTVjMGI1NzM4YjVlNWU4OTc5OTc5ZjM4MyIsInRhZyI6IiJ9/eyJpdiI6IkdLVlZ1aFlETWc0ZERaQlgwTFFFM1E9PSIsInZhbHVlIjoicmF6YW92LytOVjJUTmljTmg0c0lSQT09IiwibWFjIjoiMDY3NGJmMDcxOTQ2NWViMDQxOTZiNWU5YmZiYzBkMjQxY2I2MTQ4NmJiOGYxZDZmMjY1OTIyMjMwY2U1MDZjYSIsInRhZyI6IiJ9/eyJpdiI6IkpaQjVvM3d1a3phbTE0UWFYVVVzQmc9PSIsInZhbHVlIjoiM3ZRdUJlRzU1dzhMMzVKdFh4OXcxQT09IiwibWFjIjoiNGQ5OTJlMjRjMTk2ZWQwNjhkMGQ4YmY4NGFhNDIyNGZlMzhkYmRiYTk4NmUzY2U3MGYxYTc0MTkwMzU5MDFiZSIsInRhZyI6IiJ9",
+      "latestJudgmentsUrl": "https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6InBMQ01ja3hheVZYbmNEd0lLb1N6VVE9PSIsInZhbHVlIjoiV0xoNitpMHd1Q2VlNC9lM0NLbUd0dz09IiwibWFjIjoiNGI3MTM2NTNhMWNmY2U3ZTNjY2IzMzBiZjc3ZmYxNjc2MTQwMWI5MTVjMGI1NzM4YjVlNWU4OTc5OTc5ZjM4MyIsInRhZyI6IiJ9/eyJpdiI6IkdLVlZ1aFlETWc0ZERaQlgwTFFFM1E9PSIsInZhbHVlIjoicmF6YW92LytOVjJUTmljTmg0c0lSQT09IiwibWFjIjoiMDY3NGJmMDcxOTQ2NWViMDQxOTZiNWU5YmZiYzBkMjQxY2I2MTQ4NmJiOGYxZDZmMjY1OTIyMjMwY2U1MDZjYSIsInRhZyI6IiJ9/eyJpdiI6IkpaQjVvM3d1a3phbTE0UWFYVVVzQmc9PSIsInZhbHVlIjoiM3ZRdUJlRzU1dzhMMzVKdFh4OXcxQT09IiwibWFjIjoiNGQ5OTJlMjRjMTk2ZWQwNjhkMGQ4YmY4NGFhNDIyNGZlMzhkYmRiYTk4NmUzY2U3MGYxYTc0MTkwMzU5MDFiZSIsInRhZyI6IiJ9",
+      "id": "case_1776846277429_5x5tfv",
+      "provider": "delhiManualCaptcha",
+      "cnrNumber": "",
+      "caseLookup": "CS(OS) 515/2025",
+      "displayLabel": "CS(OS) 515/2025",
+      "queryMeta": {
+        "caseType": "CS(OS)",
+        "caseNumber": "515",
+        "year": "2025"
+      },
+      "latestCaseTitle": "DR. SHAILENDRA LALWANI & ANR. VS. PARVESH LILOTHIA & ORS.",
+      "latestCourtName": "High Court of Delhi",
+      "latestCaseNumber": "CS(OS) 515/2025",
+      "latestNextHearingDate": "21-04-2026",
+      "latestCourtNumber": "60",
+      "latestStatus": "PENDING",
+      "officialSourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+      "lastCheckedAt": "2026-04-22T08:24:37.432Z",
+      "createdAt": "2026-04-22T08:24:37.430Z",
+      "updatedAt": "2026-04-22T13:45:48.203Z",
+      "reminderEmailsLabel": "info@amitguptaadvocate.com"
+    }
+  ],
+  "snapshots": [
+    {
+      "id": "snapshot_1776839151389_399ccr",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "payload": {
+        "provider": "delhiManualCaptcha",
+        "caseFound": true,
+        "courtName": "High Court of Delhi",
+        "caseNumber": "CS(OS) 347/2026",
+        "cnrNumber": "",
+        "caseTitle": "ARVINDER SINGH SAWHNEY VS. TARLOK SINGH SAWHNEY",
+        "nextHearingDate": "20-07-2026",
+        "courtNumber": "NA",
+        "caseStatus": "PENDING",
+        "lastOrderDate": "",
+        "officialSourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "sourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "pageTitle": "High Court of Delhi",
+        "rawTextPreview": "Sitemap Contact Feedback FAQs Skip to Main Content Screen Reader Access A+ A A - A A Hindi Hindi High Court of Delhi Home Judges Administration e-Services Public Notices Rules & Guidelines Home CASE STATUS CASE WISE Back CASE WISE PARTY NAME ADVOCATE NAME DIARY NO Case Type: Select ADMIN.REPORT ARB.A. ARB. A. (COMM.) ARB.P. BAIL APPLN. CA CA (COMM.IPD-CR) C.A.(COMM.IPD-GI) C.A.(COMM.IPD-PAT) C.A.(COMM.IPD-PV) C.A.(COMM.IPD-TM) CAVEAT(CO.) CC(ARB.) CCP(CO.) CCP(REF) CEAC CEAR CHAT.A.C. CHAT.A.REF CMI CM(M) CM(M)-IPD C.O. CO.APP. CO.APPL.(C) CO.APPL.(M) CO.A(SB) C.O.(COMM.IPD-CR) C.O.(COMM.IPD-GI) C.O.(COMM.IPD-PAT) C.O. (COMM.IPD-TM) CO.EX. CONT.APP.(C) CONT.CAS(C) CONT.CAS.(CRL) CO.PET. C.REF.(O) CRL.A. CRL.L.P. CRL.M.C. CRL.M.(CO.) CRL.M.I. CRL.O. CRL.O.(CO.) CRL.REF. CRL.REV.P. CRL.REV.P.(MAT.) CRL.REV.P.(NDPS) CRL.REV.P.(NI) C.R.P. CRP-IPD C.RULE CS(COMM) CS(COMM) INFRA CS(OS) CS(OS) GP CUSAA CUS.A.C. CUS.A.R. CUSTOM A. DEATH SENTENCE REF. DEMO EDC EDR EFA(COMM) EFA(OS) EFA(OS) (COMM) EFA(OS)(IPD) EL.PET. ETR EX.F.A. EX.P. EX.S.A. FAO FAO (COMM) FAO-IPD FAO(OS) FAO(OS) (COMM) FAO(OS)(IPD) GCAC GCAR GTA GTC GTR I.A. I.P.A. ITA ITC ITR ITSA LA.APP. LPA MAC.APP. MAT. MAT.APP. MAT.APP.(F.C.) MAT.CASE MAT.REF. MISC. APPEAL (FEMA) MISC. APPEAL(PMLA) OA OCJA O.M.P. O.M.P. (COMM) OMP (CONT.) O.M.P. (E) O.M.P. (E) (COMM.) O.M.P.(EFA)(COMM.) O.M.P. (ENF.) OMP (ENF.) (COMM.) O.M.P.(I) O.M.P.(I) (COMM.) O.M.P. (J) (COMM.) O.M.P. (MISC.) O.M.P.(MISC.)(COMM.) O.M.P.(T) O.M.P. (T) (COMM.) O.REF. RC.REV. RC.S.A. RERA APPEAL REVIEW PET. RFA RFA(COMM) RFA-IPD RFA(OS) RFA(OS)(COMM) RFA(OS)(IPD) RSA SCA SDR SERTA ST.APPL. STC ST.REF. SUR.T.REF. TEST.CAS. TR.P.(C) TR.P.(C.) TR.P.(CRL.) VAT APPEAL W.P.(C) W.P.(C)-IPD WP(C)(IPD) W.P.(CRL) WTA WTC WTR Case Number : Year: Select 2026 2025 2024 2023 2022 2021 2020 2019 2018 2017 2016 2015 2014 2013 2012 2011 2010 2009 2008 2007 2006 2005 2004 2003 2002 2001 2000 1999 1998 1997 1996 1995 1994 1993 1992 1991 1990 1989 1988 1987 1986 1985 1984 1983 1982 1981 1980 1979 1978 1977 1976 1975 1974 1973 1972 1971 1970 1969 1968 1967 1966 1965 1964 1963 1962 1961 1960 1959 1958 1957 1956 1955 1954 1953 1952 6644 Enter Captcha Code Here : Submit 50 100 200 All entries per page Search: S.No. Diary No. / Case No.[STATUS] Petitioner Vs. Respondent Listing Date / Court No. 1 CS(OS) - 347 / 2026 [PENDING] Click here for Orders Click here forJudgments ARVINDER SINGH SAWHNEY VS. TARLOK SINGH SAWHNEY NEXT DATE: 20/07/2026 Last Date: 21/04/2026 COURT NO: NA Showing 1 to 1 of 1 entry «‹1›» Disclaimer : The content of this site is only for information purpose. Users are advised not to depend on the information and use it for official purpose. Neither the High Court of Delhi nor the National Informatics Centre , Ministry of Information Technology, Government of India is responsible for any damages arising in contract from the use of the content of this site. e-Visitor Pass e-Library Accessibility Services e-Sewa Kendra & Accessiblity Helplin",
+        "invalidCaptchaDetected": false,
+        "rawMetadata": {
+          "resultsCount": 1,
+          "results": [
+            {
+              "serialNumber": "1",
+              "caseNumberAndStatus": "CS(OS) - 347 / 2026 [PENDING] Click here for Orders Click here forJudgments",
+              "parties": "ARVINDER SINGH SAWHNEY VS. TARLOK SINGH SAWHNEY",
+              "listingDateAndCourtNo": "NEXT DATE: 20/07/2026 Last Date: 21/04/2026 COURT NO: NA",
+              "caseNumber": "",
+              "caseStatus": "PENDING"
+            }
+          ]
+        }
+      },
+      "createdAt": "2026-04-22T06:25:51.389Z"
+    },
+    {
+      "id": "snapshot_1776840205116_ekiz0k",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "payload": {
+        "provider": "delhiManualCaptcha",
+        "caseFound": true,
+        "courtName": "High Court of Delhi",
+        "caseNumber": "CS(OS) 347/2026",
+        "cnrNumber": "",
+        "caseTitle": "ARVINDER SINGH SAWHNEY VS. TARLOK SINGH SAWHNEY",
+        "nextHearingDate": "20-07-2026",
+        "courtNumber": "NA",
+        "caseStatus": "PENDING",
+        "lastOrderDate": "",
+        "officialSourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "sourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "pageTitle": "High Court of Delhi",
+        "rawTextPreview": "Sitemap Contact Feedback FAQs Skip to Main Content Screen Reader Access A+ A A - A A Hindi Hindi High Court of Delhi Home Judges Administration e-Services Public Notices Rules & Guidelines Home CASE STATUS CASE WISE Back CASE WISE PARTY NAME ADVOCATE NAME DIARY NO Case Type: Select ADMIN.REPORT ARB.A. ARB. A. (COMM.) ARB.P. BAIL APPLN. CA CA (COMM.IPD-CR) C.A.(COMM.IPD-GI) C.A.(COMM.IPD-PAT) C.A.(COMM.IPD-PV) C.A.(COMM.IPD-TM) CAVEAT(CO.) CC(ARB.) CCP(CO.) CCP(REF) CEAC CEAR CHAT.A.C. CHAT.A.REF CMI CM(M) CM(M)-IPD C.O. CO.APP. CO.APPL.(C) CO.APPL.(M) CO.A(SB) C.O.(COMM.IPD-CR) C.O.(COMM.IPD-GI) C.O.(COMM.IPD-PAT) C.O. (COMM.IPD-TM) CO.EX. CONT.APP.(C) CONT.CAS(C) CONT.CAS.(CRL) CO.PET. C.REF.(O) CRL.A. CRL.L.P. CRL.M.C. CRL.M.(CO.) CRL.M.I. CRL.O. CRL.O.(CO.) CRL.REF. CRL.REV.P. CRL.REV.P.(MAT.) CRL.REV.P.(NDPS) CRL.REV.P.(NI) C.R.P. CRP-IPD C.RULE CS(COMM) CS(COMM) INFRA CS(OS) CS(OS) GP CUSAA CUS.A.C. CUS.A.R. CUSTOM A. DEATH SENTENCE REF. DEMO EDC EDR EFA(COMM) EFA(OS) EFA(OS) (COMM) EFA(OS)(IPD) EL.PET. ETR EX.F.A. EX.P. EX.S.A. FAO FAO (COMM) FAO-IPD FAO(OS) FAO(OS) (COMM) FAO(OS)(IPD) GCAC GCAR GTA GTC GTR I.A. I.P.A. ITA ITC ITR ITSA LA.APP. LPA MAC.APP. MAT. MAT.APP. MAT.APP.(F.C.) MAT.CASE MAT.REF. MISC. APPEAL (FEMA) MISC. APPEAL(PMLA) OA OCJA O.M.P. O.M.P. (COMM) OMP (CONT.) O.M.P. (E) O.M.P. (E) (COMM.) O.M.P.(EFA)(COMM.) O.M.P. (ENF.) OMP (ENF.) (COMM.) O.M.P.(I) O.M.P.(I) (COMM.) O.M.P. (J) (COMM.) O.M.P. (MISC.) O.M.P.(MISC.)(COMM.) O.M.P.(T) O.M.P. (T) (COMM.) O.REF. RC.REV. RC.S.A. RERA APPEAL REVIEW PET. RFA RFA(COMM) RFA-IPD RFA(OS) RFA(OS)(COMM) RFA(OS)(IPD) RSA SCA SDR SERTA ST.APPL. STC ST.REF. SUR.T.REF. TEST.CAS. TR.P.(C) TR.P.(C.) TR.P.(CRL.) VAT APPEAL W.P.(C) W.P.(C)-IPD WP(C)(IPD) W.P.(CRL) WTA WTC WTR Case Number : Year: Select 2026 2025 2024 2023 2022 2021 2020 2019 2018 2017 2016 2015 2014 2013 2012 2011 2010 2009 2008 2007 2006 2005 2004 2003 2002 2001 2000 1999 1998 1997 1996 1995 1994 1993 1992 1991 1990 1989 1988 1987 1986 1985 1984 1983 1982 1981 1980 1979 1978 1977 1976 1975 1974 1973 1972 1971 1970 1969 1968 1967 1966 1965 1964 1963 1962 1961 1960 1959 1958 1957 1956 1955 1954 1953 1952 6068 Enter Captcha Code Here : Submit 50 100 200 All entries per page Search: S.No. Diary No. / Case No.[STATUS] Petitioner Vs. Respondent Listing Date / Court No. 1 CS(OS) - 347 / 2026 [PENDING] Click here for Orders Click here forJudgments ARVINDER SINGH SAWHNEY VS. TARLOK SINGH SAWHNEY NEXT DATE: 20/07/2026 Last Date: 21/04/2026 COURT NO: NA Showing 1 to 1 of 1 entry «‹1›» Disclaimer : The content of this site is only for information purpose. Users are advised not to depend on the information and use it for official purpose. Neither the High Court of Delhi nor the National Informatics Centre , Ministry of Information Technology, Government of India is responsible for any damages arising in contract from the use of the content of this site. e-Visitor Pass e-Library Accessibility Services e-Sewa Kendra & Accessiblity Helplin",
+        "invalidCaptchaDetected": false,
+        "rawMetadata": {
+          "resultsCount": 1,
+          "results": [
+            {
+              "serialNumber": "1",
+              "caseNumberAndStatus": "CS(OS) - 347 / 2026 [PENDING] Click here for Orders Click here forJudgments",
+              "parties": "ARVINDER SINGH SAWHNEY VS. TARLOK SINGH SAWHNEY",
+              "listingDateAndCourtNo": "NEXT DATE: 20/07/2026 Last Date: 21/04/2026 COURT NO: NA",
+              "caseNumber": "",
+              "caseStatus": "PENDING"
+            }
+          ]
+        }
+      },
+      "createdAt": "2026-04-22T06:43:25.116Z"
+    },
+    {
+      "id": "snapshot_1776843978003_3zrx7c",
+      "trackedCaseId": "case_1776843978000_21yk68",
+      "payload": {
+        "provider": "delhiManualCaptcha",
+        "caseFound": true,
+        "courtName": "High Court of Delhi",
+        "caseNumber": "W.P.(C) 27/2025",
+        "cnrNumber": "",
+        "caseTitle": "RITA BAGGA VS. GOVT. OF NCT OF DELHI & ORS.",
+        "nextHearingDate": "06-04-2026",
+        "courtNumber": "NA",
+        "caseStatus": "DISPOSED",
+        "lastOrderDate": "",
+        "officialSourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "sourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "pageTitle": "High Court of Delhi",
+        "rawTextPreview": "Sitemap Contact Feedback FAQs Skip to Main Content Screen Reader Access A+ A A - A A Hindi Hindi High Court of Delhi Home Judges Administration e-Services Public Notices Rules & Guidelines Home CASE STATUS CASE WISE Back CASE WISE PARTY NAME ADVOCATE NAME DIARY NO Case Type: Select ADMIN.REPORT ARB.A. ARB. A. (COMM.) ARB.P. BAIL APPLN. CA CA (COMM.IPD-CR) C.A.(COMM.IPD-GI) C.A.(COMM.IPD-PAT) C.A.(COMM.IPD-PV) C.A.(COMM.IPD-TM) CAVEAT(CO.) CC(ARB.) CCP(CO.) CCP(REF) CEAC CEAR CHAT.A.C. CHAT.A.REF CMI CM(M) CM(M)-IPD C.O. CO.APP. CO.APPL.(C) CO.APPL.(M) CO.A(SB) C.O.(COMM.IPD-CR) C.O.(COMM.IPD-GI) C.O.(COMM.IPD-PAT) C.O. (COMM.IPD-TM) CO.EX. CONT.APP.(C) CONT.CAS(C) CONT.CAS.(CRL) CO.PET. C.REF.(O) CRL.A. CRL.L.P. CRL.M.C. CRL.M.(CO.) CRL.M.I. CRL.O. CRL.O.(CO.) CRL.REF. CRL.REV.P. CRL.REV.P.(MAT.) CRL.REV.P.(NDPS) CRL.REV.P.(NI) C.R.P. CRP-IPD C.RULE CS(COMM) CS(COMM) INFRA CS(OS) CS(OS) GP CUSAA CUS.A.C. CUS.A.R. CUSTOM A. DEATH SENTENCE REF. DEMO EDC EDR EFA(COMM) EFA(OS) EFA(OS) (COMM) EFA(OS)(IPD) EL.PET. ETR EX.F.A. EX.P. EX.S.A. FAO FAO (COMM) FAO-IPD FAO(OS) FAO(OS) (COMM) FAO(OS)(IPD) GCAC GCAR GTA GTC GTR I.A. I.P.A. ITA ITC ITR ITSA LA.APP. LPA MAC.APP. MAT. MAT.APP. MAT.APP.(F.C.) MAT.CASE MAT.REF. MISC. APPEAL (FEMA) MISC. APPEAL(PMLA) OA OCJA O.M.P. O.M.P. (COMM) OMP (CONT.) O.M.P. (E) O.M.P. (E) (COMM.) O.M.P.(EFA)(COMM.) O.M.P. (ENF.) OMP (ENF.) (COMM.) O.M.P.(I) O.M.P.(I) (COMM.) O.M.P. (J) (COMM.) O.M.P. (MISC.) O.M.P.(MISC.)(COMM.) O.M.P.(T) O.M.P. (T) (COMM.) O.REF. RC.REV. RC.S.A. RERA APPEAL REVIEW PET. RFA RFA(COMM) RFA-IPD RFA(OS) RFA(OS)(COMM) RFA(OS)(IPD) RSA SCA SDR SERTA ST.APPL. STC ST.REF. SUR.T.REF. TEST.CAS. TR.P.(C) TR.P.(C.) TR.P.(CRL.) VAT APPEAL W.P.(C) W.P.(C)-IPD WP(C)(IPD) W.P.(CRL) WTA WTC WTR Case Number : Year: Select 2026 2025 2024 2023 2022 2021 2020 2019 2018 2017 2016 2015 2014 2013 2012 2011 2010 2009 2008 2007 2006 2005 2004 2003 2002 2001 2000 1999 1998 1997 1996 1995 1994 1993 1992 1991 1990 1989 1988 1987 1986 1985 1984 1983 1982 1981 1980 1979 1978 1977 1976 1975 1974 1973 1972 1971 1970 1969 1968 1967 1966 1965 1964 1963 1962 1961 1960 1959 1958 1957 1956 1955 1954 1953 1952 4164 Enter Captcha Code Here : Submit 50 100 200 All entries per page Search: S.No. Diary No. / Case No.[STATUS] Petitioner Vs. Respondent Listing Date / Court No. 1 W.P.(C) - 27 / 2025 [DISPOSED] Click here for Orders Click here forJudgments RITA BAGGA VS. GOVT. OF NCT OF DELHI & ORS. NEXT DATE: NA Last Date: 06/04/2026 COURT NO: NA Showing 1 to 1 of 1 entry «‹1›» Disclaimer : The content of this site is only for information purpose. Users are advised not to depend on the information and use it for official purpose. Neither the High Court of Delhi nor the National Informatics Centre , Ministry of Information Technology, Government of India is responsible for any damages arising in contract from the use of the content of this site. e-Visitor Pass e-Library Accessibility Services e-Sewa Kendra & Accessiblity Helpline निर्णय हि",
+        "invalidCaptchaDetected": false,
+        "rawMetadata": {
+          "resultsCount": 1,
+          "results": [
+            {
+              "serialNumber": "1",
+              "caseNumberAndStatus": "W.P.(C) - 27 / 2025 [DISPOSED] Click here for Orders Click here forJudgments",
+              "parties": "RITA BAGGA VS. GOVT. OF NCT OF DELHI & ORS.",
+              "listingDateAndCourtNo": "NEXT DATE: NA Last Date: 06/04/2026 COURT NO: NA",
+              "caseNumber": "",
+              "caseStatus": "DISPOSED"
+            }
+          ]
+        }
+      },
+      "createdAt": "2026-04-22T07:46:18.003Z"
+    },
+    {
+      "id": "snapshot_1776845250177_43jhcu",
+      "trackedCaseId": "case_1776843978000_21yk68",
+      "payload": {
+        "provider": "delhiManualCaptcha",
+        "caseFound": true,
+        "courtName": "High Court of Delhi",
+        "caseNumber": "W.P.(C) 27/2025",
+        "cnrNumber": "",
+        "caseTitle": "RITA BAGGA VS. GOVT. OF NCT OF DELHI & ORS.",
+        "nextHearingDate": "06-04-2026",
+        "courtNumber": "NA",
+        "caseStatus": "DISPOSED",
+        "lastOrderDate": "",
+        "officialSourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "sourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "ordersUrl": "https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6IlZBN3FNT3I0OXRxNVdRSDY0Rk1USmc9PSIsInZhbHVlIjoiTHZEMWFCbUgzdHZkYW56N3E2SmtMdz09IiwibWFjIjoiYTYyZDAxZDY3M2ZhOTI0ZmQ3OWI4N2NkMTE1OWQzNGU5NWE5M2EwZDgyNmM2MDhlMWU3NjgzYWVlNWE2NmVmYiIsInRhZyI6IiJ9/eyJpdiI6ImJIS0ppY1E4QWkwTEtVYndaU2tsV2c9PSIsInZhbHVlIjoiSHZOUUpTVzFORm9XdVQ0dFN6aDFwdz09IiwibWFjIjoiNmM4OWY2NDE4NGIzOTYzMjYwYTgxODdkMjNmODk4ODRhMGI4MzA3ZDVmNDM1MDlkZjZlZDcxZjUxYzIwMjgxOCIsInRhZyI6IiJ9/eyJpdiI6IkdTTHN0MDlsZ3NXOWFLd2NkV09RMlE9PSIsInZhbHVlIjoicDdITmFhVENFa0pFQVlBMUNGclJJZz09IiwibWFjIjoiZjQ5ODAzYmE4NzVmOWJjODVlMjlmODY0ZDhkN2M5NjRjYzgxMWI1Yzk4N2I4YzU0ODYzMGI0MTc0YjNlOTQwMiIsInRhZyI6IiJ9",
+        "judgmentsUrl": "https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6IlZBN3FNT3I0OXRxNVdRSDY0Rk1USmc9PSIsInZhbHVlIjoiTHZEMWFCbUgzdHZkYW56N3E2SmtMdz09IiwibWFjIjoiYTYyZDAxZDY3M2ZhOTI0ZmQ3OWI4N2NkMTE1OWQzNGU5NWE5M2EwZDgyNmM2MDhlMWU3NjgzYWVlNWE2NmVmYiIsInRhZyI6IiJ9/eyJpdiI6ImJIS0ppY1E4QWkwTEtVYndaU2tsV2c9PSIsInZhbHVlIjoiSHZOUUpTVzFORm9XdVQ0dFN6aDFwdz09IiwibWFjIjoiNmM4OWY2NDE4NGIzOTYzMjYwYTgxODdkMjNmODk4ODRhMGI4MzA3ZDVmNDM1MDlkZjZlZDcxZjUxYzIwMjgxOCIsInRhZyI6IiJ9/eyJpdiI6IkdTTHN0MDlsZ3NXOWFLd2NkV09RMlE9PSIsInZhbHVlIjoicDdITmFhVENFa0pFQVlBMUNGclJJZz09IiwibWFjIjoiZjQ5ODAzYmE4NzVmOWJjODVlMjlmODY0ZDhkN2M5NjRjYzgxMWI1Yzk4N2I4YzU0ODYzMGI0MTc0YjNlOTQwMiIsInRhZyI6IiJ9",
+        "pageTitle": "High Court of Delhi",
+        "rawTextPreview": "Sitemap Contact Feedback FAQs Skip to Main Content Screen Reader Access A+ A A - A A Hindi Hindi High Court of Delhi Home Judges Administration e-Services Public Notices Rules & Guidelines Home CASE STATUS CASE WISE Back CASE WISE PARTY NAME ADVOCATE NAME DIARY NO Case Type: Select ADMIN.REPORT ARB.A. ARB. A. (COMM.) ARB.P. BAIL APPLN. CA CA (COMM.IPD-CR) C.A.(COMM.IPD-GI) C.A.(COMM.IPD-PAT) C.A.(COMM.IPD-PV) C.A.(COMM.IPD-TM) CAVEAT(CO.) CC(ARB.) CCP(CO.) CCP(REF) CEAC CEAR CHAT.A.C. CHAT.A.REF CMI CM(M) CM(M)-IPD C.O. CO.APP. CO.APPL.(C) CO.APPL.(M) CO.A(SB) C.O.(COMM.IPD-CR) C.O.(COMM.IPD-GI) C.O.(COMM.IPD-PAT) C.O. (COMM.IPD-TM) CO.EX. CONT.APP.(C) CONT.CAS(C) CONT.CAS.(CRL) CO.PET. C.REF.(O) CRL.A. CRL.L.P. CRL.M.C. CRL.M.(CO.) CRL.M.I. CRL.O. CRL.O.(CO.) CRL.REF. CRL.REV.P. CRL.REV.P.(MAT.) CRL.REV.P.(NDPS) CRL.REV.P.(NI) C.R.P. CRP-IPD C.RULE CS(COMM) CS(COMM) INFRA CS(OS) CS(OS) GP CUSAA CUS.A.C. CUS.A.R. CUSTOM A. DEATH SENTENCE REF. DEMO EDC EDR EFA(COMM) EFA(OS) EFA(OS) (COMM) EFA(OS)(IPD) EL.PET. ETR EX.F.A. EX.P. EX.S.A. FAO FAO (COMM) FAO-IPD FAO(OS) FAO(OS) (COMM) FAO(OS)(IPD) GCAC GCAR GTA GTC GTR I.A. I.P.A. ITA ITC ITR ITSA LA.APP. LPA MAC.APP. MAT. MAT.APP. MAT.APP.(F.C.) MAT.CASE MAT.REF. MISC. APPEAL (FEMA) MISC. APPEAL(PMLA) OA OCJA O.M.P. O.M.P. (COMM) OMP (CONT.) O.M.P. (E) O.M.P. (E) (COMM.) O.M.P.(EFA)(COMM.) O.M.P. (ENF.) OMP (ENF.) (COMM.) O.M.P.(I) O.M.P.(I) (COMM.) O.M.P. (J) (COMM.) O.M.P. (MISC.) O.M.P.(MISC.)(COMM.) O.M.P.(T) O.M.P. (T) (COMM.) O.REF. RC.REV. RC.S.A. RERA APPEAL REVIEW PET. RFA RFA(COMM) RFA-IPD RFA(OS) RFA(OS)(COMM) RFA(OS)(IPD) RSA SCA SDR SERTA ST.APPL. STC ST.REF. SUR.T.REF. TEST.CAS. TR.P.(C) TR.P.(C.) TR.P.(CRL.) VAT APPEAL W.P.(C) W.P.(C)-IPD WP(C)(IPD) W.P.(CRL) WTA WTC WTR Case Number : Year: Select 2026 2025 2024 2023 2022 2021 2020 2019 2018 2017 2016 2015 2014 2013 2012 2011 2010 2009 2008 2007 2006 2005 2004 2003 2002 2001 2000 1999 1998 1997 1996 1995 1994 1993 1992 1991 1990 1989 1988 1987 1986 1985 1984 1983 1982 1981 1980 1979 1978 1977 1976 1975 1974 1973 1972 1971 1970 1969 1968 1967 1966 1965 1964 1963 1962 1961 1960 1959 1958 1957 1956 1955 1954 1953 1952 7407 Enter Captcha Code Here : Submit 50 100 200 All entries per page Search: S.No. Diary No. / Case No.[STATUS] Petitioner Vs. Respondent Listing Date / Court No. 1 W.P.(C) - 27 / 2025 [DISPOSED] Click here for Orders Click here forJudgments RITA BAGGA VS. GOVT. OF NCT OF DELHI & ORS. NEXT DATE: NA Last Date: 06/04/2026 COURT NO: NA Showing 1 to 1 of 1 entry «‹1›» Disclaimer : The content of this site is only for information purpose. Users are advised not to depend on the information and use it for official purpose. Neither the High Court of Delhi nor the National Informatics Centre , Ministry of Information Technology, Government of India is responsible for any damages arising in contract from the use of the content of this site. e-Visitor Pass e-Library Accessibility Services e-Sewa Kendra & Accessiblity Helpline निर्णय हि",
+        "invalidCaptchaDetected": false,
+        "rawMetadata": {
+          "resultsCount": 1,
+          "results": [
+            {
+              "serialNumber": "1",
+              "caseNumberHtml": "<a>W.P.(C)</a> - 27 / 2025 <br><font color='red'>[DISPOSED]</font><br> <a href=https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6IlZBN3FNT3I0OXRxNVdRSDY0Rk1USmc9PSIsInZhbHVlIjoiTHZEMWFCbUgzdHZkYW56N3E2SmtMdz09IiwibWFjIjoiYTYyZDAxZDY3M2ZhOTI0ZmQ3OWI4N2NkMTE1OWQzNGU5NWE5M2EwZDgyNmM2MDhlMWU3NjgzYWVlNWE2NmVmYiIsInRhZyI6IiJ9/eyJpdiI6ImJIS0ppY1E4QWkwTEtVYndaU2tsV2c9PSIsInZhbHVlIjoiSHZOUUpTVzFORm9XdVQ0dFN6aDFwdz09IiwibWFjIjoiNmM4OWY2NDE4NGIzOTYzMjYwYTgxODdkMjNmODk4ODRhMGI4MzA3ZDVmNDM1MDlkZjZlZDcxZjUxYzIwMjgxOCIsInRhZyI6IiJ9/eyJpdiI6IkdTTHN0MDlsZ3NXOWFLd2NkV09RMlE9PSIsInZhbHVlIjoicDdITmFhVENFa0pFQVlBMUNGclJJZz09IiwibWFjIjoiZjQ5ODAzYmE4NzVmOWJjODVlMjlmODY0ZDhkN2M5NjRjYzgxMWI1Yzk4N2I4YzU0ODYzMGI0MTc0YjNlOTQwMiIsInRhZyI6IiJ9 ' style='color:blue; text-decoration: underline;'><strong>Click here for Orders</strong></a> </br> <a href=https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6IlZBN3FNT3I0OXRxNVdRSDY0Rk1USmc9PSIsInZhbHVlIjoiTHZEMWFCbUgzdHZkYW56N3E2SmtMdz09IiwibWFjIjoiYTYyZDAxZDY3M2ZhOTI0ZmQ3OWI4N2NkMTE1OWQzNGU5NWE5M2EwZDgyNmM2MDhlMWU3NjgzYWVlNWE2NmVmYiIsInRhZyI6IiJ9/eyJpdiI6ImJIS0ppY1E4QWkwTEtVYndaU2tsV2c9PSIsInZhbHVlIjoiSHZOUUpTVzFORm9XdVQ0dFN6aDFwdz09IiwibWFjIjoiNmM4OWY2NDE4NGIzOTYzMjYwYTgxODdkMjNmODk4ODRhMGI4MzA3ZDVmNDM1MDlkZjZlZDcxZjUxYzIwMjgxOCIsInRhZyI6IiJ9/eyJpdiI6IkdTTHN0MDlsZ3NXOWFLd2NkV09RMlE9PSIsInZhbHVlIjoicDdITmFhVENFa0pFQVlBMUNGclJJZz09IiwibWFjIjoiZjQ5ODAzYmE4NzVmOWJjODVlMjlmODY0ZDhkN2M5NjRjYzgxMWI1Yzk4N2I4YzU0ODYzMGI0MTc0YjNlOTQwMiIsInRhZyI6IiJ9 ' style='color:blue; text-decoration: underline;'><strong>Click here forJudgments</strong></a>",
+              "caseNumberAndStatus": "W.P.(C) - 27 / 2025 [DISPOSED] Click here for Orders Click here forJudgments",
+              "parties": "RITA BAGGA VS. GOVT. OF NCT OF DELHI & ORS.",
+              "listingDateAndCourtNo": "NEXT DATE: NA Last Date: 06/04/2026 COURT NO: NA",
+              "caseNumber": "",
+              "caseStatus": "DISPOSED",
+              "links": {
+                "ordersUrl": "https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6IlZBN3FNT3I0OXRxNVdRSDY0Rk1USmc9PSIsInZhbHVlIjoiTHZEMWFCbUgzdHZkYW56N3E2SmtMdz09IiwibWFjIjoiYTYyZDAxZDY3M2ZhOTI0ZmQ3OWI4N2NkMTE1OWQzNGU5NWE5M2EwZDgyNmM2MDhlMWU3NjgzYWVlNWE2NmVmYiIsInRhZyI6IiJ9/eyJpdiI6ImJIS0ppY1E4QWkwTEtVYndaU2tsV2c9PSIsInZhbHVlIjoiSHZOUUpTVzFORm9XdVQ0dFN6aDFwdz09IiwibWFjIjoiNmM4OWY2NDE4NGIzOTYzMjYwYTgxODdkMjNmODk4ODRhMGI4MzA3ZDVmNDM1MDlkZjZlZDcxZjUxYzIwMjgxOCIsInRhZyI6IiJ9/eyJpdiI6IkdTTHN0MDlsZ3NXOWFLd2NkV09RMlE9PSIsInZhbHVlIjoicDdITmFhVENFa0pFQVlBMUNGclJJZz09IiwibWFjIjoiZjQ5ODAzYmE4NzVmOWJjODVlMjlmODY0ZDhkN2M5NjRjYzgxMWI1Yzk4N2I4YzU0ODYzMGI0MTc0YjNlOTQwMiIsInRhZyI6IiJ9",
+                "judgmentsUrl": "https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6IlZBN3FNT3I0OXRxNVdRSDY0Rk1USmc9PSIsInZhbHVlIjoiTHZEMWFCbUgzdHZkYW56N3E2SmtMdz09IiwibWFjIjoiYTYyZDAxZDY3M2ZhOTI0ZmQ3OWI4N2NkMTE1OWQzNGU5NWE5M2EwZDgyNmM2MDhlMWU3NjgzYWVlNWE2NmVmYiIsInRhZyI6IiJ9/eyJpdiI6ImJIS0ppY1E4QWkwTEtVYndaU2tsV2c9PSIsInZhbHVlIjoiSHZOUUpTVzFORm9XdVQ0dFN6aDFwdz09IiwibWFjIjoiNmM4OWY2NDE4NGIzOTYzMjYwYTgxODdkMjNmODk4ODRhMGI4MzA3ZDVmNDM1MDlkZjZlZDcxZjUxYzIwMjgxOCIsInRhZyI6IiJ9/eyJpdiI6IkdTTHN0MDlsZ3NXOWFLd2NkV09RMlE9PSIsInZhbHVlIjoicDdITmFhVENFa0pFQVlBMUNGclJJZz09IiwibWFjIjoiZjQ5ODAzYmE4NzVmOWJjODVlMjlmODY0ZDhkN2M5NjRjYzgxMWI1Yzk4N2I4YzU0ODYzMGI0MTc0YjNlOTQwMiIsInRhZyI6IiJ9"
+              }
+            }
+          ]
+        }
+      },
+      "createdAt": "2026-04-22T08:07:30.177Z"
+    },
+    {
+      "id": "snapshot_1776845320847_4pp4k4",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "payload": {
+        "provider": "delhiManualCaptcha",
+        "caseFound": true,
+        "courtName": "High Court of Delhi",
+        "caseNumber": "CS(OS) 347/2026",
+        "cnrNumber": "",
+        "caseTitle": "ARVINDER SINGH SAWHNEY VS. TARLOK SINGH SAWHNEY",
+        "nextHearingDate": "20-07-2026",
+        "courtNumber": "NA",
+        "caseStatus": "PENDING",
+        "lastOrderDate": "",
+        "officialSourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "sourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "ordersUrl": "https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6IjlnWVAwTlZCdDZ5Z2dRaCtPeDFjb2c9PSIsInZhbHVlIjoiVlY0Zmd4cUhqUkdaU0JxS1huaHE1QT09IiwibWFjIjoiYjE0YmQ1MTAwZTIzOTY4N2I2YTc2ZWY2ZmQ4MjE1NmZhZWU5MmRiMTI0MGI0YzFhMmYwMzM2YTM5OWY2YmQzYSIsInRhZyI6IiJ9/eyJpdiI6IkpHbTdTblVmeWhNSXRyOXZtQ1ZkNXc9PSIsInZhbHVlIjoid21OMllvelhSaDBYM1N6TTdqRkNzdz09IiwibWFjIjoiZDMwYTQ1ZjM1MDY2Nzk4NTRlODJlNWVjODBjZmQ3NThjY2Y1MDcwZmVhMGJmNTY5MDkyMDZjMGE3MThjMjc5MyIsInRhZyI6IiJ9/eyJpdiI6Ik55enM5L2pSUHQ5bGphMXFNSW9PMGc9PSIsInZhbHVlIjoiazJWV0ZVaGRQckhTb0VZaFVUcmZKdz09IiwibWFjIjoiZjI2ODJjN2FkYWZkNzA1MjQyMjc1OTI1MWMzNzdkMmQ3YWVmNTUyOTlmNmM1NDFiN2M4MGI0ZTY5NjU5ODM3NSIsInRhZyI6IiJ9",
+        "judgmentsUrl": "https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6IjlnWVAwTlZCdDZ5Z2dRaCtPeDFjb2c9PSIsInZhbHVlIjoiVlY0Zmd4cUhqUkdaU0JxS1huaHE1QT09IiwibWFjIjoiYjE0YmQ1MTAwZTIzOTY4N2I2YTc2ZWY2ZmQ4MjE1NmZhZWU5MmRiMTI0MGI0YzFhMmYwMzM2YTM5OWY2YmQzYSIsInRhZyI6IiJ9/eyJpdiI6IkpHbTdTblVmeWhNSXRyOXZtQ1ZkNXc9PSIsInZhbHVlIjoid21OMllvelhSaDBYM1N6TTdqRkNzdz09IiwibWFjIjoiZDMwYTQ1ZjM1MDY2Nzk4NTRlODJlNWVjODBjZmQ3NThjY2Y1MDcwZmVhMGJmNTY5MDkyMDZjMGE3MThjMjc5MyIsInRhZyI6IiJ9/eyJpdiI6Ik55enM5L2pSUHQ5bGphMXFNSW9PMGc9PSIsInZhbHVlIjoiazJWV0ZVaGRQckhTb0VZaFVUcmZKdz09IiwibWFjIjoiZjI2ODJjN2FkYWZkNzA1MjQyMjc1OTI1MWMzNzdkMmQ3YWVmNTUyOTlmNmM1NDFiN2M4MGI0ZTY5NjU5ODM3NSIsInRhZyI6IiJ9",
+        "pageTitle": "High Court of Delhi",
+        "rawTextPreview": "Sitemap Contact Feedback FAQs Skip to Main Content Screen Reader Access A+ A A - A A Hindi Hindi High Court of Delhi Home Judges Administration e-Services Public Notices Rules & Guidelines Home CASE STATUS CASE WISE Back CASE WISE PARTY NAME ADVOCATE NAME DIARY NO Case Type: Select ADMIN.REPORT ARB.A. ARB. A. (COMM.) ARB.P. BAIL APPLN. CA CA (COMM.IPD-CR) C.A.(COMM.IPD-GI) C.A.(COMM.IPD-PAT) C.A.(COMM.IPD-PV) C.A.(COMM.IPD-TM) CAVEAT(CO.) CC(ARB.) CCP(CO.) CCP(REF) CEAC CEAR CHAT.A.C. CHAT.A.REF CMI CM(M) CM(M)-IPD C.O. CO.APP. CO.APPL.(C) CO.APPL.(M) CO.A(SB) C.O.(COMM.IPD-CR) C.O.(COMM.IPD-GI) C.O.(COMM.IPD-PAT) C.O. (COMM.IPD-TM) CO.EX. CONT.APP.(C) CONT.CAS(C) CONT.CAS.(CRL) CO.PET. C.REF.(O) CRL.A. CRL.L.P. CRL.M.C. CRL.M.(CO.) CRL.M.I. CRL.O. CRL.O.(CO.) CRL.REF. CRL.REV.P. CRL.REV.P.(MAT.) CRL.REV.P.(NDPS) CRL.REV.P.(NI) C.R.P. CRP-IPD C.RULE CS(COMM) CS(COMM) INFRA CS(OS) CS(OS) GP CUSAA CUS.A.C. CUS.A.R. CUSTOM A. DEATH SENTENCE REF. DEMO EDC EDR EFA(COMM) EFA(OS) EFA(OS) (COMM) EFA(OS)(IPD) EL.PET. ETR EX.F.A. EX.P. EX.S.A. FAO FAO (COMM) FAO-IPD FAO(OS) FAO(OS) (COMM) FAO(OS)(IPD) GCAC GCAR GTA GTC GTR I.A. I.P.A. ITA ITC ITR ITSA LA.APP. LPA MAC.APP. MAT. MAT.APP. MAT.APP.(F.C.) MAT.CASE MAT.REF. MISC. APPEAL (FEMA) MISC. APPEAL(PMLA) OA OCJA O.M.P. O.M.P. (COMM) OMP (CONT.) O.M.P. (E) O.M.P. (E) (COMM.) O.M.P.(EFA)(COMM.) O.M.P. (ENF.) OMP (ENF.) (COMM.) O.M.P.(I) O.M.P.(I) (COMM.) O.M.P. (J) (COMM.) O.M.P. (MISC.) O.M.P.(MISC.)(COMM.) O.M.P.(T) O.M.P. (T) (COMM.) O.REF. RC.REV. RC.S.A. RERA APPEAL REVIEW PET. RFA RFA(COMM) RFA-IPD RFA(OS) RFA(OS)(COMM) RFA(OS)(IPD) RSA SCA SDR SERTA ST.APPL. STC ST.REF. SUR.T.REF. TEST.CAS. TR.P.(C) TR.P.(C.) TR.P.(CRL.) VAT APPEAL W.P.(C) W.P.(C)-IPD WP(C)(IPD) W.P.(CRL) WTA WTC WTR Case Number : Year: Select 2026 2025 2024 2023 2022 2021 2020 2019 2018 2017 2016 2015 2014 2013 2012 2011 2010 2009 2008 2007 2006 2005 2004 2003 2002 2001 2000 1999 1998 1997 1996 1995 1994 1993 1992 1991 1990 1989 1988 1987 1986 1985 1984 1983 1982 1981 1980 1979 1978 1977 1976 1975 1974 1973 1972 1971 1970 1969 1968 1967 1966 1965 1964 1963 1962 1961 1960 1959 1958 1957 1956 1955 1954 1953 1952 4540 Enter Captcha Code Here : Submit 50 100 200 All entries per page Search: S.No. Diary No. / Case No.[STATUS] Petitioner Vs. Respondent Listing Date / Court No. 1 CS(OS) - 347 / 2026 [PENDING] Click here for Orders Click here forJudgments ARVINDER SINGH SAWHNEY VS. TARLOK SINGH SAWHNEY NEXT DATE: 20/07/2026 Last Date: 21/04/2026 COURT NO: NA Showing 1 to 1 of 1 entry «‹1›» Disclaimer : The content of this site is only for information purpose. Users are advised not to depend on the information and use it for official purpose. Neither the High Court of Delhi nor the National Informatics Centre , Ministry of Information Technology, Government of India is responsible for any damages arising in contract from the use of the content of this site. e-Visitor Pass e-Library Accessibility Services e-Sewa Kendra & Accessiblity Helplin",
+        "invalidCaptchaDetected": false,
+        "rawMetadata": {
+          "resultsCount": 1,
+          "results": [
+            {
+              "serialNumber": "1",
+              "caseNumberHtml": "<a>CS(OS)</a> - 347 / 2026 <br><font color='green'>[PENDING]</font><br> <a href=https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6IjlnWVAwTlZCdDZ5Z2dRaCtPeDFjb2c9PSIsInZhbHVlIjoiVlY0Zmd4cUhqUkdaU0JxS1huaHE1QT09IiwibWFjIjoiYjE0YmQ1MTAwZTIzOTY4N2I2YTc2ZWY2ZmQ4MjE1NmZhZWU5MmRiMTI0MGI0YzFhMmYwMzM2YTM5OWY2YmQzYSIsInRhZyI6IiJ9/eyJpdiI6IkpHbTdTblVmeWhNSXRyOXZtQ1ZkNXc9PSIsInZhbHVlIjoid21OMllvelhSaDBYM1N6TTdqRkNzdz09IiwibWFjIjoiZDMwYTQ1ZjM1MDY2Nzk4NTRlODJlNWVjODBjZmQ3NThjY2Y1MDcwZmVhMGJmNTY5MDkyMDZjMGE3MThjMjc5MyIsInRhZyI6IiJ9/eyJpdiI6Ik55enM5L2pSUHQ5bGphMXFNSW9PMGc9PSIsInZhbHVlIjoiazJWV0ZVaGRQckhTb0VZaFVUcmZKdz09IiwibWFjIjoiZjI2ODJjN2FkYWZkNzA1MjQyMjc1OTI1MWMzNzdkMmQ3YWVmNTUyOTlmNmM1NDFiN2M4MGI0ZTY5NjU5ODM3NSIsInRhZyI6IiJ9 ' style='color:blue; text-decoration: underline;'><strong>Click here for Orders</strong></a> </br> <a href=https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6IjlnWVAwTlZCdDZ5Z2dRaCtPeDFjb2c9PSIsInZhbHVlIjoiVlY0Zmd4cUhqUkdaU0JxS1huaHE1QT09IiwibWFjIjoiYjE0YmQ1MTAwZTIzOTY4N2I2YTc2ZWY2ZmQ4MjE1NmZhZWU5MmRiMTI0MGI0YzFhMmYwMzM2YTM5OWY2YmQzYSIsInRhZyI6IiJ9/eyJpdiI6IkpHbTdTblVmeWhNSXRyOXZtQ1ZkNXc9PSIsInZhbHVlIjoid21OMllvelhSaDBYM1N6TTdqRkNzdz09IiwibWFjIjoiZDMwYTQ1ZjM1MDY2Nzk4NTRlODJlNWVjODBjZmQ3NThjY2Y1MDcwZmVhMGJmNTY5MDkyMDZjMGE3MThjMjc5MyIsInRhZyI6IiJ9/eyJpdiI6Ik55enM5L2pSUHQ5bGphMXFNSW9PMGc9PSIsInZhbHVlIjoiazJWV0ZVaGRQckhTb0VZaFVUcmZKdz09IiwibWFjIjoiZjI2ODJjN2FkYWZkNzA1MjQyMjc1OTI1MWMzNzdkMmQ3YWVmNTUyOTlmNmM1NDFiN2M4MGI0ZTY5NjU5ODM3NSIsInRhZyI6IiJ9 ' style='color:blue; text-decoration: underline;'><strong>Click here forJudgments</strong></a>",
+              "caseNumberAndStatus": "CS(OS) - 347 / 2026 [PENDING] Click here for Orders Click here forJudgments",
+              "parties": "ARVINDER SINGH SAWHNEY VS. TARLOK SINGH SAWHNEY",
+              "listingDateAndCourtNo": "NEXT DATE: 20/07/2026 Last Date: 21/04/2026 COURT NO: NA",
+              "caseNumber": "",
+              "caseStatus": "PENDING",
+              "links": {
+                "ordersUrl": "https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6IjlnWVAwTlZCdDZ5Z2dRaCtPeDFjb2c9PSIsInZhbHVlIjoiVlY0Zmd4cUhqUkdaU0JxS1huaHE1QT09IiwibWFjIjoiYjE0YmQ1MTAwZTIzOTY4N2I2YTc2ZWY2ZmQ4MjE1NmZhZWU5MmRiMTI0MGI0YzFhMmYwMzM2YTM5OWY2YmQzYSIsInRhZyI6IiJ9/eyJpdiI6IkpHbTdTblVmeWhNSXRyOXZtQ1ZkNXc9PSIsInZhbHVlIjoid21OMllvelhSaDBYM1N6TTdqRkNzdz09IiwibWFjIjoiZDMwYTQ1ZjM1MDY2Nzk4NTRlODJlNWVjODBjZmQ3NThjY2Y1MDcwZmVhMGJmNTY5MDkyMDZjMGE3MThjMjc5MyIsInRhZyI6IiJ9/eyJpdiI6Ik55enM5L2pSUHQ5bGphMXFNSW9PMGc9PSIsInZhbHVlIjoiazJWV0ZVaGRQckhTb0VZaFVUcmZKdz09IiwibWFjIjoiZjI2ODJjN2FkYWZkNzA1MjQyMjc1OTI1MWMzNzdkMmQ3YWVmNTUyOTlmNmM1NDFiN2M4MGI0ZTY5NjU5ODM3NSIsInRhZyI6IiJ9",
+                "judgmentsUrl": "https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6IjlnWVAwTlZCdDZ5Z2dRaCtPeDFjb2c9PSIsInZhbHVlIjoiVlY0Zmd4cUhqUkdaU0JxS1huaHE1QT09IiwibWFjIjoiYjE0YmQ1MTAwZTIzOTY4N2I2YTc2ZWY2ZmQ4MjE1NmZhZWU5MmRiMTI0MGI0YzFhMmYwMzM2YTM5OWY2YmQzYSIsInRhZyI6IiJ9/eyJpdiI6IkpHbTdTblVmeWhNSXRyOXZtQ1ZkNXc9PSIsInZhbHVlIjoid21OMllvelhSaDBYM1N6TTdqRkNzdz09IiwibWFjIjoiZDMwYTQ1ZjM1MDY2Nzk4NTRlODJlNWVjODBjZmQ3NThjY2Y1MDcwZmVhMGJmNTY5MDkyMDZjMGE3MThjMjc5MyIsInRhZyI6IiJ9/eyJpdiI6Ik55enM5L2pSUHQ5bGphMXFNSW9PMGc9PSIsInZhbHVlIjoiazJWV0ZVaGRQckhTb0VZaFVUcmZKdz09IiwibWFjIjoiZjI2ODJjN2FkYWZkNzA1MjQyMjc1OTI1MWMzNzdkMmQ3YWVmNTUyOTlmNmM1NDFiN2M4MGI0ZTY5NjU5ODM3NSIsInRhZyI6IiJ9"
+              }
+            }
+          ]
+        }
+      },
+      "createdAt": "2026-04-22T08:08:40.847Z"
+    },
+    {
+      "id": "snapshot_1776846277432_xeiaes",
+      "trackedCaseId": "case_1776846277429_5x5tfv",
+      "payload": {
+        "provider": "delhiManualCaptcha",
+        "caseFound": true,
+        "courtName": "High Court of Delhi",
+        "caseNumber": "CS(OS) 515/2025",
+        "cnrNumber": "",
+        "caseTitle": "DR. SHAILENDRA LALWANI & ANR. VS. PARVESH LILOTHIA & ORS.",
+        "nextHearingDate": "21-04-2026",
+        "courtNumber": "60",
+        "caseStatus": "PENDING",
+        "lastOrderDate": "",
+        "officialSourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "sourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "ordersUrl": "https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6InBMQ01ja3hheVZYbmNEd0lLb1N6VVE9PSIsInZhbHVlIjoiV0xoNitpMHd1Q2VlNC9lM0NLbUd0dz09IiwibWFjIjoiNGI3MTM2NTNhMWNmY2U3ZTNjY2IzMzBiZjc3ZmYxNjc2MTQwMWI5MTVjMGI1NzM4YjVlNWU4OTc5OTc5ZjM4MyIsInRhZyI6IiJ9/eyJpdiI6IkdLVlZ1aFlETWc0ZERaQlgwTFFFM1E9PSIsInZhbHVlIjoicmF6YW92LytOVjJUTmljTmg0c0lSQT09IiwibWFjIjoiMDY3NGJmMDcxOTQ2NWViMDQxOTZiNWU5YmZiYzBkMjQxY2I2MTQ4NmJiOGYxZDZmMjY1OTIyMjMwY2U1MDZjYSIsInRhZyI6IiJ9/eyJpdiI6IkpaQjVvM3d1a3phbTE0UWFYVVVzQmc9PSIsInZhbHVlIjoiM3ZRdUJlRzU1dzhMMzVKdFh4OXcxQT09IiwibWFjIjoiNGQ5OTJlMjRjMTk2ZWQwNjhkMGQ4YmY4NGFhNDIyNGZlMzhkYmRiYTk4NmUzY2U3MGYxYTc0MTkwMzU5MDFiZSIsInRhZyI6IiJ9",
+        "judgmentsUrl": "https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6InBMQ01ja3hheVZYbmNEd0lLb1N6VVE9PSIsInZhbHVlIjoiV0xoNitpMHd1Q2VlNC9lM0NLbUd0dz09IiwibWFjIjoiNGI3MTM2NTNhMWNmY2U3ZTNjY2IzMzBiZjc3ZmYxNjc2MTQwMWI5MTVjMGI1NzM4YjVlNWU4OTc5OTc5ZjM4MyIsInRhZyI6IiJ9/eyJpdiI6IkdLVlZ1aFlETWc0ZERaQlgwTFFFM1E9PSIsInZhbHVlIjoicmF6YW92LytOVjJUTmljTmg0c0lSQT09IiwibWFjIjoiMDY3NGJmMDcxOTQ2NWViMDQxOTZiNWU5YmZiYzBkMjQxY2I2MTQ4NmJiOGYxZDZmMjY1OTIyMjMwY2U1MDZjYSIsInRhZyI6IiJ9/eyJpdiI6IkpaQjVvM3d1a3phbTE0UWFYVVVzQmc9PSIsInZhbHVlIjoiM3ZRdUJlRzU1dzhMMzVKdFh4OXcxQT09IiwibWFjIjoiNGQ5OTJlMjRjMTk2ZWQwNjhkMGQ4YmY4NGFhNDIyNGZlMzhkYmRiYTk4NmUzY2U3MGYxYTc0MTkwMzU5MDFiZSIsInRhZyI6IiJ9",
+        "pageTitle": "High Court of Delhi",
+        "rawTextPreview": "Sitemap Contact Feedback FAQs Skip to Main Content Screen Reader Access A+ A A - A A Hindi Hindi High Court of Delhi Home Judges Administration e-Services Public Notices Rules & Guidelines Home CASE STATUS CASE WISE Back CASE WISE PARTY NAME ADVOCATE NAME DIARY NO Case Type: Select ADMIN.REPORT ARB.A. ARB. A. (COMM.) ARB.P. BAIL APPLN. CA CA (COMM.IPD-CR) C.A.(COMM.IPD-GI) C.A.(COMM.IPD-PAT) C.A.(COMM.IPD-PV) C.A.(COMM.IPD-TM) CAVEAT(CO.) CC(ARB.) CCP(CO.) CCP(REF) CEAC CEAR CHAT.A.C. CHAT.A.REF CMI CM(M) CM(M)-IPD C.O. CO.APP. CO.APPL.(C) CO.APPL.(M) CO.A(SB) C.O.(COMM.IPD-CR) C.O.(COMM.IPD-GI) C.O.(COMM.IPD-PAT) C.O. (COMM.IPD-TM) CO.EX. CONT.APP.(C) CONT.CAS(C) CONT.CAS.(CRL) CO.PET. C.REF.(O) CRL.A. CRL.L.P. CRL.M.C. CRL.M.(CO.) CRL.M.I. CRL.O. CRL.O.(CO.) CRL.REF. CRL.REV.P. CRL.REV.P.(MAT.) CRL.REV.P.(NDPS) CRL.REV.P.(NI) C.R.P. CRP-IPD C.RULE CS(COMM) CS(COMM) INFRA CS(OS) CS(OS) GP CUSAA CUS.A.C. CUS.A.R. CUSTOM A. DEATH SENTENCE REF. DEMO EDC EDR EFA(COMM) EFA(OS) EFA(OS) (COMM) EFA(OS)(IPD) EL.PET. ETR EX.F.A. EX.P. EX.S.A. FAO FAO (COMM) FAO-IPD FAO(OS) FAO(OS) (COMM) FAO(OS)(IPD) GCAC GCAR GTA GTC GTR I.A. I.P.A. ITA ITC ITR ITSA LA.APP. LPA MAC.APP. MAT. MAT.APP. MAT.APP.(F.C.) MAT.CASE MAT.REF. MISC. APPEAL (FEMA) MISC. APPEAL(PMLA) OA OCJA O.M.P. O.M.P. (COMM) OMP (CONT.) O.M.P. (E) O.M.P. (E) (COMM.) O.M.P.(EFA)(COMM.) O.M.P. (ENF.) OMP (ENF.) (COMM.) O.M.P.(I) O.M.P.(I) (COMM.) O.M.P. (J) (COMM.) O.M.P. (MISC.) O.M.P.(MISC.)(COMM.) O.M.P.(T) O.M.P. (T) (COMM.) O.REF. RC.REV. RC.S.A. RERA APPEAL REVIEW PET. RFA RFA(COMM) RFA-IPD RFA(OS) RFA(OS)(COMM) RFA(OS)(IPD) RSA SCA SDR SERTA ST.APPL. STC ST.REF. SUR.T.REF. TEST.CAS. TR.P.(C) TR.P.(C.) TR.P.(CRL.) VAT APPEAL W.P.(C) W.P.(C)-IPD WP(C)(IPD) W.P.(CRL) WTA WTC WTR Case Number : Year: Select 2026 2025 2024 2023 2022 2021 2020 2019 2018 2017 2016 2015 2014 2013 2012 2011 2010 2009 2008 2007 2006 2005 2004 2003 2002 2001 2000 1999 1998 1997 1996 1995 1994 1993 1992 1991 1990 1989 1988 1987 1986 1985 1984 1983 1982 1981 1980 1979 1978 1977 1976 1975 1974 1973 1972 1971 1970 1969 1968 1967 1966 1965 1964 1963 1962 1961 1960 1959 1958 1957 1956 1955 1954 1953 1952 7949 Enter Captcha Code Here : Submit 50 100 200 All entries per page Search: S.No. Diary No. / Case No.[STATUS] Petitioner Vs. Respondent Listing Date / Court No. 1 CS(OS) - 515 / 2025 [PENDING] Click here for Orders Click here forJudgments DR. SHAILENDRA LALWANI & ANR. VS. PARVESH LILOTHIA & ORS. NEXT DATE: 21/04/2026 Last Date: 17/02/2026 COURT NO: 60 Showing 1 to 1 of 1 entry «‹1›» Disclaimer : The content of this site is only for information purpose. Users are advised not to depend on the information and use it for official purpose. Neither the High Court of Delhi nor the National Informatics Centre , Ministry of Information Technology, Government of India is responsible for any damages arising in contract from the use of the content of this site. e-Visitor Pass e-Library Accessibility Services e-Sewa Kendra & Accessibli",
+        "invalidCaptchaDetected": false,
+        "rawMetadata": {
+          "resultsCount": 1,
+          "results": [
+            {
+              "serialNumber": "1",
+              "caseNumberHtml": "<a>CS(OS)</a> - 515 / 2025 <br><font color='green'>[PENDING]</font><br> <a href=https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6InBMQ01ja3hheVZYbmNEd0lLb1N6VVE9PSIsInZhbHVlIjoiV0xoNitpMHd1Q2VlNC9lM0NLbUd0dz09IiwibWFjIjoiNGI3MTM2NTNhMWNmY2U3ZTNjY2IzMzBiZjc3ZmYxNjc2MTQwMWI5MTVjMGI1NzM4YjVlNWU4OTc5OTc5ZjM4MyIsInRhZyI6IiJ9/eyJpdiI6IkdLVlZ1aFlETWc0ZERaQlgwTFFFM1E9PSIsInZhbHVlIjoicmF6YW92LytOVjJUTmljTmg0c0lSQT09IiwibWFjIjoiMDY3NGJmMDcxOTQ2NWViMDQxOTZiNWU5YmZiYzBkMjQxY2I2MTQ4NmJiOGYxZDZmMjY1OTIyMjMwY2U1MDZjYSIsInRhZyI6IiJ9/eyJpdiI6IkpaQjVvM3d1a3phbTE0UWFYVVVzQmc9PSIsInZhbHVlIjoiM3ZRdUJlRzU1dzhMMzVKdFh4OXcxQT09IiwibWFjIjoiNGQ5OTJlMjRjMTk2ZWQwNjhkMGQ4YmY4NGFhNDIyNGZlMzhkYmRiYTk4NmUzY2U3MGYxYTc0MTkwMzU5MDFiZSIsInRhZyI6IiJ9 ' style='color:blue; text-decoration: underline;'><strong>Click here for Orders</strong></a> </br> <a href=https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6InBMQ01ja3hheVZYbmNEd0lLb1N6VVE9PSIsInZhbHVlIjoiV0xoNitpMHd1Q2VlNC9lM0NLbUd0dz09IiwibWFjIjoiNGI3MTM2NTNhMWNmY2U3ZTNjY2IzMzBiZjc3ZmYxNjc2MTQwMWI5MTVjMGI1NzM4YjVlNWU4OTc5OTc5ZjM4MyIsInRhZyI6IiJ9/eyJpdiI6IkdLVlZ1aFlETWc0ZERaQlgwTFFFM1E9PSIsInZhbHVlIjoicmF6YW92LytOVjJUTmljTmg0c0lSQT09IiwibWFjIjoiMDY3NGJmMDcxOTQ2NWViMDQxOTZiNWU5YmZiYzBkMjQxY2I2MTQ4NmJiOGYxZDZmMjY1OTIyMjMwY2U1MDZjYSIsInRhZyI6IiJ9/eyJpdiI6IkpaQjVvM3d1a3phbTE0UWFYVVVzQmc9PSIsInZhbHVlIjoiM3ZRdUJlRzU1dzhMMzVKdFh4OXcxQT09IiwibWFjIjoiNGQ5OTJlMjRjMTk2ZWQwNjhkMGQ4YmY4NGFhNDIyNGZlMzhkYmRiYTk4NmUzY2U3MGYxYTc0MTkwMzU5MDFiZSIsInRhZyI6IiJ9 ' style='color:blue; text-decoration: underline;'><strong>Click here forJudgments</strong></a>",
+              "caseNumberAndStatus": "CS(OS) - 515 / 2025 [PENDING] Click here for Orders Click here forJudgments",
+              "parties": "DR. SHAILENDRA LALWANI & ANR. VS. PARVESH LILOTHIA & ORS.",
+              "listingDateAndCourtNo": "NEXT DATE: 21/04/2026 Last Date: 17/02/2026 COURT NO: 60",
+              "caseNumber": "",
+              "caseStatus": "PENDING",
+              "links": {
+                "ordersUrl": "https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6InBMQ01ja3hheVZYbmNEd0lLb1N6VVE9PSIsInZhbHVlIjoiV0xoNitpMHd1Q2VlNC9lM0NLbUd0dz09IiwibWFjIjoiNGI3MTM2NTNhMWNmY2U3ZTNjY2IzMzBiZjc3ZmYxNjc2MTQwMWI5MTVjMGI1NzM4YjVlNWU4OTc5OTc5ZjM4MyIsInRhZyI6IiJ9/eyJpdiI6IkdLVlZ1aFlETWc0ZERaQlgwTFFFM1E9PSIsInZhbHVlIjoicmF6YW92LytOVjJUTmljTmg0c0lSQT09IiwibWFjIjoiMDY3NGJmMDcxOTQ2NWViMDQxOTZiNWU5YmZiYzBkMjQxY2I2MTQ4NmJiOGYxZDZmMjY1OTIyMjMwY2U1MDZjYSIsInRhZyI6IiJ9/eyJpdiI6IkpaQjVvM3d1a3phbTE0UWFYVVVzQmc9PSIsInZhbHVlIjoiM3ZRdUJlRzU1dzhMMzVKdFh4OXcxQT09IiwibWFjIjoiNGQ5OTJlMjRjMTk2ZWQwNjhkMGQ4YmY4NGFhNDIyNGZlMzhkYmRiYTk4NmUzY2U3MGYxYTc0MTkwMzU5MDFiZSIsInRhZyI6IiJ9",
+                "judgmentsUrl": "https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6InBMQ01ja3hheVZYbmNEd0lLb1N6VVE9PSIsInZhbHVlIjoiV0xoNitpMHd1Q2VlNC9lM0NLbUd0dz09IiwibWFjIjoiNGI3MTM2NTNhMWNmY2U3ZTNjY2IzMzBiZjc3ZmYxNjc2MTQwMWI5MTVjMGI1NzM4YjVlNWU4OTc5OTc5ZjM4MyIsInRhZyI6IiJ9/eyJpdiI6IkdLVlZ1aFlETWc0ZERaQlgwTFFFM1E9PSIsInZhbHVlIjoicmF6YW92LytOVjJUTmljTmg0c0lSQT09IiwibWFjIjoiMDY3NGJmMDcxOTQ2NWViMDQxOTZiNWU5YmZiYzBkMjQxY2I2MTQ4NmJiOGYxZDZmMjY1OTIyMjMwY2U1MDZjYSIsInRhZyI6IiJ9/eyJpdiI6IkpaQjVvM3d1a3phbTE0UWFYVVVzQmc9PSIsInZhbHVlIjoiM3ZRdUJlRzU1dzhMMzVKdFh4OXcxQT09IiwibWFjIjoiNGQ5OTJlMjRjMTk2ZWQwNjhkMGQ4YmY4NGFhNDIyNGZlMzhkYmRiYTk4NmUzY2U3MGYxYTc0MTkwMzU5MDFiZSIsInRhZyI6IiJ9"
+              }
+            }
+          ]
+        }
+      },
+      "createdAt": "2026-04-22T08:24:37.432Z"
+    },
+    {
+      "id": "snapshot_1776846384004_9n1q21",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "payload": {
+        "provider": "delhiManualCaptcha",
+        "caseFound": true,
+        "courtName": "High Court of Delhi",
+        "caseNumber": "CS(OS) 347/2026",
+        "cnrNumber": "",
+        "caseTitle": "ARVINDER SINGH SAWHNEY VS. TARLOK SINGH SAWHNEY",
+        "nextHearingDate": "20-07-2026",
+        "courtNumber": "NA",
+        "caseStatus": "PENDING",
+        "lastOrderDate": "",
+        "officialSourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "sourceUrl": "https://delhihighcourt.nic.in/app/get-case-type-status",
+        "ordersUrl": "https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6Ilp0aXRhWUhGTW9nYkZ5R1FoSDRNNkE9PSIsInZhbHVlIjoiNlJiSXE2NENQQ2pMRDEzN3poL2ZSQT09IiwibWFjIjoiYmNjYjY2MWVjMGM3ZmM4MzU3YTdlOThmMjIwZGIzODM2ZDBiM2FmMzNjOTU5MmM5MmYwNTI5MzA4Y2Q2YmMwMCIsInRhZyI6IiJ9/eyJpdiI6IlZhcHFIZjlTTkFBVXp2alk0aE9HYmc9PSIsInZhbHVlIjoiWkRRTEdkSXA2blhzQWdjckVFaFJidz09IiwibWFjIjoiYmQwOGRjMmUwOTJkZWU5OWQ5ZDQ1MjNiNDgxMjY4ZGM2M2ZlMzYyNmVhMzQxYTE1ZTQ5YzkyOTE2NjBkZjRkYyIsInRhZyI6IiJ9/eyJpdiI6IitIQmxZZ2JQbU9jdmxSNmJSazNpNlE9PSIsInZhbHVlIjoiRHVFTnAxUWE3MWYycWtWendJRWtLQT09IiwibWFjIjoiYmQwNWI2ZmE3NDU0YTAwYTdlOTUwNjRhYTdlZjVlMWEzMTY4NWExYTEwYjllZjliNWQxMjA4ZjRlYjBlNjNhMyIsInRhZyI6IiJ9",
+        "judgmentsUrl": "https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6Ilp0aXRhWUhGTW9nYkZ5R1FoSDRNNkE9PSIsInZhbHVlIjoiNlJiSXE2NENQQ2pMRDEzN3poL2ZSQT09IiwibWFjIjoiYmNjYjY2MWVjMGM3ZmM4MzU3YTdlOThmMjIwZGIzODM2ZDBiM2FmMzNjOTU5MmM5MmYwNTI5MzA4Y2Q2YmMwMCIsInRhZyI6IiJ9/eyJpdiI6IlZhcHFIZjlTTkFBVXp2alk0aE9HYmc9PSIsInZhbHVlIjoiWkRRTEdkSXA2blhzQWdjckVFaFJidz09IiwibWFjIjoiYmQwOGRjMmUwOTJkZWU5OWQ5ZDQ1MjNiNDgxMjY4ZGM2M2ZlMzYyNmVhMzQxYTE1ZTQ5YzkyOTE2NjBkZjRkYyIsInRhZyI6IiJ9/eyJpdiI6IitIQmxZZ2JQbU9jdmxSNmJSazNpNlE9PSIsInZhbHVlIjoiRHVFTnAxUWE3MWYycWtWendJRWtLQT09IiwibWFjIjoiYmQwNWI2ZmE3NDU0YTAwYTdlOTUwNjRhYTdlZjVlMWEzMTY4NWExYTEwYjllZjliNWQxMjA4ZjRlYjBlNjNhMyIsInRhZyI6IiJ9",
+        "pageTitle": "High Court of Delhi",
+        "rawTextPreview": "Sitemap Contact Feedback FAQs Skip to Main Content Screen Reader Access A+ A A - A A Hindi Hindi High Court of Delhi Home Judges Administration e-Services Public Notices Rules & Guidelines Home CASE STATUS CASE WISE Back CASE WISE PARTY NAME ADVOCATE NAME DIARY NO Case Type: Select ADMIN.REPORT ARB.A. ARB. A. (COMM.) ARB.P. BAIL APPLN. CA CA (COMM.IPD-CR) C.A.(COMM.IPD-GI) C.A.(COMM.IPD-PAT) C.A.(COMM.IPD-PV) C.A.(COMM.IPD-TM) CAVEAT(CO.) CC(ARB.) CCP(CO.) CCP(REF) CEAC CEAR CHAT.A.C. CHAT.A.REF CMI CM(M) CM(M)-IPD C.O. CO.APP. CO.APPL.(C) CO.APPL.(M) CO.A(SB) C.O.(COMM.IPD-CR) C.O.(COMM.IPD-GI) C.O.(COMM.IPD-PAT) C.O. (COMM.IPD-TM) CO.EX. CONT.APP.(C) CONT.CAS(C) CONT.CAS.(CRL) CO.PET. C.REF.(O) CRL.A. CRL.L.P. CRL.M.C. CRL.M.(CO.) CRL.M.I. CRL.O. CRL.O.(CO.) CRL.REF. CRL.REV.P. CRL.REV.P.(MAT.) CRL.REV.P.(NDPS) CRL.REV.P.(NI) C.R.P. CRP-IPD C.RULE CS(COMM) CS(COMM) INFRA CS(OS) CS(OS) GP CUSAA CUS.A.C. CUS.A.R. CUSTOM A. DEATH SENTENCE REF. DEMO EDC EDR EFA(COMM) EFA(OS) EFA(OS) (COMM) EFA(OS)(IPD) EL.PET. ETR EX.F.A. EX.P. EX.S.A. FAO FAO (COMM) FAO-IPD FAO(OS) FAO(OS) (COMM) FAO(OS)(IPD) GCAC GCAR GTA GTC GTR I.A. I.P.A. ITA ITC ITR ITSA LA.APP. LPA MAC.APP. MAT. MAT.APP. MAT.APP.(F.C.) MAT.CASE MAT.REF. MISC. APPEAL (FEMA) MISC. APPEAL(PMLA) OA OCJA O.M.P. O.M.P. (COMM) OMP (CONT.) O.M.P. (E) O.M.P. (E) (COMM.) O.M.P.(EFA)(COMM.) O.M.P. (ENF.) OMP (ENF.) (COMM.) O.M.P.(I) O.M.P.(I) (COMM.) O.M.P. (J) (COMM.) O.M.P. (MISC.) O.M.P.(MISC.)(COMM.) O.M.P.(T) O.M.P. (T) (COMM.) O.REF. RC.REV. RC.S.A. RERA APPEAL REVIEW PET. RFA RFA(COMM) RFA-IPD RFA(OS) RFA(OS)(COMM) RFA(OS)(IPD) RSA SCA SDR SERTA ST.APPL. STC ST.REF. SUR.T.REF. TEST.CAS. TR.P.(C) TR.P.(C.) TR.P.(CRL.) VAT APPEAL W.P.(C) W.P.(C)-IPD WP(C)(IPD) W.P.(CRL) WTA WTC WTR Case Number : Year: Select 2026 2025 2024 2023 2022 2021 2020 2019 2018 2017 2016 2015 2014 2013 2012 2011 2010 2009 2008 2007 2006 2005 2004 2003 2002 2001 2000 1999 1998 1997 1996 1995 1994 1993 1992 1991 1990 1989 1988 1987 1986 1985 1984 1983 1982 1981 1980 1979 1978 1977 1976 1975 1974 1973 1972 1971 1970 1969 1968 1967 1966 1965 1964 1963 1962 1961 1960 1959 1958 1957 1956 1955 1954 1953 1952 1016 Enter Captcha Code Here : Submit 50 100 200 All entries per page Search: S.No. Diary No. / Case No.[STATUS] Petitioner Vs. Respondent Listing Date / Court No. 1 CS(OS) - 347 / 2026 [PENDING] Click here for Orders Click here forJudgments ARVINDER SINGH SAWHNEY VS. TARLOK SINGH SAWHNEY NEXT DATE: 20/07/2026 Last Date: 21/04/2026 COURT NO: NA Showing 1 to 1 of 1 entry «‹1›» Disclaimer : The content of this site is only for information purpose. Users are advised not to depend on the information and use it for official purpose. Neither the High Court of Delhi nor the National Informatics Centre , Ministry of Information Technology, Government of India is responsible for any damages arising in contract from the use of the content of this site. e-Visitor Pass e-Library Accessibility Services e-Sewa Kendra & Accessiblity Helplin",
+        "invalidCaptchaDetected": false,
+        "rawMetadata": {
+          "resultsCount": 1,
+          "results": [
+            {
+              "serialNumber": "1",
+              "caseNumberHtml": "<a>CS(OS)</a> - 347 / 2026 <br><font color='green'>[PENDING]</font><br> <a href=https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6Ilp0aXRhWUhGTW9nYkZ5R1FoSDRNNkE9PSIsInZhbHVlIjoiNlJiSXE2NENQQ2pMRDEzN3poL2ZSQT09IiwibWFjIjoiYmNjYjY2MWVjMGM3ZmM4MzU3YTdlOThmMjIwZGIzODM2ZDBiM2FmMzNjOTU5MmM5MmYwNTI5MzA4Y2Q2YmMwMCIsInRhZyI6IiJ9/eyJpdiI6IlZhcHFIZjlTTkFBVXp2alk0aE9HYmc9PSIsInZhbHVlIjoiWkRRTEdkSXA2blhzQWdjckVFaFJidz09IiwibWFjIjoiYmQwOGRjMmUwOTJkZWU5OWQ5ZDQ1MjNiNDgxMjY4ZGM2M2ZlMzYyNmVhMzQxYTE1ZTQ5YzkyOTE2NjBkZjRkYyIsInRhZyI6IiJ9/eyJpdiI6IitIQmxZZ2JQbU9jdmxSNmJSazNpNlE9PSIsInZhbHVlIjoiRHVFTnAxUWE3MWYycWtWendJRWtLQT09IiwibWFjIjoiYmQwNWI2ZmE3NDU0YTAwYTdlOTUwNjRhYTdlZjVlMWEzMTY4NWExYTEwYjllZjliNWQxMjA4ZjRlYjBlNjNhMyIsInRhZyI6IiJ9 ' style='color:blue; text-decoration: underline;'><strong>Click here for Orders</strong></a> </br> <a href=https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6Ilp0aXRhWUhGTW9nYkZ5R1FoSDRNNkE9PSIsInZhbHVlIjoiNlJiSXE2NENQQ2pMRDEzN3poL2ZSQT09IiwibWFjIjoiYmNjYjY2MWVjMGM3ZmM4MzU3YTdlOThmMjIwZGIzODM2ZDBiM2FmMzNjOTU5MmM5MmYwNTI5MzA4Y2Q2YmMwMCIsInRhZyI6IiJ9/eyJpdiI6IlZhcHFIZjlTTkFBVXp2alk0aE9HYmc9PSIsInZhbHVlIjoiWkRRTEdkSXA2blhzQWdjckVFaFJidz09IiwibWFjIjoiYmQwOGRjMmUwOTJkZWU5OWQ5ZDQ1MjNiNDgxMjY4ZGM2M2ZlMzYyNmVhMzQxYTE1ZTQ5YzkyOTE2NjBkZjRkYyIsInRhZyI6IiJ9/eyJpdiI6IitIQmxZZ2JQbU9jdmxSNmJSazNpNlE9PSIsInZhbHVlIjoiRHVFTnAxUWE3MWYycWtWendJRWtLQT09IiwibWFjIjoiYmQwNWI2ZmE3NDU0YTAwYTdlOTUwNjRhYTdlZjVlMWEzMTY4NWExYTEwYjllZjliNWQxMjA4ZjRlYjBlNjNhMyIsInRhZyI6IiJ9 ' style='color:blue; text-decoration: underline;'><strong>Click here forJudgments</strong></a>",
+              "caseNumberAndStatus": "CS(OS) - 347 / 2026 [PENDING] Click here for Orders Click here forJudgments",
+              "parties": "ARVINDER SINGH SAWHNEY VS. TARLOK SINGH SAWHNEY",
+              "listingDateAndCourtNo": "NEXT DATE: 20/07/2026 Last Date: 21/04/2026 COURT NO: NA",
+              "caseNumber": "",
+              "caseStatus": "PENDING",
+              "links": {
+                "ordersUrl": "https://delhihighcourt.nic.in/app/case-type-status-details/eyJpdiI6Ilp0aXRhWUhGTW9nYkZ5R1FoSDRNNkE9PSIsInZhbHVlIjoiNlJiSXE2NENQQ2pMRDEzN3poL2ZSQT09IiwibWFjIjoiYmNjYjY2MWVjMGM3ZmM4MzU3YTdlOThmMjIwZGIzODM2ZDBiM2FmMzNjOTU5MmM5MmYwNTI5MzA4Y2Q2YmMwMCIsInRhZyI6IiJ9/eyJpdiI6IlZhcHFIZjlTTkFBVXp2alk0aE9HYmc9PSIsInZhbHVlIjoiWkRRTEdkSXA2blhzQWdjckVFaFJidz09IiwibWFjIjoiYmQwOGRjMmUwOTJkZWU5OWQ5ZDQ1MjNiNDgxMjY4ZGM2M2ZlMzYyNmVhMzQxYTE1ZTQ5YzkyOTE2NjBkZjRkYyIsInRhZyI6IiJ9/eyJpdiI6IitIQmxZZ2JQbU9jdmxSNmJSazNpNlE9PSIsInZhbHVlIjoiRHVFTnAxUWE3MWYycWtWendJRWtLQT09IiwibWFjIjoiYmQwNWI2ZmE3NDU0YTAwYTdlOTUwNjRhYTdlZjVlMWEzMTY4NWExYTEwYjllZjliNWQxMjA4ZjRlYjBlNjNhMyIsInRhZyI6IiJ9",
+                "judgmentsUrl": "https://delhihighcourt.nic.in/app/case-type-status-judgment/eyJpdiI6Ilp0aXRhWUhGTW9nYkZ5R1FoSDRNNkE9PSIsInZhbHVlIjoiNlJiSXE2NENQQ2pMRDEzN3poL2ZSQT09IiwibWFjIjoiYmNjYjY2MWVjMGM3ZmM4MzU3YTdlOThmMjIwZGIzODM2ZDBiM2FmMzNjOTU5MmM5MmYwNTI5MzA4Y2Q2YmMwMCIsInRhZyI6IiJ9/eyJpdiI6IlZhcHFIZjlTTkFBVXp2alk0aE9HYmc9PSIsInZhbHVlIjoiWkRRTEdkSXA2blhzQWdjckVFaFJidz09IiwibWFjIjoiYmQwOGRjMmUwOTJkZWU5OWQ5ZDQ1MjNiNDgxMjY4ZGM2M2ZlMzYyNmVhMzQxYTE1ZTQ5YzkyOTE2NjBkZjRkYyIsInRhZyI6IiJ9/eyJpdiI6IitIQmxZZ2JQbU9jdmxSNmJSazNpNlE9PSIsInZhbHVlIjoiRHVFTnAxUWE3MWYycWtWendJRWtLQT09IiwibWFjIjoiYmQwNWI2ZmE3NDU0YTAwYTdlOTUwNjRhYTdlZjVlMWEzMTY4NWExYTEwYjllZjliNWQxMjA4ZjRlYjBlNjNhMyIsInRhZyI6IiJ9"
+              }
+            }
+          ]
+        }
+      },
+      "createdAt": "2026-04-22T08:26:24.004Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "event_1776839151389_swzmft",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "type": "hearing_date_added",
+      "message": "Initial hearing date captured: 20-07-2026",
+      "createdAt": "2026-04-22T06:25:51.389Z"
+    },
+    {
+      "id": "event_1776843978003_46in8s",
+      "trackedCaseId": "case_1776843978000_21yk68",
+      "type": "hearing_date_added",
+      "message": "Initial hearing date captured: 06-04-2026",
+      "createdAt": "2026-04-22T07:46:18.003Z"
+    },
+    {
+      "id": "event_1776846277432_5hfj23",
+      "trackedCaseId": "case_1776846277429_5x5tfv",
+      "type": "hearing_date_added",
+      "message": "Initial hearing date captured: 21-04-2026",
+      "createdAt": "2026-04-22T08:24:37.432Z"
+    }
+  ],
+  "scrapeRuns": [
+    {
+      "id": "run_1776839151389_4z1ken",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "status": "success",
+      "message": "Sync completed with 1 new event(s)",
+      "createdAt": "2026-04-22T06:25:51.389Z",
+      "finishedAt": "2026-04-22T06:25:51.389Z"
+    },
+    {
+      "id": "run_1776840205115_pc6jtm",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "status": "success",
+      "message": "Sync completed with no changes",
+      "createdAt": "2026-04-22T06:43:25.115Z",
+      "finishedAt": "2026-04-22T06:43:25.116Z"
+    },
+    {
+      "id": "run_1776843978003_5bd37i",
+      "trackedCaseId": "case_1776843978000_21yk68",
+      "status": "success",
+      "message": "Sync completed with 1 new event(s)",
+      "createdAt": "2026-04-22T07:46:18.003Z",
+      "finishedAt": "2026-04-22T07:46:18.003Z"
+    },
+    {
+      "id": "run_1776845250176_zntjo0",
+      "trackedCaseId": "case_1776843978000_21yk68",
+      "status": "success",
+      "message": "Sync completed with no changes",
+      "createdAt": "2026-04-22T08:07:30.176Z",
+      "finishedAt": "2026-04-22T08:07:30.178Z"
+    },
+    {
+      "id": "run_1776845320846_e5lxg8",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "status": "success",
+      "message": "Sync completed with no changes",
+      "createdAt": "2026-04-22T08:08:40.846Z",
+      "finishedAt": "2026-04-22T08:08:40.847Z"
+    },
+    {
+      "id": "run_1776846277432_m4dlln",
+      "trackedCaseId": "case_1776846277429_5x5tfv",
+      "status": "success",
+      "message": "Sync completed with 1 new event(s)",
+      "createdAt": "2026-04-22T08:24:37.432Z",
+      "finishedAt": "2026-04-22T08:24:37.432Z"
+    },
+    {
+      "id": "run_1776846384001_0xpv8b",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "status": "success",
+      "message": "Sync completed with no changes",
+      "createdAt": "2026-04-22T08:26:24.001Z",
+      "finishedAt": "2026-04-22T08:26:24.004Z"
+    }
+  ],
+  "reminderDeliveries": [
+    {
+      "id": "reminder_1776861609560_djbphr",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "status": "sent",
+      "reminderDate": "2026-04-22",
+      "daysUntilHearing": 89,
+      "email": "guptashreyas013@gmail.com",
+      "kind": "test",
+      "createdAt": "2026-04-22T12:40:09.560Z"
+    },
+    {
+      "id": "reminder_1776861697765_ebheaa",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "status": "sent",
+      "reminderDate": "2026-04-22",
+      "daysUntilHearing": 89,
+      "email": "guptashreyas013@gmail.com",
+      "kind": "test",
+      "createdAt": "2026-04-22T12:41:37.765Z"
+    },
+    {
+      "id": "reminder_1776861698950_aslhv6",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "status": "sent",
+      "reminderDate": "2026-04-22",
+      "daysUntilHearing": 89,
+      "email": "guptashreyas013@gmail.com",
+      "kind": "test",
+      "createdAt": "2026-04-22T12:41:38.950Z"
+    },
+    {
+      "id": "reminder_1776861740813_8jxu3e",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "status": "sent",
+      "reminderDate": "2026-04-22",
+      "daysUntilHearing": 89,
+      "email": "guptashreyas013@gmail.com",
+      "kind": "test",
+      "createdAt": "2026-04-22T12:42:20.813Z"
+    },
+    {
+      "id": "reminder_1776861768508_dpgtc5",
+      "trackedCaseId": "case_1776846277429_5x5tfv",
+      "status": "sent",
+      "reminderDate": "2026-04-22",
+      "daysUntilHearing": 0,
+      "email": "guptashreyas013@gmail.com",
+      "kind": "test",
+      "createdAt": "2026-04-22T12:42:48.509Z"
+    },
+    {
+      "id": "reminder_1776861768956_atkhfo",
+      "trackedCaseId": "case_1776846277429_5x5tfv",
+      "status": "sent",
+      "reminderDate": "2026-04-22",
+      "daysUntilHearing": 0,
+      "email": "guptashreyas013@gmail.com",
+      "kind": "test",
+      "createdAt": "2026-04-22T12:42:48.956Z"
+    },
+    {
+      "id": "reminder_1776863390835_iippu9",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "status": "sent",
+      "reminderDate": "2026-04-22",
+      "daysUntilHearing": 89,
+      "email": "guptashreyas013@gmail.com",
+      "kind": "test",
+      "createdAt": "2026-04-22T13:09:50.835Z"
+    },
+    {
+      "id": "reminder_1776863467771_e32frj",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "status": "sent",
+      "reminderDate": "2026-04-22",
+      "daysUntilHearing": 89,
+      "email": "guptashreyas013@gmail.com",
+      "kind": "test",
+      "createdAt": "2026-04-22T13:11:07.771Z"
+    },
+    {
+      "id": "reminder_1776864321572_jq47ad",
+      "trackedCaseId": "case_1776839151388_ytu9bp",
+      "status": "sent",
+      "reminderDate": "2026-04-22",
+      "daysUntilHearing": 89,
+      "email": "info@amitguptaadvocate.com",
+      "kind": "test",
+      "createdAt": "2026-04-22T13:25:21.572Z"
+    }
+  ]
+}
