@@ -55,6 +55,7 @@ SMTP_USER=your-email@example.com
 SMTP_PASS=your-app-password
 SMTP_FROM="CourtTrack <your-email@example.com>"
 SMTP_REPLY_TO=your-email@example.com
+DEFAULT_REMINDER_EMAIL=info@amitguptaadvocate.com
 APP_LOGIN_USERNAME=admin
 APP_LOGIN_PASSWORD=change-this-password
 DB_PATH=/app/data/db.json
@@ -101,6 +102,7 @@ SMTP_USER=your-user
 SMTP_PASS=your-password
 SMTP_FROM="CourtTrack <alerts@example.com>"
 SMTP_REPLY_TO=optional-reply-to@example.com
+DEFAULT_REMINDER_EMAIL=info@amitguptaadvocate.com
 APP_LOGIN_USERNAME=your-login
 APP_LOGIN_PASSWORD=your-password
 ```

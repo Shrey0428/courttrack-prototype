@@ -22,6 +22,8 @@
         linear-gradient(180deg, #f7f9fc 0%, var(--bg) 100%); color: var(--ink); }
       .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 48px; }
       .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+      .brand { display:flex; align-items:center; gap:14px; }
+      .brand-logo { width:66px; height:66px; object-fit:cover; border-radius:18px; box-shadow:0 14px 28px rgba(19,34,56,.12); }
       .eyebrow { letter-spacing: .08em; text-transform: uppercase; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
       h1, h2, h3 { margin: 0 0 10px; font-weight: 600; }
       p { margin: 0 0 10px; }
@@ -48,6 +50,8 @@
       .item { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: #fbfcfe; }
       .item time { display: block; color: var(--muted); font-size: 13px; margin-bottom: 6px; }
       .pill { display: inline-block; padding: 4px 9px; border-radius: 999px; font-size: 12px; background: var(--accent-soft); color: var(--accent); }
+      .pill.status-pending { background: #e7f8ef; color: #027a48; }
+      .pill.status-disposed { background: #fdecec; color: #b42318; }
       a { color: var(--accent); }
       @media (max-width: 900px) {
         .grid, .meta-grid { grid-template-columns: 1fr; }
@@ -58,10 +62,13 @@
   <body>
     <div class="wrap">
       <div class="topbar">
-        <div>
-          <div class="eyebrow">CourtTrack</div>
-          <h1 id="pageTitle">Case details</h1>
-          <p class="muted" id="pageSubtitle">Loading case data...</p>
+        <div class="brand">
+          <img src="/assets/logo.png" alt="Amit Gupta and Associates logo" class="brand-logo" />
+          <div>
+            <div class="eyebrow">CourtTrack</div>
+            <h1 id="pageTitle">Case details</h1>
+            <p class="muted" id="pageSubtitle">Loading case data...</p>
+          </div>
         </div>
         <div class="toolbar">
           <button class="secondary" id="logoutBtn" type="button">Logout</button>
@@ -126,6 +133,7 @@
       const caseId = new URLSearchParams(window.location.search).get('id');
       let currentCase = null;
       let reminderStatus = null;
+      const DEFAULT_REMINDER_EMAIL = 'info@amitguptaadvocate.com';
 
       async function api(url, options = {}) {
         const response = await fetch(url, {
@@ -174,6 +182,13 @@
         return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
       }
 
+      function statusClass(status) {
+        const value = String(status || '').toLowerCase();
+        if (value.includes('disposed')) return 'status-disposed';
+        if (value.includes('pending')) return 'status-pending';
+        return '';
+      }
+
       function renderDocumentLinks(caseData) {
         const links = [];
         if (caseData?.latestOrdersUrl || caseData?.snapshots?.[0]?.payload?.ordersUrl) {
@@ -211,13 +226,13 @@
         document.getElementById('caseTitle').textContent = caseData.latestCaseTitle || caseData.displayLabel;
         document.getElementById('caseNumber').textContent = caseData.latestCaseNumber || caseData.caseLookup || '-';
         document.getElementById('documentLinks').innerHTML = renderDocumentLinks(caseData);
-        document.getElementById('reminderEmails').value = caseData.reminderEmailsLabel || caseData.reminderEmail || '';
+        document.getElementById('reminderEmails').value = caseData.reminderEmailsLabel || caseData.reminderEmail || DEFAULT_REMINDER_EMAIL;
 
         const metaGrid = document.getElementById('metaGrid');
         metaGrid.innerHTML = [
           ['Court', caseData.latestCourtName || '-'],
           ['Court number', caseData.latestCourtNumber || '-'],
-          ['Status', caseData.latestStatus || '-'],
+          ['Status', `<span class="pill ${statusClass(caseData.latestStatus)}">${escapeHtml(caseData.latestStatus || '-')}</span>`],
           ['Official source', caseData.officialSourceUrl ? `<a href="${caseData.officialSourceUrl}" target="_blank" rel="noopener noreferrer">Open source</a>` : '-'],
           ['Case type / lookup', caseData.queryMeta?.caseType ? `${escapeHtml(caseData.queryMeta.caseType)} ${escapeHtml(caseData.queryMeta.caseNumber || '')}/${escapeHtml(caseData.queryMeta.year || '')}` : escapeHtml(caseData.displayLabel || '-')],
           ['Reminder emails', escapeHtml(caseData.reminderEmailsLabel || 'Not configured')]

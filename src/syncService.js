@@ -10,6 +10,7 @@ const providers = {
   delhiCauseList: delhiCauseListProvider,
   delhiManualCaptcha: delhiManualCaptchaProvider
 };
+const DEFAULT_REMINDER_EMAIL = process.env.DEFAULT_REMINDER_EMAIL || 'info@amitguptaadvocate.com';
 
 function getProvider(name) {
   const provider = providers[name];
@@ -52,7 +53,7 @@ function addCase(input) {
     throw new Error('This case is already being tracked.');
   }
 
-  const parsedReminderEmails = parseReminderEmailsFromInput(input);
+  const parsedReminderEmails = parseReminderEmailsFromInput(applyDefaultReminderInput(input));
   if (parsedReminderEmails.invalid.length) {
     throw new Error(`Invalid reminder email(s): ${parsedReminderEmails.invalid.join(', ')}`);
   }
@@ -85,6 +86,12 @@ function addCase(input) {
   db.trackedCases.push(trackedCase);
   writeDb(db);
   return trackedCase;
+}
+
+function applyDefaultReminderInput(input) {
+  const hasReminderInput = Object.prototype.hasOwnProperty.call(input, 'reminderEmail') ||
+    Object.prototype.hasOwnProperty.call(input, 'reminderEmails');
+  return hasReminderInput ? input : { ...input, reminderEmails: DEFAULT_REMINDER_EMAIL };
 }
 
 function deleteCase(caseId) {

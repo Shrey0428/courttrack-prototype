@@ -9,6 +9,8 @@
       .wrap { max-width: 1160px; margin: 0 auto; padding: 24px; }
       .card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 4px 18px rgba(0,0,0,.06); margin-bottom: 16px; }
       .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+      .brand { display:flex; align-items:center; gap:14px; }
+      .brand-logo { width:64px; height:64px; object-fit:cover; border-radius:16px; box-shadow:0 8px 20px rgba(20,33,61,.12); }
       h1,h2,h3 { margin-top: 0; }
       .form-grid { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 12px; align-items: end; }
       input, button, select, textarea { padding: 10px 12px; border-radius: 8px; border: 1px solid #d3dbe8; width: 100%; box-sizing: border-box; }
@@ -19,6 +21,8 @@
       table { width: 100%; border-collapse: collapse; }
       th, td { padding: 10px; border-bottom: 1px solid #edf1f7; text-align: left; vertical-align: top; }
       .pill { display: inline-block; padding: 4px 8px; background: #eaf3ff; color: #1248b5; border-radius: 999px; font-size: 12px; }
+      .pill.status-pending { background: #e7f8ef; color: #027a48; }
+      .pill.status-disposed { background: #fdecec; color: #b42318; }
       .grid2 { display: grid; grid-template-columns: 1.15fr .85fr; gap: 16px; }
       .muted { color: #5c6b87; font-size: 14px; }
       .date { font-size: 28px; font-weight: bold; }
@@ -34,9 +38,12 @@
   <body>
     <div class="wrap">
       <div class="topbar">
-        <div>
-          <h1>Case Status</h1>
-          <p class="muted">Amit Gupta and Associates</p>
+        <div class="brand">
+          <img src="/assets/logo.png" alt="Amit Gupta and Associates logo" class="brand-logo" />
+          <div>
+            <h1>Case Status</h1>
+            <p class="muted">Amit Gupta and Associates</p>
+          </div>
         </div>
         <button class="secondary" type="button" onclick="logout()">Logout</button>
       </div>
@@ -120,6 +127,10 @@
           <h2>Tracked cases</h2>
           <button class="secondary" onclick="syncAll()">Refresh all</button>
         </div>
+        <div style="margin: 10px 0 14px;">
+          <label for="caseSearch">Search tracked cases</label>
+          <input id="caseSearch" placeholder="Search by case number, party, status, court, or date" />
+        </div>
         <table>
           <thead>
             <tr>
@@ -156,6 +167,8 @@
       let activeCaptchaSessionId = null;
       let activeCaptchaTrackedCaseId = null;
       let activeTrackedDelhiInput = null;
+      let trackedCasesCache = [];
+      const DEFAULT_REMINDER_EMAIL = 'info@amitguptaadvocate.com';
 
       async function api(url, options = {}) {
         const response = await fetch(url, {
@@ -219,12 +232,20 @@
       }
 
       async function loadCases() {
-        const cases = await api('/api/cases');
+        trackedCasesCache = await api('/api/cases');
+        renderCaseRows();
+      }
+
+      function renderCaseRows() {
         const rows = document.getElementById('caseRows');
+        const searchTerm = document.getElementById('caseSearch')?.value.trim().toLowerCase() || '';
+        const cases = trackedCasesCache
+          .filter((c) => matchesCaseSearch(c, searchTerm))
+          .sort(compareCasesByHearingDate);
         rows.innerHTML = '';
 
         if (!cases.length) {
-          rows.innerHTML = '<tr><td colspan="6" class="muted">No cases tracked yet.</td></tr>';
+          rows.innerHTML = `<tr><td colspan="6" class="muted">${trackedCasesCache.length ? 'No tracked cases match your search.' : 'No cases tracked yet.'}</td></tr>`;
           return;
         }
 
@@ -235,7 +256,7 @@
             <td><strong>${escapeHtml(c.latestCaseTitle || c.displayLabel)}</strong><br><span class="muted">${escapeHtml(c.latestCaseNumber || c.cnrNumber || c.caseLookup)}</span><br><span class="muted">${escapeHtml(c.provider)}</span></td>
             <td>${escapeHtml(c.latestCourtName || '-')}</td>
             <td>${escapeHtml(c.latestNextHearingDate || '-')}</td>
-            <td><span class="pill">${escapeHtml(c.latestStatus || 'Not synced')}</span></td>
+            <td><span class="pill ${statusClass(c.latestStatus)}">${escapeHtml(c.latestStatus || 'Not synced')}</span></td>
             <td>${c.lastCheckedAt ? new Date(c.lastCheckedAt).toLocaleString() : '-'}</td>
             <td>
               <div class="row-actions">
@@ -247,6 +268,54 @@
           `;
           rows.appendChild(tr);
         }
+      }
+
+      function matchesCaseSearch(c, searchTerm) {
+        if (!searchTerm) return true;
+        return [
+          c.latestCaseTitle,
+          c.displayLabel,
+          c.latestCaseNumber,
+          c.cnrNumber,
+          c.caseLookup,
+          c.latestCourtName,
+          c.latestNextHearingDate,
+          c.latestStatus,
+          c.provider
+        ].some((value) => String(value || '').toLowerCase().includes(searchTerm));
+      }
+
+      function compareCasesByHearingDate(a, b) {
+        const dateA = parseIndianDate(a.latestNextHearingDate);
+        const dateB = parseIndianDate(b.latestNextHearingDate);
+        const bucketA = hearingDateBucket(dateA);
+        const bucketB = hearingDateBucket(dateB);
+        if (bucketA !== bucketB) return bucketA - bucketB;
+        if (dateA && dateB) {
+          return bucketA === 1 ? dateB.getTime() - dateA.getTime() : dateA.getTime() - dateB.getTime();
+        }
+        return String(a.latestCaseNumber || a.displayLabel || '').localeCompare(String(b.latestCaseNumber || b.displayLabel || ''));
+      }
+
+      function hearingDateBucket(date) {
+        if (!date) return 2;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return date.getTime() >= today.getTime() ? 0 : 1;
+      }
+
+      function parseIndianDate(value) {
+        const match = String(value || '').match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
+        if (!match) return null;
+        const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+
+      function statusClass(status) {
+        const value = String(status || '').toLowerCase();
+        if (value.includes('disposed')) return 'status-disposed';
+        if (value.includes('pending')) return 'status-pending';
+        return '';
       }
 
       function openCasePage(caseId) {
@@ -273,7 +342,7 @@
           <p class="muted">${escapeHtml(c.latestCaseNumber || c.cnrNumber || c.caseLookup)}</p>
           <p><strong>Court:</strong> ${escapeHtml(c.latestCourtName || '-')}</p>
           <p><strong>Court number:</strong> ${escapeHtml(c.latestCourtNumber || '-')}</p>
-          <p><strong>Status:</strong> ${escapeHtml(c.latestStatus || '-')}</p>
+          <p><strong>Status:</strong> <span class="pill ${statusClass(c.latestStatus)}">${escapeHtml(c.latestStatus || '-')}</span></p>
           <p><strong>Official link:</strong> ${c.officialSourceUrl ? `<a href="${c.officialSourceUrl}" target="_blank">Open source</a>` : '-'}</p>
           <p><strong>Orders / Judgments:</strong> ${documentLinks}</p>
           ${c.provider === 'delhiManualCaptcha' ? `<p class="muted"><strong>Manual query:</strong> ${escapeHtml(queryMeta.caseType || '')} ${escapeHtml(queryMeta.caseNumber || '')}/${escapeHtml(queryMeta.year || '')}</p>` : ''}
@@ -325,7 +394,7 @@
         document.getElementById('caseType').value = queryMeta.caseType || '';
         document.getElementById('caseNumber').value = queryMeta.caseNumber || '';
         document.getElementById('caseYear').value = queryMeta.year || '';
-        document.getElementById('reminderEmails').value = c.reminderEmailsLabel || c.reminderEmail || '';
+        document.getElementById('reminderEmails').value = c.reminderEmailsLabel || c.reminderEmail || DEFAULT_REMINDER_EMAIL;
         activeTrackedDelhiInput = {
           caseType: queryMeta.caseType || '',
           caseNumber: queryMeta.caseNumber || '',
@@ -438,6 +507,8 @@
         return links.length ? links.join(' | ') : '-';
       }
 
+      document.getElementById('caseSearch').addEventListener('input', renderCaseRows);
+      document.getElementById('reminderEmails').value = DEFAULT_REMINDER_EMAIL;
       renderLookupResult(null);
       loadCases();
     </script>
