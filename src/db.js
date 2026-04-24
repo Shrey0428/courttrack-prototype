@@ -243,6 +243,13 @@ function normalizeDate(value) {
   return [namedMatch[1].padStart(2, '0'), month, namedMatch[3]].join('-');
 }
 
+function dateSortValue(value) {
+  const normalized = normalizeDate(value);
+  if (!normalized) return 0;
+  const [day, month, year] = normalized.split('-').map(Number);
+  return new Date(year, (month || 1) - 1, day || 1).getTime();
+}
+
 module.exports = { readDb, writeDb, id, DB_PATH };
 
 function normalizeSnapshotPayload(payload) {
