@@ -745,16 +745,17 @@ DistrictCourtCnrProvider.prototype.resolveOrderAction = async function resolveOr
       throw new Error(`eCourts order resolver returned HTTP ${response.status}.`);
     }
 
-    const payload = await response.json().catch(() => null);
+    const rawText = await response.text();
+    const payload = parseDisplayPdfPayload(rawText);
     if (payload?.errormsg && /session timeout/i.test(String(payload.errormsg))) {
       throw new Error('District court order access has expired. Refresh this district case via CAPTCHA once, then open the order again.');
     }
-    const orderUrl = normalizeDocumentUrl(absolutizeUrl(payload?.order || ''));
-    if (!payload?.status || !orderUrl) {
-      throw new Error('eCourts did not return a usable order URL.');
+    const orderUrl = extractDisplayPdfOrderUrl(payload, rawText);
+    if (orderUrl) {
+      return orderUrl;
     }
-
-    return orderUrl;
+    const debugSnippet = String(rawText || '').replace(/\s+/g, ' ').slice(0, 280);
+    throw new Error(`eCourts did not return a usable order URL. Response preview: ${debugSnippet}`);
   };
 
 DistrictCourtCnrProvider.prototype.downloadOrderAction = async function downloadOrderAction(action, access = null) {
@@ -1869,6 +1870,50 @@ function absolutizeUrl(url) {
   if (url.startsWith('//')) return `https:${url}`;
   if (url.startsWith('/')) return `https://services.ecourts.gov.in${url}`;
   return `https://services.ecourts.gov.in/ecourtindia_v6/${url.replace(/^\.\//, '')}`;
+}
+
+function parseDisplayPdfPayload(rawText) {
+  const text = String(rawText || '').trim();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch (_error) {
+    const objectMatch = text.match(/\{[\s\S]*\}/);
+    if (objectMatch) {
+      try {
+        return JSON.parse(objectMatch[0]);
+      } catch (_nestedError) {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
+function extractDisplayPdfOrderUrl(payload, rawText) {
+  const candidates = [
+    payload?.order,
+    payload?.url,
+    payload?.pdf,
+    payload?.pdf_url,
+    payload?.file,
+    payload?.filename
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeDocumentUrl(absolutizeUrl(String(candidate || '').replace(/\\\//g, '/')));
+    if (normalized) return normalized;
+  }
+
+  const text = String(rawText || '');
+  const explicitMatch = text.match(/"order"\s*:\s*"([^"]+)"/i)
+    || text.match(/"url"\s*:\s*"([^"]+)"/i)
+    || text.match(/"pdf(?:_url)?"\s*:\s*"([^"]+)"/i)
+    || text.match(/(\/ecourtindia_v6\/[^"'\\s>]+(?:pdf|download)[^"'\\s>]*)/i);
+  if (!explicitMatch?.[1]) return '';
+
+  return normalizeDocumentUrl(absolutizeUrl(String(explicitMatch[1] || '').replace(/\\\//g, '/')));
 }
 
 function normalizeDocumentUrl(url) {
