@@ -5,6 +5,7 @@ const { getDelhiDistrictSite } = require('../delhiDistrictSites');
 
 const ECOURTS_URL = 'https://services.ecourts.gov.in/ecourtindia_v6/';
 const COURT_NAME = 'District Court (eCourts)';
+const DISTRICT_NAVIGATION_TIMEOUT_MS = Number(process.env.DISTRICT_NAVIGATION_TIMEOUT_MS || 120000);
 
 class DistrictCourtCnrProvider extends BaseProvider {
   constructor() {
@@ -63,11 +64,7 @@ async function startCnrLookup({ cnrNumber }) {
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    await page.goto(ECOURTS_URL, {
-      waitUntil: 'domcontentloaded',
-      timeout: 60000
-    });
-    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    await gotoWithFallback(page, ECOURTS_URL, { timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
 
     await page.locator('#cino').fill(cino);
     const captchaLocator = page.locator('#captcha_image').first();
@@ -103,11 +100,7 @@ async function startDistrictCaseNumberLookup({ districtSlug, courtComplex, caseT
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  await page.goto(district.url, {
-    waitUntil: 'domcontentloaded',
-    timeout: 60000
-  });
-  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+  await gotoWithFallback(page, district.url, { timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
 
   await page.locator('#chkYes').check().catch(() => {});
 
@@ -141,6 +134,34 @@ async function startDistrictCaseNumberLookup({ districtSlug, courtComplex, caseT
       sourceUrl: district.url
     }
   };
+}
+
+async function gotoWithFallback(page, url, options = {}) {
+  const timeout = Number(options.timeout || DISTRICT_NAVIGATION_TIMEOUT_MS);
+  const attempts = [
+    { waitUntil: 'domcontentloaded', timeout },
+    { waitUntil: 'load', timeout: Math.max(timeout, 90000) },
+    { waitUntil: 'commit', timeout: Math.max(timeout, 120000) }
+  ];
+
+  let lastError = null;
+
+  for (const attempt of attempts) {
+    try {
+      const response = await page.goto(url, attempt);
+      if (response && response.status() >= 400) {
+        throw new Error(`Navigation returned HTTP ${response.status()} for ${url}`);
+      }
+      await page.waitForSelector('body', { state: 'attached', timeout: 15000 }).catch(() => {});
+      await page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
+      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      return response;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error(`Unable to open ${url}`);
 }
 
 async function completeCnrLookup(session, cleanedCaptcha) {
