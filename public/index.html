@@ -82,43 +82,17 @@
             <p class="muted" style="margin-top:10px;"></p>
           </div>
           <div>
-            <h3>District Court / eCourts</h3>
+            <h3>District Court / eCourts (CNR search)</h3>
             <form id="districtCaseForm">
-              <div class="form-grid" style="grid-template-columns: repeat(5, 1fr) auto;">
+              <div class="form-grid" style="grid-template-columns: 1fr auto;">
                 <div>
-                  <label>District</label>
-                  <select id="districtCourtSite">
-                    <option value="">Select district</option>
-                  </select>
-                </div>
-                <div>
-                  <label>Court complex</label>
-                  <select id="districtCourtComplex" disabled>
-                    <option value="">Select court complex</option>
-                  </select>
-                </div>
-                <div>
-                  <label>Case type</label>
-                  <input id="districtCaseTypeManual" placeholder="Enter case type manually" />
-                  <div style="display:flex; gap:8px; margin-top:8px;">
-                    <select id="districtCaseType" disabled>
-                      <option value="">Official case types are optional</option>
-                    </select>
-                    <button type="button" id="loadDistrictCaseTypesBtn" disabled>Load official types</button>
-                  </div>
-                </div>
-                <div>
-                  <label>Case number</label>
-                  <input id="districtCaseNumber" placeholder="123" />
-                </div>
-                <div>
-                  <label>Year</label>
-                  <input id="districtCaseYear" placeholder="2026" />
+                  <label>CNR number</label>
+                  <input id="districtCnrNumber" placeholder="DLST010012342026" />
                 </div>
                 <button type="submit">Load CAPTCHA</button>
               </div>
             </form>
-            <p class="muted" style="margin-top:10px;">Pick the Delhi district first, then use the court complex and case-number details from that district court page. Enter the case type manually exactly as shown on the district court website. Loading official case types is optional.</p>
+            <p class="muted" style="margin-top:10px;">Use the official 16-character eCourts CNR number for district court cases. This is the stable district-court lookup path.</p>
           </div>
           <div>
             <label>Secondary providers</label>
@@ -220,7 +194,6 @@
       let activeCaptchaTrackedCaseId = null;
       let activeTrackedManualInput = null;
       let trackedCasesCache = [];
-      let districtCourts = [];
       let delhiCaseTypes = [];
       let courtFilter = 'all';
       const DEFAULT_REMINDER_EMAIL = 'info@amitguptaadvocate.com';
@@ -249,20 +222,6 @@
         el.textContent = message || '';
       }
 
-      async function loadDistrictCourts() {
-        const payload = await api('/api/district-courts');
-        districtCourts = Array.isArray(payload.districts) ? payload.districts : [];
-        const select = document.getElementById('districtCourtSite');
-        const currentValue = select.value;
-        select.innerHTML = '<option value="">Select district</option>' + districtCourts
-          .map((district) => `<option value="${escapeHtml(district.slug)}">${escapeHtml(district.label)}</option>`)
-          .join('');
-        if (currentValue && districtCourts.some((district) => district.slug === currentValue)) {
-          select.value = currentValue;
-        }
-        populateDistrictComplexes(select.value, document.getElementById('districtCourtComplex').value);
-      }
-
       async function loadDelhiCaseTypes() {
         const payload = await api('/api/lookup-options/delhi-case-types');
         delhiCaseTypes = Array.isArray(payload.caseTypes) ? payload.caseTypes : [];
@@ -273,66 +232,6 @@
           .join('');
         if (currentValue && delhiCaseTypes.some((item) => item.value === currentValue || item.label === currentValue)) {
           select.value = currentValue;
-        }
-      }
-
-      function populateDistrictComplexes(districtSlug, selectedComplex = '') {
-        const district = districtCourts.find((item) => item.slug === districtSlug);
-        const complexSelect = document.getElementById('districtCourtComplex');
-        const loadCaseTypesButton = document.getElementById('loadDistrictCaseTypesBtn');
-        const complexes = Array.isArray(district?.complexes) ? district.complexes : [];
-        complexSelect.disabled = !complexes.length;
-        complexSelect.innerHTML = '<option value="">Select court complex</option>' + complexes
-          .map((complex) => `<option value="${escapeHtml(complex.text)}">${escapeHtml(complex.text)}</option>`)
-          .join('');
-        if (selectedComplex && complexes.some((complex) => complex.text === selectedComplex)) {
-          complexSelect.value = selectedComplex;
-        }
-        if (loadCaseTypesButton) {
-          loadCaseTypesButton.disabled = !districtSlug || !complexSelect.value;
-        }
-        resetDistrictCaseTypes('Official case types are optional');
-      }
-
-      function resetDistrictCaseTypes(message = 'Official case types are optional') {
-        const select = document.getElementById('districtCaseType');
-        select.disabled = true;
-        select.innerHTML = `<option value="">${escapeHtml(message)}</option>`;
-      }
-
-      function getDistrictCaseTypeValue() {
-        const manualValue = document.getElementById('districtCaseTypeManual').value.trim();
-        if (manualValue) return manualValue;
-        return document.getElementById('districtCaseType').value.trim();
-      }
-
-      async function loadDistrictCaseTypes() {
-        const districtSlug = document.getElementById('districtCourtSite').value.trim();
-        const courtComplex = document.getElementById('districtCourtComplex').value.trim();
-        if (!districtSlug || !courtComplex) {
-          resetDistrictCaseTypes('Select district and complex first');
-          return;
-        }
-
-        const select = document.getElementById('districtCaseType');
-        const currentValue = select.value;
-        select.disabled = true;
-        select.innerHTML = '<option value="">Loading case types...</option>';
-
-        try {
-          const params = new URLSearchParams({ districtSlug, courtComplex });
-          const payload = await api(`/api/lookup-options/district-case-types?${params.toString()}`);
-          const caseTypes = Array.isArray(payload.caseTypes) ? payload.caseTypes : [];
-          select.innerHTML = '<option value="">Select case type</option>' + caseTypes
-            .map((item) => `<option value="${escapeHtml(item.label)}">${escapeHtml(item.label)}</option>`)
-            .join('');
-          select.disabled = false;
-          if (currentValue && caseTypes.some((item) => item.label === currentValue || item.value === currentValue)) {
-            select.value = currentValue;
-          }
-        } catch (error) {
-          resetDistrictCaseTypes('Case types unavailable - enter manually');
-          setStatus('District case types could not be loaded automatically. You can still enter the case type manually and continue.', 'muted');
         }
       }
 
@@ -565,25 +464,14 @@
         document.getElementById('caseType').value = c.provider === 'delhiManualCaptcha' ? (queryMeta.caseType || '') : '';
         document.getElementById('caseNumber').value = c.provider === 'delhiManualCaptcha' ? (queryMeta.caseNumber || '') : '';
         document.getElementById('caseYear').value = c.provider === 'delhiManualCaptcha' ? (queryMeta.year || '') : '';
-        document.getElementById('districtCourtSite').value = c.provider === 'districtCourtCnr' ? (queryMeta.districtSlug || '') : '';
-        populateDistrictComplexes(queryMeta.districtSlug || '', queryMeta.courtComplex || queryMeta.courtEstablishment || '');
-        document.getElementById('districtCaseType').value = c.provider === 'districtCourtCnr' ? (queryMeta.caseType || '') : '';
-        document.getElementById('districtCaseTypeManual').value = c.provider === 'districtCourtCnr' ? (queryMeta.caseType || '') : '';
-        if (c.provider === 'districtCourtCnr' && queryMeta.districtSlug && (queryMeta.courtComplex || queryMeta.courtEstablishment)) {
-          await loadDistrictCaseTypes();
-          document.getElementById('districtCaseType').value = queryMeta.caseType || '';
-        }
-        document.getElementById('districtCaseNumber').value = c.provider === 'districtCourtCnr' ? (queryMeta.caseNumber || '') : '';
-        document.getElementById('districtCaseYear').value = c.provider === 'districtCourtCnr' ? (queryMeta.year || '') : '';
+        document.getElementById('districtCnrNumber').value = c.provider === 'districtCourtCnr' ? (queryMeta.cnrNumber || c.cnrNumber || '') : '';
         document.getElementById('reminderEmails').value = c.reminderEmailsLabel || c.reminderEmail || DEFAULT_REMINDER_EMAIL;
         activeTrackedManualInput = {
           provider: c.provider,
           caseType: queryMeta.caseType || '',
           caseNumber: queryMeta.caseNumber || '',
           year: queryMeta.year || '',
-          cnrNumber: queryMeta.cnrNumber || c.cnrNumber || '',
-          districtSlug: queryMeta.districtSlug || '',
-          courtComplex: queryMeta.courtComplex || queryMeta.courtEstablishment || ''
+          cnrNumber: queryMeta.cnrNumber || c.cnrNumber || ''
         };
         window.scrollTo({ top: 0, behavior: 'smooth' });
         setStatus('Ready to load a fresh CAPTCHA for this manual case.', 'muted');
@@ -641,35 +529,27 @@
 
       document.getElementById('districtCaseForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const districtSlug = document.getElementById('districtCourtSite').value.trim();
-        const courtComplex = document.getElementById('districtCourtComplex').value.trim();
-        const caseType = getDistrictCaseTypeValue();
-        const caseNumber = document.getElementById('districtCaseNumber').value.trim();
-        const year = document.getElementById('districtCaseYear').value.trim();
+        const cnrNumber = document.getElementById('districtCnrNumber').value.trim();
         const reminderEmails = document.getElementById('reminderEmails').value.trim();
-        if (!districtSlug || !courtComplex || !caseType || !caseNumber || !year) {
-          return alert('Select district, court complex, case type, case number, and year.');
+        if (!cnrNumber) {
+          return alert('Enter the district court CNR number.');
         }
 
         try {
           const trackedCaseId = activeCaptchaTrackedCaseId &&
             activeTrackedManualInput &&
             activeTrackedManualInput.provider === 'districtCourtCnr' &&
-            activeTrackedManualInput.districtSlug === districtSlug &&
-            activeTrackedManualInput.courtComplex === courtComplex &&
-            activeTrackedManualInput.caseType === caseType &&
-            activeTrackedManualInput.caseNumber === caseNumber &&
-            activeTrackedManualInput.year === year
+            activeTrackedManualInput.cnrNumber === cnrNumber
             ? activeCaptchaTrackedCaseId
             : null;
 
-          setStatus('Loading official Delhi district court CAPTCHA...');
+          setStatus('Loading official district court CAPTCHA...');
           const payload = await api('/lookup/start', {
             method: 'POST',
-            body: JSON.stringify({ provider: 'districtCourtCnr', districtSlug, courtComplex, caseType, caseNumber, year, trackedCaseId, reminderEmails })
+            body: JSON.stringify({ provider: 'districtCourtCnr', cnrNumber, trackedCaseId, reminderEmails })
           });
           showCaptchaBox(payload);
-          setStatus('CAPTCHA loaded. Enter it below to fetch the district court case history.', 'success');
+          setStatus('CAPTCHA loaded. Enter it below to fetch the district court case history by CNR.', 'success');
         } catch (error) {
           setStatus(error.message, 'error');
         }
@@ -784,7 +664,7 @@
           return `<p class="muted"><strong>Manual query:</strong> ${escapeHtml(queryMeta.caseType || '')} ${escapeHtml(queryMeta.caseNumber || '')}/${escapeHtml(queryMeta.year || '')}</p>`;
         }
         if (c.provider === 'districtCourtCnr') {
-          return `<p class="muted"><strong>Manual query:</strong> ${escapeHtml(queryMeta.districtLabel || queryMeta.districtSlug || 'District Court')} | ${escapeHtml(queryMeta.courtComplex || queryMeta.courtEstablishment || '-')} | ${escapeHtml(queryMeta.caseType || '')} ${escapeHtml(queryMeta.caseNumber || '')}/${escapeHtml(queryMeta.year || '')}</p>`;
+          return `<p class="muted"><strong>Manual query:</strong> ${escapeHtml(queryMeta.cnrNumber || c.cnrNumber || 'District Court CNR')}</p>`;
         }
         return '';
       }
@@ -809,22 +689,10 @@
       }
 
       document.getElementById('caseSearch').addEventListener('input', renderCaseRows);
-      document.getElementById('districtCourtSite').addEventListener('change', (event) => {
-        populateDistrictComplexes(event.target.value, '');
-      });
-      document.getElementById('districtCourtComplex').addEventListener('change', () => {
-        document.getElementById('loadDistrictCaseTypesBtn').disabled = !document.getElementById('districtCourtSite').value.trim() || !document.getElementById('districtCourtComplex').value.trim();
-        resetDistrictCaseTypes('Official case types are optional');
-      });
-      document.getElementById('loadDistrictCaseTypesBtn').addEventListener('click', () => {
-        setStatus('Loading official district case types...', 'muted');
-        loadDistrictCaseTypes().catch((error) => setStatus(error.message, 'error'));
-      });
       document.getElementById('reminderEmails').value = DEFAULT_REMINDER_EMAIL;
       renderLookupResult(null);
       Promise.all([
-        loadDelhiCaseTypes().catch((error) => setStatus(error.message, 'error')),
-        loadDistrictCourts().catch((error) => setStatus(error.message, 'error'))
+        loadDelhiCaseTypes().catch((error) => setStatus(error.message, 'error'))
       ]);
       loadCases();
     </script>
