@@ -326,8 +326,8 @@
             select.value = currentValue;
           }
         } catch (error) {
-          resetDistrictCaseTypes('Case types unavailable');
-          setStatus(`District case types could not be loaded. ${error.message}`, 'error');
+          resetDistrictCaseTypes('Case types unavailable - enter manually');
+          setStatus('District case types could not be loaded automatically. You can still enter the case type manually and continue.', 'muted');
         }
       }
 
