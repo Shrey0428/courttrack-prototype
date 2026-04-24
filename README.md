@@ -9,8 +9,13 @@ This runnable prototype now treats the **official Delhi High Court case-wise sta
   - `POST /lookup/start` opens the official Delhi page in Playwright, fills the case fields, captures the CAPTCHA, and stores the browser session server-side
   - `POST /lookup/complete` accepts `sessionId` and `captchaText`, submits the official lookup, parses the result, and closes the Playwright session
 - configure one or more per-case reminder emails and send daily upcoming-hearing reminders from D-3 through D-0
+- prefer the latest-order hearing date when the order PDF can be parsed confidently, while still showing every possible date found in the order
+- open the matching Delhi case-history page and extract filing/listing history during lookups
+- run an **official district/taluka court eCourts CNR lookup** with `districtCourtCnr`
+  - enter a 16-character CNR, solve the eCourts CAPTCHA, and parse current status, hearing history, filings, and orders
+- customize reminder days per case and force-send a reminder for a case when needed
 - open each tracked case on its own details page with documents, events, sync runs, and reminder history
-- protect the dashboard behind a login page backed by a server-side session
+- protect the dashboard behind a login page backed by server-side sessions and optional multi-user accounts
 - keep `delhiCauseList` only as an optional secondary provider
 - save snapshots, events, and scrape logs
 
@@ -58,6 +63,9 @@ SMTP_REPLY_TO=your-email@example.com
 DEFAULT_REMINDER_EMAIL=info@amitguptaadvocate.com
 APP_LOGIN_USERNAME=admin
 APP_LOGIN_PASSWORD=change-this-password
+# Prefer APP_USERS_JSON for multiple users. Password hashes can be generated with:
+# node -e "console.log(require('./src/authService').createPasswordHash('new-password'))"
+# APP_USERS_JSON='[{"username":"admin","displayName":"Admin","role":"admin","passwordHash":"pbkdf2$sha256$..."}]'
 DB_PATH=/app/data/db.json
 ```
 
@@ -69,6 +77,8 @@ Login defaults to `admin` / `courttrack123` unless you set:
 APP_LOGIN_USERNAME=your-login
 APP_LOGIN_PASSWORD=your-password
 ```
+
+For multiple users, set `APP_USERS_JSON` to an array of user objects with `username`, optional `displayName`/`role`, and a `passwordHash`. The legacy single-login variables remain as a fallback for local prototypes.
 
 ## Recommended first test
 
@@ -87,7 +97,7 @@ Then:
 - `POST /lookup/start`
 - `POST /lookup/complete`
 - `PATCH /api/cases/:id/reminders`
-- `POST /api/reminders/run`
+- `POST /api/reminders/run` with optional `caseId` and `forceSend`
 - `GET /api/reminders/status`
 
 ## Reminder email setup
@@ -107,7 +117,7 @@ APP_LOGIN_USERNAME=your-login
 APP_LOGIN_PASSWORD=your-password
 ```
 
-The reminder worker checks tracked cases on a timer and sends one email per day when a hearing is 3, 2, 1, or 0 days away.
+The reminder worker checks tracked cases on a timer and sends one email per selected day-before value for each case. The default is 3, 2, 1, and 0 days away.
 
 Optional:
 

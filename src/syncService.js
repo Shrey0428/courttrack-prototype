@@ -4,11 +4,13 @@ const { formatReminderEmails, parseReminderEmailsFromInput } = require('./remind
 const mockHighCourtProvider = require('./providers/mockHighCourt');
 const delhiCauseListProvider = require('./providers/delhiCauseList');
 const delhiManualCaptchaProvider = require('./providers/delhiManualCaptcha');
+const districtCourtCnrProvider = require('./providers/districtCourtCnr');
 
 const providers = {
   mockHighCourt: mockHighCourtProvider,
   delhiCauseList: delhiCauseListProvider,
-  delhiManualCaptcha: delhiManualCaptchaProvider
+  delhiManualCaptcha: delhiManualCaptchaProvider,
+  districtCourtCnr: districtCourtCnrProvider
 };
 const DEFAULT_REMINDER_EMAIL = process.env.DEFAULT_REMINDER_EMAIL || 'info@amitguptaadvocate.com';
 
@@ -69,15 +71,25 @@ function addCase(input) {
     latestCourtName: '',
     latestCaseNumber: '',
     latestNextHearingDate: '',
+    latestNextHearingDateSource: '',
+    latestStatusPageNextHearingDate: '',
     latestCourtNumber: '',
     latestStatus: '',
     officialSourceUrl: '',
     latestOrdersUrl: '',
     latestJudgmentsUrl: '',
+    latestCaseHistoryUrl: '',
+    latestFilingsUrl: '',
+    latestListingsUrl: '',
+    latestCaseHistory: { filings: [], listings: [], hearings: [], orders: [], rawTables: [] },
+    latestOrderUrl: '',
+    latestOrderDate: '',
     reminderEmails: parsedReminderEmails.emails,
     reminderEmail: parsedReminderEmails.emails[0] || '',
     reminderEmailsLabel: formatReminderEmails(parsedReminderEmails.emails),
     reminderEnabled: Boolean(parsedReminderEmails.emails.length),
+    reminderDaysBefore: [3, 2, 1, 0],
+    reminderSkipDisposed: true,
     lastCheckedAt: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -118,6 +130,20 @@ function updateCaseReminderSettings(caseId, input) {
   trackedCase.reminderEmail = parsedReminderEmails.emails[0] || '';
   trackedCase.reminderEmailsLabel = formatReminderEmails(parsedReminderEmails.emails);
   trackedCase.reminderEnabled = Boolean(input.reminderEnabled && parsedReminderEmails.emails.length);
+  trackedCase.reminderDaysBefore = normalizeReminderDaysBefore(input.reminderDaysBefore ?? trackedCase.reminderDaysBefore);
+  trackedCase.reminderSkipDisposed = input.reminderSkipDisposed !== false;
+  trackedCase.updatedAt = new Date().toISOString();
+
+  writeDb(db);
+  return trackedCase;
+}
+
+function updateCaseMetadata(caseId, input) {
+  const db = readDb();
+  const trackedCase = db.trackedCases.find((c) => c.id === caseId);
+  if (!trackedCase) throw new Error('Tracked case not found');
+
+  trackedCase.manualCaseTitle = String(input.manualCaseTitle || '').trim().slice(0, 240);
   trackedCase.updatedAt = new Date().toISOString();
 
   writeDb(db);
@@ -128,8 +154,8 @@ async function syncCase(caseId) {
   const db = readDb();
   const trackedCase = db.trackedCases.find((c) => c.id === caseId);
   if (!trackedCase) throw new Error('Tracked case not found');
-  if (trackedCase.provider === 'delhiManualCaptcha') {
-    throw new Error('Delhi manual CAPTCHA cases must be refreshed from the browser UI so you can solve the official CAPTCHA.');
+  if (trackedCase.provider === 'delhiManualCaptcha' || trackedCase.provider === 'districtCourtCnr') {
+    throw new Error('Manual CAPTCHA cases must be refreshed from the browser UI so you can solve the official CAPTCHA.');
   }
 
   const provider = getProvider(trackedCase.provider);
@@ -207,11 +233,19 @@ function applyNormalizedResult(db, trackedCase, normalized, run) {
   trackedCase.latestCourtName = normalized.courtName || trackedCase.latestCourtName;
   trackedCase.latestCaseNumber = normalized.caseNumber || trackedCase.latestCaseNumber;
   trackedCase.latestNextHearingDate = normalized.nextHearingDate || trackedCase.latestNextHearingDate;
+  trackedCase.latestNextHearingDateSource = normalized.nextHearingDateSource || trackedCase.latestNextHearingDateSource;
+  trackedCase.latestStatusPageNextHearingDate = normalized.statusPageNextHearingDate || trackedCase.latestStatusPageNextHearingDate;
   trackedCase.latestCourtNumber = normalized.courtNumber || trackedCase.latestCourtNumber;
   trackedCase.latestStatus = normalized.caseStatus || trackedCase.latestStatus;
   trackedCase.officialSourceUrl = normalized.officialSourceUrl || trackedCase.officialSourceUrl;
   trackedCase.latestOrdersUrl = normalized.ordersUrl || trackedCase.latestOrdersUrl;
   trackedCase.latestJudgmentsUrl = normalized.judgmentsUrl || trackedCase.latestJudgmentsUrl;
+  trackedCase.latestCaseHistoryUrl = normalized.caseHistoryUrl || trackedCase.latestCaseHistoryUrl;
+  trackedCase.latestFilingsUrl = normalized.filingsUrl || trackedCase.latestFilingsUrl;
+  trackedCase.latestListingsUrl = normalized.listingsUrl || trackedCase.latestListingsUrl;
+  trackedCase.latestCaseHistory = normalizeCaseHistory(normalized.caseHistory || trackedCase.latestCaseHistory);
+  trackedCase.latestOrderUrl = normalized.latestOrderUrl || trackedCase.latestOrderUrl;
+  trackedCase.latestOrderDate = normalized.latestOrderDate || trackedCase.latestOrderDate;
   trackedCase.reminderEmail = trackedCase.reminderEmails[0] || '';
   trackedCase.reminderEmailsLabel = formatReminderEmails(trackedCase.reminderEmails);
   trackedCase.lastCheckedAt = new Date().toISOString();
@@ -233,7 +267,7 @@ async function syncAllCases() {
   const cases = listCases();
   const results = [];
   for (const c of cases) {
-    if (c.provider === 'delhiManualCaptcha') {
+    if (c.provider === 'delhiManualCaptcha' || c.provider === 'districtCourtCnr') {
       results.push({ caseId: c.id, ok: false, error: 'Skipped: manual CAPTCHA required' });
       continue;
     }
@@ -247,6 +281,31 @@ async function syncAllCases() {
   return results;
 }
 
+function normalizeReminderDaysBefore(value) {
+  const values = Array.isArray(value)
+    ? value
+    : String(value ?? '3,2,1,0').split(/[\s,;]+/g);
+  const unique = [];
+  const seen = new Set();
+  for (const raw of values) {
+    const day = Number(raw);
+    if (!Number.isInteger(day) || day < 0 || day > 30 || seen.has(day)) continue;
+    seen.add(day);
+    unique.push(day);
+  }
+  return unique.length ? unique.sort((a, b) => b - a) : [3, 2, 1, 0];
+}
+
+function normalizeCaseHistory(value) {
+  return {
+    filings: Array.isArray(value?.filings) ? value.filings : [],
+    listings: Array.isArray(value?.listings) ? value.listings : [],
+    hearings: Array.isArray(value?.hearings) ? value.hearings : [],
+    orders: Array.isArray(value?.orders) ? value.orders : [],
+    rawTables: Array.isArray(value?.rawTables) ? value.rawTables : []
+  };
+}
+
 module.exports = {
   listProviders,
   getProvider,
@@ -254,6 +313,7 @@ module.exports = {
   getCase,
   addCase,
   deleteCase,
+  updateCaseMetadata,
   updateCaseReminderSettings,
   syncCase,
   syncCaseWithNormalizedResult,

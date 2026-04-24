@@ -37,12 +37,14 @@ function getReminderStatus() {
   };
 }
 
-async function runReminderSweep() {
+async function runReminderSweep(options = {}) {
   const db = readDb();
   const status = getReminderStatus();
   const now = new Date();
   const today = startOfDay(now);
   const results = [];
+  const forceSend = Boolean(options.forceSend);
+  const targetCaseId = options.caseId ? String(options.caseId) : '';
 
   if (!status.configured) {
     return {
@@ -54,25 +56,31 @@ async function runReminderSweep() {
   }
 
   for (const trackedCase of db.trackedCases) {
-    const eligibility = getReminderEligibility(trackedCase, today);
+    if (targetCaseId && trackedCase.id !== targetCaseId) continue;
+
+    const eligibility = getReminderEligibility(trackedCase, today, { forceSend });
     if (!eligibility.shouldSend) {
       results.push({
         caseId: trackedCase.id,
         caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
         sent: false,
         skipped: true,
-        reason: eligibility.reason
+        reason: eligibility.reason,
+        reasonCode: eligibility.reasonCode,
+        details: eligibility.details
       });
       continue;
     }
 
-    if (hasSentReminder(db, trackedCase.id, eligibility.dateKey, eligibility.daysUntil)) {
+    if (!forceSend && hasSentReminder(db, trackedCase.id, eligibility.dateKey, eligibility.daysUntil)) {
       results.push({
         caseId: trackedCase.id,
         caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
         sent: false,
         skipped: true,
-        reason: 'Reminder already sent for today.'
+        reason: 'Reminder already sent for today.',
+        reasonCode: 'already_sent',
+        details: { daysUntilHearing: eligibility.daysUntil, reminderDate: eligibility.dateKey }
       });
       continue;
     }
@@ -88,6 +96,7 @@ async function runReminderSweep() {
         daysUntilHearing: eligibility.daysUntil,
         email: recipientLabel,
         emails: trackedCase.reminderEmails,
+        kind: forceSend ? 'forced' : 'scheduled',
         createdAt: now.toISOString()
       });
       results.push({
@@ -96,6 +105,7 @@ async function runReminderSweep() {
         sent: true,
         email: recipientLabel,
         emails: trackedCase.reminderEmails,
+        forced: forceSend,
         daysUntilHearing: eligibility.daysUntil
       });
     } catch (error) {
@@ -108,6 +118,7 @@ async function runReminderSweep() {
         daysUntilHearing: eligibility.daysUntil,
         email: recipientLabel,
         emails: trackedCase.reminderEmails,
+        kind: forceSend ? 'forced' : 'scheduled',
         error: error.message,
         createdAt: now.toISOString()
       });
@@ -116,7 +127,8 @@ async function runReminderSweep() {
         caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
         sent: false,
         skipped: false,
-        reason: error.message
+        reason: error.message,
+        reasonCode: 'send_failed'
       });
     }
   }
@@ -177,34 +189,64 @@ async function sendTestReminderEmail(trackedCase) {
   };
 }
 
-function getReminderEligibility(trackedCase, today) {
-  if (!trackedCase.reminderEnabled) {
-    return { shouldSend: false, reason: 'Reminders are disabled for this case.' };
+function getReminderEligibility(trackedCase, today, options = {}) {
+  const forceSend = Boolean(options.forceSend);
+
+  if (!trackedCase.reminderEnabled && !forceSend) {
+    return {
+      shouldSend: false,
+      reason: 'Reminders are disabled for this case.',
+      reasonCode: 'disabled'
+    };
   }
 
   if (!trackedCase.reminderEmails?.length) {
-    return { shouldSend: false, reason: 'No reminder emails configured.' };
+    return {
+      shouldSend: false,
+      reason: 'No reminder emails configured.',
+      reasonCode: 'missing_recipients'
+    };
   }
 
-  if (/disposed/i.test(String(trackedCase.latestStatus || ''))) {
-    return { shouldSend: false, reason: 'Disposed cases do not receive reminders.' };
+  if (!forceSend && trackedCase.reminderSkipDisposed !== false && /disposed/i.test(String(trackedCase.latestStatus || ''))) {
+    return {
+      shouldSend: false,
+      reason: 'Disposed cases do not receive reminders.',
+      reasonCode: 'disposed_case',
+      details: { status: trackedCase.latestStatus || '' }
+    };
   }
 
   const hearingDate = parseIndianDate(trackedCase.latestNextHearingDate);
   if (!hearingDate) {
-    return { shouldSend: false, reason: 'No valid next hearing date available.' };
+    return {
+      shouldSend: false,
+      reason: 'No valid next hearing date available.',
+      reasonCode: 'missing_hearing_date'
+    };
   }
 
   const daysUntil = Math.round((hearingDate.getTime() - today.getTime()) / DAY_MS);
-  if (daysUntil < 0 || daysUntil > 3) {
-    return { shouldSend: false, reason: 'Hearing is not within the reminder window.' };
+  const reminderDays = normalizeReminderDaysBefore(trackedCase.reminderDaysBefore);
+  if (!forceSend && !reminderDays.includes(daysUntil)) {
+    return {
+      shouldSend: false,
+      reason: `Hearing is ${daysUntil < 0 ? `${Math.abs(daysUntil)} day${Math.abs(daysUntil) === 1 ? '' : 's'} past` : `${daysUntil} day${daysUntil === 1 ? '' : 's'} away`}; reminders are set for ${formatReminderDays(reminderDays)}.`,
+      reasonCode: 'outside_case_window',
+      details: {
+        hearingDate: trackedCase.latestNextHearingDate,
+        daysUntilHearing: daysUntil,
+        reminderDaysBefore: reminderDays
+      }
+    };
   }
 
   return {
     shouldSend: true,
     daysUntil,
     hearingDate,
-    dateKey: formatDateKey(today)
+    dateKey: formatDateKey(today),
+    forced: forceSend
   };
 }
 
@@ -247,7 +289,11 @@ function getTransporter() {
 }
 
 function buildReminderSubject(trackedCase, daysUntil) {
-  const prefix = daysUntil === 0 ? 'Hearing today' : `Hearing in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`;
+  const prefix = daysUntil === 0
+    ? 'Hearing today'
+    : daysUntil < 0
+      ? `Hearing date passed ${Math.abs(daysUntil)} day${Math.abs(daysUntil) === 1 ? '' : 's'} ago`
+      : `Hearing in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`;
   return `${prefix}: ${trackedCase.latestCaseNumber || trackedCase.displayLabel}`;
 }
 
@@ -259,6 +305,7 @@ function buildReminderText(trackedCase, eligibility, links, isTest) {
     `Court: ${trackedCase.latestCourtName || 'High Court of Delhi'}`,
     `Status: ${trackedCase.latestStatus || 'Not available'}`,
     `Next hearing date: ${trackedCase.latestNextHearingDate || 'Not available'}`,
+    `Date source: ${formatDateSource(trackedCase.latestNextHearingDateSource)}`,
     `Court number: ${trackedCase.latestCourtNumber || 'Not available'}`,
     `Days until hearing: ${eligibility.daysUntil}`,
     `Official source: ${trackedCase.officialSourceUrl || 'Not available'}`
@@ -276,6 +323,7 @@ function buildReminderHtml(trackedCase, eligibility, links, isTest) {
     ['Court', escapeHtml(trackedCase.latestCourtName || 'High Court of Delhi')],
     ['Status', escapeHtml(trackedCase.latestStatus || 'Not available')],
     ['Next hearing date', escapeHtml(trackedCase.latestNextHearingDate || 'Not available')],
+    ['Date source', escapeHtml(formatDateSource(trackedCase.latestNextHearingDateSource))],
     ['Court number', escapeHtml(trackedCase.latestCourtNumber || 'Not available')],
     ['Days until hearing', String(eligibility.daysUntil)],
     ['Official source', trackedCase.officialSourceUrl ? `<a href="${trackedCase.officialSourceUrl}">${escapeHtml(trackedCase.officialSourceUrl)}</a>` : 'Not available']
@@ -323,6 +371,37 @@ function formatDateKey(date) {
     String(date.getMonth() + 1).padStart(2, '0'),
     String(date.getDate()).padStart(2, '0')
   ].join('-');
+}
+
+function normalizeReminderDaysBefore(value) {
+  const values = Array.isArray(value)
+    ? value
+    : String(value ?? '3,2,1,0').split(/[\s,;]+/g);
+  const unique = [];
+  const seen = new Set();
+  for (const raw of values) {
+    const day = Number(raw);
+    if (!Number.isInteger(day) || day < 0 || day > 30 || seen.has(day)) continue;
+    seen.add(day);
+    unique.push(day);
+  }
+  return unique.length ? unique.sort((a, b) => b - a) : [3, 2, 1, 0];
+}
+
+function formatReminderDays(days) {
+  return days
+    .slice()
+    .sort((a, b) => b - a)
+    .map((day) => `D-${day}`)
+    .join(', ');
+}
+
+function formatDateSource(source) {
+  if (source === 'latest_order') return 'Latest order';
+  if (source === 'case_status_page') return 'Delhi case-status page';
+  if (source === 'ecourts_cnr') return 'eCourts CNR history';
+  if (source === 'district_case_number') return 'District case-number page';
+  return 'Not available';
 }
 
 function escapeHtml(value) {

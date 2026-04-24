@@ -9,6 +9,8 @@ const {
   getCaptchaImage,
   getResultsTable
 } = require('./delhiCaseStatusSelectors');
+const { fetchDelhiCaseHistory } = require('./delhiCaseHistory');
+const { extractLatestOrderHearingDates } = require('./delhiOrders');
 
 const CASE_STATUS_URL = 'https://delhihighcourt.nic.in/app/get-case-type-status';
 const SITE_ORIGIN = 'https://delhihighcourt.nic.in';
@@ -92,7 +94,9 @@ class DelhiManualCaptchaProvider extends BaseProvider {
     await (await getCaptchaInput(page)).fill(cleanedCaptcha);
     await (await getSubmitButton(page)).click();
 
-    const validationResponse = await captchaValidationPromise;
+    const validationResponse = await captchaValidationPromise.catch((error) => {
+      throw new Error(formatOfficialTimeout(error, 'Delhi CAPTCHA validation did not finish in time. Load a fresh CAPTCHA and try again.'));
+    });
     const validationPayload = await readJsonResponse(validationResponse);
 
     if (!validationPayload?.success) {
@@ -105,7 +109,9 @@ class DelhiManualCaptchaProvider extends BaseProvider {
       };
     }
 
-    const resultsResponse = await resultsResponsePromise;
+    const resultsResponse = await resultsResponsePromise.catch((error) => {
+      throw new Error(formatOfficialTimeout(error, 'Delhi case-status results did not return in time. Load a fresh CAPTCHA and try again.'));
+    });
     const resultsPayload = await readJsonResponse(resultsResponse);
     await page.waitForTimeout(800);
 
@@ -114,6 +120,14 @@ class DelhiManualCaptchaProvider extends BaseProvider {
       caseData: await parseDelhiResult(page, input, resultsPayload)
     };
   }
+}
+
+function formatOfficialTimeout(error, fallbackMessage) {
+  const message = String(error?.message || error || '');
+  if (/Timeout|waitForResponse|waiting for event "response"/i.test(message)) {
+    return fallbackMessage;
+  }
+  return message || fallbackMessage;
 }
 
 async function selectDelhiOption(selectLocator, value, fieldName) {
@@ -188,7 +202,12 @@ async function parseDelhiResult(page, input, resultsPayload) {
     };
   }
 
-  const { listingDate, courtNumber } = parseListingCell(bestRow.listingDateAndCourtNo);
+  const { listingDate, lastDate, courtNumber } = parseListingCell(bestRow.listingDateAndCourtNo);
+  const orderHearing = await extractLatestOrderHearingDates(bestRow.links.ordersUrl);
+  const orderDerivedDate = orderHearing.parsed ? orderHearing.nextHearingDate : '';
+  const nextHearingDate = orderDerivedDate || listingDate;
+  const nextHearingDateSource = orderDerivedDate ? 'latest_order' : (listingDate ? 'case_status_page' : '');
+  const caseHistory = await fetchDelhiCaseHistory(input);
 
   return {
     provider: 'delhiManualCaptcha',
@@ -197,20 +216,35 @@ async function parseDelhiResult(page, input, resultsPayload) {
     caseNumber: bestRow.caseNumber || formatCaseNumber(input),
     cnrNumber: '',
     caseTitle: bestRow.parties || '',
-    nextHearingDate: listingDate,
+    nextHearingDate,
+    statusPageNextHearingDate: listingDate,
+    nextHearingDateSource,
     courtNumber,
     caseStatus: bestRow.caseStatus || 'Found in official Delhi case-status results',
-    lastOrderDate: '',
+    lastOrderDate: orderHearing.latestOrder?.orderDate || lastDate,
     officialSourceUrl: sourceUrl,
     sourceUrl,
     ordersUrl: bestRow.links.ordersUrl,
     judgmentsUrl: bestRow.links.judgmentsUrl,
+    caseHistoryUrl: caseHistory.caseHistoryUrl,
+    filingsUrl: caseHistory.filingsUrl,
+    listingsUrl: caseHistory.listingsUrl,
+    caseHistory: {
+      filings: caseHistory.filings,
+      listings: caseHistory.listings
+    },
+    latestOrderUrl: orderHearing.latestOrder?.pdfUrl || '',
+    latestOrderDate: orderHearing.latestOrder?.orderDate || '',
     pageTitle,
     rawTextPreview,
     invalidCaptchaDetected: false,
     rawMetadata: {
       resultsCount: rows.length,
-      results: rows
+      results: rows,
+      statusPageListingDate: listingDate,
+      statusPageLastDate: lastDate,
+      latestOrderHearingExtraction: orderHearing,
+      caseHistoryExtraction: caseHistory
     }
   };
 }
@@ -244,13 +278,26 @@ function pickBestRow(rows, input) {
 
 function parseListingCell(value) {
   const text = sanitizeText(value);
-  const dateMatch = text.match(/\b\d{2}[-/]\d{2}[-/]\d{4}\b/);
+  const nextDateMatch = text.match(/next\s+date\s*:\s*(\d{1,2}[-/]\d{1,2}[-/]\d{4})/i);
+  const lastDateMatch = text.match(/last\s+date\s*:\s*(\d{1,2}[-/]\d{1,2}[-/]\d{4})/i);
+  const fallbackDateMatch = text.match(/\b\d{1,2}[-/]\d{1,2}[-/]\d{4}\b/);
   const courtMatch = text.match(/court\s*no\.?\s*[:\-]?\s*([a-z0-9-]+)/i);
 
   return {
-    listingDate: dateMatch ? dateMatch[0].replace(/\//g, '-') : text,
+    listingDate: nextDateMatch ? normalizeListingDate(nextDateMatch[1]) : '',
+    lastDate: lastDateMatch ? normalizeListingDate(lastDateMatch[1]) : (fallbackDateMatch ? normalizeListingDate(fallbackDateMatch[0]) : ''),
     courtNumber: courtMatch ? courtMatch[1].trim().toUpperCase() : ''
   };
+}
+
+function normalizeListingDate(value) {
+  const match = String(value || '').match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/);
+  if (!match) return '';
+  return [
+    match[1].padStart(2, '0'),
+    match[2].padStart(2, '0'),
+    match[3]
+  ].join('-');
 }
 
 function extractCaseNumber(value) {
