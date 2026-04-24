@@ -2,6 +2,9 @@ const { chromium } = require('playwright');
 const BaseProvider = require('./base');
 const { getDelhiDistrictSite } = require('../delhiDistrictSites');
 
+const DISTRICT_NAVIGATION_TIMEOUT_MS = Number(process.env.DISTRICT_NAVIGATION_TIMEOUT_MS || 120000);
+const DISTRICT_SELECTOR_TIMEOUT_MS = Number(process.env.DISTRICT_SELECTOR_TIMEOUT_MS || 30000);
+
 class DistrictCourtCnrProvider extends BaseProvider {
   constructor() {
     super('districtCourtCnr');
@@ -26,21 +29,29 @@ class DistrictCourtCnrProvider extends BaseProvider {
   async startLookup(input) {
     const prepared = prepareDistrictStartInput(input);
     const browser = await chromium.launch({ headless: process.env.PLAYWRIGHT_HEADLESS !== 'false' });
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      userAgent: process.env.PLAYWRIGHT_USER_AGENT || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+      locale: 'en-IN',
+      timezoneId: 'Asia/Kolkata',
+      viewport: { width: 1366, height: 900 },
+      ignoreHTTPSErrors: true
+    });
     const page = await context.newPage();
 
-    await page.goto(prepared.districtUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    await prepareDistrictLookupPage(page);
+    await gotoDistrictPage(page, prepared.districtUrl);
 
+    await page.locator('#chkYes').waitFor({ state: 'attached', timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(() => {});
+    await page.locator('#est_code').waitFor({ state: 'attached', timeout: DISTRICT_SELECTOR_TIMEOUT_MS });
     await page.check('#chkYes').catch(() => {});
     await page.selectOption('#est_code', prepared.courtComplexValue);
     await page.waitForFunction(() => {
       const select = document.querySelector('#case_type');
       return Boolean(select && !select.disabled);
-    }, { timeout: 20000 }).catch(() => {});
+    }, { timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(() => {});
 
     const captchaLocator = page.locator('img[id^="siwp_captcha_image_"]').first();
-    await captchaLocator.waitFor({ state: 'visible', timeout: 15000 });
+    await captchaLocator.waitFor({ state: 'visible', timeout: DISTRICT_SELECTOR_TIMEOUT_MS });
     const captchaPng = await captchaLocator.screenshot({ type: 'png' });
 
     return {
@@ -155,6 +166,47 @@ class DistrictCourtCnrProvider extends BaseProvider {
       caseData: detail
     };
   }
+}
+
+async function gotoDistrictPage(page, url) {
+  let lastError = null;
+  for (const waitUntil of ['commit', 'load', 'domcontentloaded']) {
+    try {
+      await page.goto(url, { waitUntil, timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
+      await page.locator('body').waitFor({ state: 'attached', timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(() => {});
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error(`Failed to open district court page: ${url}`);
+}
+
+async function prepareDistrictLookupPage(page) {
+  await page.route('**/*', (route) => {
+    const request = route.request();
+    const resourceType = request.resourceType();
+    const url = request.url();
+
+    if (['font', 'media'].includes(resourceType)) {
+      return route.abort().catch(() => {});
+    }
+
+    if (/google-analytics|googletagmanager|doubleclick|facebook|youtube|gravatar|fontawesome/i.test(url)) {
+      return route.abort().catch(() => {});
+    }
+
+    return route.continue().catch(() => {});
+  }).catch(() => {});
+
+  await page.addInitScript(() => {
+    try {
+      Object.defineProperty(navigator, 'webdriver', {
+        configurable: true,
+        get: () => undefined
+      });
+    } catch (_error) {}
+  }).catch(() => {});
 }
 
 function prepareDistrictStartInput(input) {
