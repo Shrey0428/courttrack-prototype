@@ -99,11 +99,12 @@
                 </div>
                 <div>
                   <label>Case type</label>
-                  <select id="districtCaseType" disabled>
-                    <option value="">Select district and complex first</option>
-                  </select>
-                  <div style="margin-top:8px;">
-                    <input id="districtCaseTypeManual" placeholder="Or enter case type manually" />
+                  <input id="districtCaseTypeManual" placeholder="Enter case type manually" />
+                  <div style="display:flex; gap:8px; margin-top:8px;">
+                    <select id="districtCaseType" disabled>
+                      <option value="">Official case types are optional</option>
+                    </select>
+                    <button type="button" id="loadDistrictCaseTypesBtn" disabled>Load official types</button>
                   </div>
                 </div>
                 <div>
@@ -117,7 +118,7 @@
                 <button type="submit">Load CAPTCHA</button>
               </div>
             </form>
-            <p class="muted" style="margin-top:10px;">Pick the Delhi district first, then use the court complex and case-number details from that district court page. If case types do not load, enter the case type manually exactly as shown on the district court website.</p>
+            <p class="muted" style="margin-top:10px;">Pick the Delhi district first, then use the court complex and case-number details from that district court page. Enter the case type manually exactly as shown on the district court website. Loading official case types is optional.</p>
           </div>
           <div>
             <label>Secondary providers</label>
@@ -278,6 +279,7 @@
       function populateDistrictComplexes(districtSlug, selectedComplex = '') {
         const district = districtCourts.find((item) => item.slug === districtSlug);
         const complexSelect = document.getElementById('districtCourtComplex');
+        const loadCaseTypesButton = document.getElementById('loadDistrictCaseTypesBtn');
         const complexes = Array.isArray(district?.complexes) ? district.complexes : [];
         complexSelect.disabled = !complexes.length;
         complexSelect.innerHTML = '<option value="">Select court complex</option>' + complexes
@@ -286,10 +288,13 @@
         if (selectedComplex && complexes.some((complex) => complex.text === selectedComplex)) {
           complexSelect.value = selectedComplex;
         }
-        resetDistrictCaseTypes('Select district and complex first');
+        if (loadCaseTypesButton) {
+          loadCaseTypesButton.disabled = !districtSlug || !complexSelect.value;
+        }
+        resetDistrictCaseTypes('Official case types are optional');
       }
 
-      function resetDistrictCaseTypes(message = 'Select district and complex first') {
+      function resetDistrictCaseTypes(message = 'Official case types are optional') {
         const select = document.getElementById('districtCaseType');
         select.disabled = true;
         select.innerHTML = `<option value="">${escapeHtml(message)}</option>`;
@@ -808,6 +813,11 @@
         populateDistrictComplexes(event.target.value, '');
       });
       document.getElementById('districtCourtComplex').addEventListener('change', () => {
+        document.getElementById('loadDistrictCaseTypesBtn').disabled = !document.getElementById('districtCourtSite').value.trim() || !document.getElementById('districtCourtComplex').value.trim();
+        resetDistrictCaseTypes('Official case types are optional');
+      });
+      document.getElementById('loadDistrictCaseTypesBtn').addEventListener('click', () => {
+        setStatus('Loading official district case types...', 'muted');
         loadDistrictCaseTypes().catch((error) => setStatus(error.message, 'error'));
       });
       document.getElementById('reminderEmails').value = DEFAULT_REMINDER_EMAIL;
