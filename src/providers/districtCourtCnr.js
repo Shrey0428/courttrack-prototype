@@ -168,16 +168,28 @@ class DistrictCourtCnrProvider extends BaseProvider {
 
 async function gotoDistrictPage(page, url) {
   let lastError = null;
-  for (const waitUntil of ['commit', 'load', 'domcontentloaded']) {
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      await page.goto(url, { waitUntil, timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
+      await page.goto(url, { waitUntil: 'commit', timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
       await page.locator('body').waitFor({ state: 'attached', timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(() => {});
+
+      const bodyText = await page.locator('body').innerText({ timeout: 5000 }).catch(() => '');
+      if (/ERR_CONNECTION_TIMED_OUT|This site can[’']?t be reached|connection timed out/i.test(bodyText)) {
+        throw new Error(`District court page did not load correctly at ${url}.`);
+      }
+
       return;
     } catch (error) {
       lastError = error;
+      if (attempt === 0) {
+        await page.waitForTimeout(1500).catch(() => {});
+      }
     }
   }
-  throw lastError || new Error(`Failed to open district court page: ${url}`);
+
+  const message = String(lastError?.message || '').replace(/\s+/g, ' ').trim();
+  throw new Error(`District court page could not be opened in time. ${message || url}`);
 }
 
 async function prepareDistrictLookupPage(page) {
