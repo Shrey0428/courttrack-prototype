@@ -292,7 +292,14 @@ app.post('/lookup/complete', async (req, res) => {
 
   try {
     const provider = getProvider(session.provider);
-    const lookupResult = await provider.completeLookup(session, captchaText || '');
+    const lookupInput = session.provider === 'districtCourtCnr'
+      ? {
+          caseType: req.body?.caseType,
+          caseNumber: req.body?.caseNumber,
+          year: req.body?.year
+        }
+      : undefined;
+    const lookupResult = await provider.completeLookup(session, captchaText || '', lookupInput);
 
     if (lookupResult.status === 'invalidCaptcha') {
       return res.status(422).json(lookupResult.debug);

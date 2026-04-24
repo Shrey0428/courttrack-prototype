@@ -24,7 +24,7 @@ class DistrictCourtCnrProvider extends BaseProvider {
   }
 
   async startLookup(input) {
-    const prepared = prepareDistrictInput(input);
+    const prepared = prepareDistrictStartInput(input);
     const browser = await chromium.launch({ headless: process.env.PLAYWRIGHT_HEADLESS !== 'false' });
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -39,13 +39,6 @@ class DistrictCourtCnrProvider extends BaseProvider {
       return Boolean(select && !select.disabled);
     }, { timeout: 20000 }).catch(() => {});
 
-    if (prepared.caseType) {
-      await selectCaseType(page, prepared.caseType);
-    }
-
-    await page.fill('#reg_no', prepared.caseNumber);
-    await page.fill('#reg_year', prepared.year);
-
     const captchaLocator = page.locator('img[id^="siwp_captcha_image_"]').first();
     await captchaLocator.waitFor({ state: 'visible', timeout: 15000 });
     const captchaPng = await captchaLocator.screenshot({ type: 'png' });
@@ -57,13 +50,13 @@ class DistrictCourtCnrProvider extends BaseProvider {
       input: prepared,
       preview: {
         captchaImageBase64: captchaPng.toString('base64'),
-        instructions: `Solve the official CAPTCHA from the ${prepared.districtLabel} case-number page, then submit it here to finish the lookup.`,
+        instructions: `The official ${prepared.districtLabel} CAPTCHA is ready. Enter the case details and CAPTCHA together below to finish the lookup.`,
         sourceUrl: prepared.districtUrl
       }
     };
   }
 
-  async completeLookup(session, captchaText) {
+  async completeLookup(session, captchaText, lookupInput = {}) {
     if (!session?.page) {
       throw new Error('Lookup session is missing or expired.');
     }
@@ -74,7 +67,16 @@ class DistrictCourtCnrProvider extends BaseProvider {
     }
 
     const { page, input } = session;
+    const completedInput = prepareDistrictCompleteInput(input, lookupInput);
+
+    if (completedInput.caseType) {
+      await selectCaseType(page, completedInput.caseType);
+    }
+
+    await page.fill('#reg_no', completedInput.caseNumber);
+    await page.fill('#reg_year', completedInput.year);
     await page.fill('#siwp_captcha_value_0', cleanedCaptcha);
+    Object.assign(input, completedInput);
 
     const responsePromise = page.waitForResponse((response) => {
       const request = response.request();
@@ -155,7 +157,7 @@ class DistrictCourtCnrProvider extends BaseProvider {
   }
 }
 
-function prepareDistrictInput(input) {
+function prepareDistrictStartInput(input) {
   const district = getDelhiDistrictSite(input?.districtSlug);
   if (!district) {
     throw new Error('Choose a Delhi district first.');
@@ -167,12 +169,6 @@ function prepareDistrictInput(input) {
     throw new Error('Choose a valid court complex for the selected district.');
   }
 
-  const caseNumber = String(input?.caseNumber || '').trim();
-  const year = String(input?.year || '').trim();
-  if (!caseNumber || !year) {
-    throw new Error('District lookup requires a case number and year.');
-  }
-
   return {
     lookupMode: 'district_case_number',
     districtSlug: district.slug,
@@ -180,6 +176,37 @@ function prepareDistrictInput(input) {
     districtUrl: district.url,
     courtComplex: courtComplex.label,
     courtComplexValue: courtComplex.value,
+    caseType: '',
+    caseNumber: '',
+    year: ''
+  };
+}
+
+function prepareDistrictCompleteInput(sessionInput, input) {
+  const caseNumber = String(input?.caseNumber || '').trim();
+  const year = String(input?.year || '').trim();
+  if (!caseNumber || !year) {
+    throw new Error('District lookup requires a case number and year.');
+  }
+
+  return {
+    ...sessionInput,
+    caseType: String(input?.caseType || '').trim(),
+    caseNumber,
+    year
+  };
+}
+
+function prepareDistrictInput(input) {
+  const base = prepareDistrictStartInput(input);
+  const caseNumber = String(input?.caseNumber || '').trim();
+  const year = String(input?.year || '').trim();
+  if (!caseNumber || !year) {
+    throw new Error('District lookup requires a case number and year.');
+  }
+
+  return {
+    ...base,
     caseType: String(input?.caseType || '').trim(),
     caseNumber,
     year
