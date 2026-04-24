@@ -12,24 +12,11 @@ function ensureDocumentCacheRoot() {
 
 async function cacheDocumentBuffer(caseId, sourceUrl, buffer, options = {}) {
   ensureDocumentCacheRoot();
+  const cacheInfo = buildCachedDocumentInfo(caseId, sourceUrl, buffer, options);
 
-  const safeCaseId = String(caseId || 'case').replace(/[^a-zA-Z0-9_-]/g, '_');
-  const caseDir = path.join(DOCUMENT_CACHE_ROOT, safeCaseId);
-  await fs.promises.mkdir(caseDir, { recursive: true });
-
-  const extension = normalizeExtension(options.extension || inferExtension(sourceUrl, buffer, options.contentType));
-  const baseName = options.baseName ? slugify(options.baseName) : 'document';
-  const hash = crypto.createHash('sha1').update(String(sourceUrl || '')).digest('hex').slice(0, 12);
-  const fileName = `${baseName}-${hash}${extension}`;
-  const absolutePath = path.join(caseDir, fileName);
-
-  await fs.promises.writeFile(absolutePath, buffer);
-
-  return {
-    fileName,
-    absolutePath,
-    localUrl: `/api/documents/${encodeURIComponent(safeCaseId)}/${encodeURIComponent(fileName)}`
-  };
+  await fs.promises.mkdir(path.dirname(cacheInfo.absolutePath), { recursive: true });
+  await fs.promises.writeFile(cacheInfo.absolutePath, buffer);
+  return cacheInfo;
 }
 
 function resolveCachedDocument(caseId, fileName) {
@@ -40,6 +27,29 @@ function resolveCachedDocument(caseId, fileName) {
   if (!absolutePath.startsWith(path.join(DOCUMENT_CACHE_ROOT, safeCaseId))) return null;
   if (!fs.existsSync(absolutePath)) return null;
   return absolutePath;
+}
+
+function resolveCachedDocumentBySource(caseId, sourceUrl, options = {}) {
+  const cacheInfo = buildCachedDocumentInfo(caseId, sourceUrl, null, options);
+  if (!fs.existsSync(cacheInfo.absolutePath)) return null;
+  return cacheInfo.absolutePath;
+}
+
+function buildCachedDocumentInfo(caseId, sourceUrl, buffer, options = {}) {
+  ensureDocumentCacheRoot();
+  const safeCaseId = String(caseId || 'case').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const caseDir = path.join(DOCUMENT_CACHE_ROOT, safeCaseId);
+  const extension = normalizeExtension(options.extension || inferExtension(sourceUrl, buffer, options.contentType));
+  const baseName = options.baseName ? slugify(options.baseName) : 'document';
+  const hash = crypto.createHash('sha1').update(String(sourceUrl || '')).digest('hex').slice(0, 12);
+  const fileName = `${baseName}-${hash}${extension}`;
+  const absolutePath = path.join(caseDir, fileName);
+
+  return {
+    fileName,
+    absolutePath,
+    localUrl: `/api/documents/${encodeURIComponent(safeCaseId)}/${encodeURIComponent(fileName)}`
+  };
 }
 
 function inferExtension(sourceUrl, buffer, contentType) {
@@ -71,5 +81,6 @@ function slugify(value) {
 
 module.exports = {
   cacheDocumentBuffer,
-  resolveCachedDocument
+  resolveCachedDocument,
+  resolveCachedDocumentBySource
 };

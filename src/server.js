@@ -29,7 +29,7 @@ const {
 const { createSession, getSession, deleteSession } = require('./sessionStore');
 const { REMINDER_INTERVAL_MS, getReminderStatus, runReminderSweep, sendTestReminderEmail } = require('./reminderService');
 const { parseReminderEmailsFromInput } = require('./reminderEmails');
-const { cacheDocumentBuffer, resolveCachedDocument } = require('./documentCache');
+const { cacheDocumentBuffer, resolveCachedDocument, resolveCachedDocumentBySource } = require('./documentCache');
 const { listDelhiDistrictSites } = require('./delhiDistrictSites');
 
 const app = express();
@@ -206,6 +206,17 @@ app.get('/api/cases/:id/district-order', async (req, res) => {
       return res.status(400).json({ error: 'Order action could not be parsed.' });
     }
 
+    const cacheBaseName = `${trackedCase.latestCaseNumber || trackedCase.cnrNumber || trackedCase.displayLabel || 'district-court'} order`;
+    const existingCachedPath = resolveCachedDocumentBySource(trackedCase.id, actionPayload, {
+      contentType: 'application/pdf',
+      baseName: cacheBaseName
+    });
+    if (existingCachedPath) {
+      return res.sendFile(existingCachedPath, {
+        headers: { 'Content-Type': 'application/pdf' }
+      });
+    }
+
     const provider = getProvider('districtCourtCnr');
     const access = trackedCase.snapshots?.[0]?.payload?.rawMetadata?.ecourtsAccess || null;
     if (!access?.appToken || !Array.isArray(access.cookies) || !access.cookies.length) {
@@ -218,7 +229,7 @@ app.get('/api/cases/:id/district-order', async (req, res) => {
 
     const cached = await cacheDocumentBuffer(trackedCase.id, actionPayload || download.orderUrl || JSON.stringify(action), download.buffer, {
       contentType: download.contentType,
-      baseName: `${trackedCase.latestCaseNumber || trackedCase.cnrNumber || trackedCase.displayLabel || 'district-court'} order`
+      baseName: cacheBaseName
     }).catch(() => null);
 
     if (cached?.absolutePath) {
