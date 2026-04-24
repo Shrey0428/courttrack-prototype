@@ -87,7 +87,21 @@
     </main>
 
     <script>
-      const nextUrl = new URLSearchParams(window.location.search).get('next') || '/';
+      function getSafeNextUrl() {
+        try {
+          const rawNext = new URLSearchParams(window.location.search).get('next') || '/';
+          if (!rawNext || rawNext === 'null' || rawNext === 'undefined') return '/';
+          if (rawNext.startsWith('/')) return rawNext;
+
+          const parsed = new URL(rawNext, window.location.origin);
+          if (parsed.origin !== window.location.origin) return '/';
+          return `${parsed.pathname}${parsed.search}${parsed.hash}` || '/';
+        } catch (_error) {
+          return '/';
+        }
+      }
+
+      const nextUrl = getSafeNextUrl();
 
       async function api(url, options = {}) {
         const response = await fetch(url, {
@@ -113,7 +127,7 @@
         try {
           const status = await api('/auth/status');
           if (status.authenticated) {
-            window.location.replace(nextUrl);
+            window.location.replace(nextUrl || '/');
           }
         } catch (_) {}
       }
@@ -130,7 +144,7 @@
               password: document.getElementById('password').value
             })
           });
-          window.location.replace(nextUrl);
+          window.location.replace(nextUrl || '/');
         } catch (error) {
           setStatus(error.message, 'error');
         }
