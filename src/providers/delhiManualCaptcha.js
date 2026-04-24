@@ -9,15 +9,11 @@ const {
   getCaptchaImage,
   getResultsTable
 } = require('./delhiCaseStatusSelectors');
-const { fetchDelhiCaseHistory } = require('./delhiCaseHistory');
-const { extractLatestOrderHearingDates } = require('./delhiOrders');
-const { createLookupContext, launchLookupBrowser, prepareLookupPage } = require('../playwrightProfile');
 
 const CASE_STATUS_URL = 'https://delhihighcourt.nic.in/app/get-case-type-status';
+const CASE_HISTORY_SEARCH_URL = 'https://delhihighcourt.nic.in/app/get-case-wise';
 const SITE_ORIGIN = 'https://delhihighcourt.nic.in';
 const COURT_NAME = 'High Court of Delhi';
-const DELHI_CASE_TYPES_TTL_MS = 12 * 60 * 60 * 1000;
-let delhiCaseTypesCache = { items: null, expiresAt: 0 };
 
 class DelhiManualCaptchaProvider extends BaseProvider {
   constructor() {
@@ -40,39 +36,14 @@ class DelhiManualCaptchaProvider extends BaseProvider {
     throw new Error('Delhi case-status lookups require the manual CAPTCHA flow.');
   }
 
-  async listCaseTypes() {
-    const now = Date.now();
-    if (delhiCaseTypesCache.items && delhiCaseTypesCache.expiresAt > now) {
-      return delhiCaseTypesCache.items;
-    }
-
-    const response = await fetch(CASE_STATUS_URL, {
-      headers: {
-        'user-agent': 'CourtTrackPrototype/1.0 (+delhi case type options)'
-      }
-    });
-    if (!response.ok) {
-      throw new Error(`Delhi case types request returned HTTP ${response.status}`);
-    }
-
-    const html = await response.text();
-    const items = extractDelhiCaseTypesFromHtml(html);
-    delhiCaseTypesCache = {
-      items,
-      expiresAt: now + DELHI_CASE_TYPES_TTL_MS
-    };
-    return items;
-  }
-
   async startLookup({ caseType, caseNumber, year }) {
     if (!caseType || !caseNumber || !year) {
       throw new Error('Delhi case-status lookup requires case type, case number, and year.');
     }
 
-    const browser = await launchLookupBrowser(chromium);
-    const context = await createLookupContext(browser);
+    const browser = await chromium.launch({ headless: process.env.PLAYWRIGHT_HEADLESS !== 'false' });
+    const context = await browser.newContext();
     const page = await context.newPage();
-    await prepareLookupPage(page);
 
     await page.goto(CASE_STATUS_URL, {
       waitUntil: 'domcontentloaded',
@@ -122,9 +93,7 @@ class DelhiManualCaptchaProvider extends BaseProvider {
     await (await getCaptchaInput(page)).fill(cleanedCaptcha);
     await (await getSubmitButton(page)).click();
 
-    const validationResponse = await captchaValidationPromise.catch((error) => {
-      throw new Error(formatOfficialTimeout(error, 'Delhi CAPTCHA validation did not finish in time. Load a fresh CAPTCHA and try again.'));
-    });
+    const validationResponse = await captchaValidationPromise;
     const validationPayload = await readJsonResponse(validationResponse);
 
     if (!validationPayload?.success) {
@@ -137,39 +106,15 @@ class DelhiManualCaptchaProvider extends BaseProvider {
       };
     }
 
-    const resultsResponse = await resultsResponsePromise.catch((error) => {
-      throw new Error(formatOfficialTimeout(error, 'Delhi case-status results did not return in time. Load a fresh CAPTCHA and try again.'));
-    });
+    const resultsResponse = await resultsResponsePromise;
     const resultsPayload = await readJsonResponse(resultsResponse);
     await page.waitForTimeout(800);
 
     return {
       status: 'success',
-      caseData: await parseDelhiResult(page, input, resultsPayload)
+      caseData: await parseDelhiResult(page, input, resultsPayload, cleanedCaptcha)
     };
   }
-}
-
-function extractDelhiCaseTypesFromHtml(html) {
-  const selectMatch = String(html || '').match(/<select[^>]*id="case_type"[\s\S]*?<\/select>/i);
-  if (!selectMatch) {
-    throw new Error('Could not find Delhi case-type dropdown on the official page.');
-  }
-
-  return [...selectMatch[0].matchAll(/<option[^>]*value="([^"]*)"[^>]*>([\s\S]*?)<\/option>/gi)]
-    .map(([, value, label]) => ({
-      value: String(value || '').trim(),
-      label: String(label || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-    }))
-    .filter((option) => option.value);
-}
-
-function formatOfficialTimeout(error, fallbackMessage) {
-  const message = String(error?.message || error || '');
-  if (/Timeout|waitForResponse|waiting for event "response"/i.test(message)) {
-    return fallbackMessage;
-  }
-  return message || fallbackMessage;
 }
 
 async function selectDelhiOption(selectLocator, value, fieldName) {
@@ -210,7 +155,7 @@ function waitForResultsResponse(page) {
   }, { timeout: 20000 });
 }
 
-async function parseDelhiResult(page, input, resultsPayload) {
+async function parseDelhiResult(page, input, resultsPayload, captchaText) {
   await getResultsTable(page);
 
   const pageTitle = await page.title().catch(() => '');
@@ -229,11 +174,21 @@ async function parseDelhiResult(page, input, resultsPayload) {
       cnrNumber: '',
       caseTitle: '',
       nextHearingDate: '',
+      statusPageNextHearingDate: '',
+      nextHearingDateSource: 'case_status_page',
       courtNumber: '',
       caseStatus: 'No matching case found in the official Delhi case-status search results',
       lastOrderDate: '',
       officialSourceUrl: sourceUrl,
       sourceUrl,
+      ordersUrl: '',
+      judgmentsUrl: '',
+      caseHistoryUrl: '',
+      filingsUrl: '',
+      listingsUrl: '',
+      caseHistory: { filings: [], listings: [], hearings: [], orders: [], rawTables: [] },
+      latestOrderUrl: '',
+      latestOrderDate: '',
       pageTitle,
       rawTextPreview,
       invalidCaptchaDetected: false,
@@ -244,49 +199,52 @@ async function parseDelhiResult(page, input, resultsPayload) {
     };
   }
 
-  const { listingDate, lastDate, courtNumber } = parseListingCell(bestRow.listingDateAndCourtNo);
-  const orderHearing = await extractLatestOrderHearingDates(bestRow.links.ordersUrl);
-  const orderDerivedDate = orderHearing.parsed ? orderHearing.nextHearingDate : '';
-  const nextHearingDate = orderDerivedDate || listingDate;
-  const nextHearingDateSource = orderDerivedDate ? 'latest_order' : (listingDate ? 'case_status_page' : '');
-  const caseHistory = await fetchDelhiCaseHistory(input);
+  const { listingDate, courtNumber } = parseListingCell(bestRow.listingDateAndCourtNo);
+  const latestOrderDate = extractLastOrderDate(bestRow.listingDateAndCourtNo);
+  const caseNumber = bestRow.caseNumber || formatCaseNumber(input);
+  const historyLookup = await fetchDelhiCaseHistory(page, input, captchaText).catch((error) => ({
+    caseHistoryUrl: '',
+    filingsUrl: '',
+    listingsUrl: '',
+    caseHistory: emptyCaseHistory(),
+    summary: {},
+    rawMetadata: {
+      error: error.message || String(error)
+    }
+  }));
+  const summary = historyLookup.summary || {};
 
   return {
     provider: 'delhiManualCaptcha',
     caseFound: true,
     courtName: COURT_NAME,
-    caseNumber: bestRow.caseNumber || formatCaseNumber(input),
-    cnrNumber: '',
-    caseTitle: bestRow.parties || '',
-    nextHearingDate,
+    caseNumber: summary.caseNumber || caseNumber,
+    cnrNumber: summary.cnrNumber || '',
+    caseTitle: summary.caseTitle || bestRow.parties || '',
+    nextHearingDate: listingDate,
     statusPageNextHearingDate: listingDate,
-    nextHearingDateSource,
-    courtNumber,
-    caseStatus: bestRow.caseStatus || 'Found in official Delhi case-status results',
-    lastOrderDate: orderHearing.latestOrder?.orderDate || lastDate,
+    nextHearingDateSource: 'case_status_page',
+    courtNumber: summary.courtNumber || courtNumber,
+    caseStatus: summary.caseStatus || bestRow.caseStatus || 'Found in official Delhi case-status results',
+    firstHearingDate: summary.firstHearingDate || '',
+    lastOrderDate: summary.lastOrderDate || latestOrderDate,
     officialSourceUrl: sourceUrl,
     sourceUrl,
     ordersUrl: bestRow.links.ordersUrl,
     judgmentsUrl: bestRow.links.judgmentsUrl,
-    caseHistoryUrl: caseHistory.caseHistoryUrl,
-    filingsUrl: caseHistory.filingsUrl,
-    listingsUrl: caseHistory.listingsUrl,
-    caseHistory: {
-      filings: caseHistory.filings,
-      listings: caseHistory.listings
-    },
-    latestOrderUrl: orderHearing.latestOrder?.pdfUrl || '',
-    latestOrderDate: orderHearing.latestOrder?.orderDate || '',
+    caseHistoryUrl: historyLookup.caseHistoryUrl || '',
+    filingsUrl: historyLookup.filingsUrl || '',
+    listingsUrl: historyLookup.listingsUrl || '',
+    caseHistory: historyLookup.caseHistory || emptyCaseHistory(),
+    latestOrderUrl: '',
+    latestOrderDate: summary.lastOrderDate || latestOrderDate,
     pageTitle,
     rawTextPreview,
     invalidCaptchaDetected: false,
     rawMetadata: {
       resultsCount: rows.length,
       results: rows,
-      statusPageListingDate: listingDate,
-      statusPageLastDate: lastDate,
-      latestOrderHearingExtraction: orderHearing,
-      caseHistoryExtraction: caseHistory
+      historyLookup: historyLookup.rawMetadata || {}
     }
   };
 }
@@ -310,6 +268,24 @@ function extractResultRows(resultsPayload) {
     .filter((row) => row.caseNumberAndStatus || row.parties || row.listingDateAndCourtNo);
 }
 
+function extractHistorySearchRows(resultsPayload) {
+  const rows = Array.isArray(resultsPayload?.data) ? resultsPayload.data : [];
+  return rows
+    .map((row) => ({
+      serialNumber: cleanHtmlText(row.DT_RowIndex || row[0] || ''),
+      caseNumberHtml: String(row.ctype || row[1] || ''),
+      caseNumberAndStatus: cleanHtmlText(row.ctype || row[1] || ''),
+      parties: cleanHtmlText(row.pet_name || row.pet || row[2] || '')
+    }))
+    .map((row) => ({
+      ...row,
+      caseNumber: extractCaseNumber(row.caseNumberAndStatus),
+      caseStatus: extractStatus(row.caseNumberAndStatus),
+      links: extractLinksFromHtml(row.caseNumberHtml)
+    }))
+    .filter((row) => row.caseNumberAndStatus || row.parties);
+}
+
 function pickBestRow(rows, input) {
   if (!rows.length) return null;
 
@@ -320,32 +296,31 @@ function pickBestRow(rows, input) {
 
 function parseListingCell(value) {
   const text = sanitizeText(value);
-  const nextDateMatch = text.match(/next\s+date\s*:\s*(\d{1,2}[-/]\d{1,2}[-/]\d{4})/i);
-  const lastDateMatch = text.match(/last\s+date\s*:\s*(\d{1,2}[-/]\d{1,2}[-/]\d{4})/i);
-  const fallbackDateMatch = text.match(/\b\d{1,2}[-/]\d{1,2}[-/]\d{4}\b/);
+  const nextDateMatch = text.match(/next\s*date\s*:\s*(\d{1,2}[-/]\d{1,2}[-/]\d{4}|na)/i);
   const courtMatch = text.match(/court\s*no\.?\s*[:\-]?\s*([a-z0-9-]+)/i);
+  const fallbackDateMatch = text.match(/\b\d{1,2}[-/]\d{1,2}[-/]\d{4}\b/);
+  const nextDate = nextDateMatch ? nextDateMatch[1] : '';
+  const normalizedNextDate = nextDate && !/^na$/i.test(nextDate)
+    ? nextDate.replace(/\//g, '-').replace(/\b(\d{1})([-/])/g, '0$1$2').replace(/-(\d)(-)/g, '-0$1$2')
+    : '';
 
   return {
-    listingDate: nextDateMatch ? normalizeListingDate(nextDateMatch[1]) : '',
-    lastDate: lastDateMatch ? normalizeListingDate(lastDateMatch[1]) : (fallbackDateMatch ? normalizeListingDate(fallbackDateMatch[0]) : ''),
+    listingDate: normalizedNextDate || (fallbackDateMatch ? fallbackDateMatch[0].replace(/\//g, '-') : ''),
     courtNumber: courtMatch ? courtMatch[1].trim().toUpperCase() : ''
   };
 }
 
-function normalizeListingDate(value) {
-  const match = String(value || '').match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/);
-  if (!match) return '';
-  return [
-    match[1].padStart(2, '0'),
-    match[2].padStart(2, '0'),
-    match[3]
-  ].join('-');
-}
-
 function extractCaseNumber(value) {
   const text = sanitizeText(value);
-  const match = text.match(/[A-Z.() -]*\d+[A-Z.() /-]*\/\d{4}/i);
-  return match ? sanitizeText(match[0]) : '';
+  const match = text.match(/[A-Z.() -]+[- ]\s*\d+\s*\/\s*\d{4}/i);
+  if (!match) return '';
+  return sanitizeText(match[0]).replace(/\s*-\s*/, ' ').replace(/\s*\/\s*/, '/');
+}
+
+function extractLastOrderDate(value) {
+  const text = sanitizeText(value);
+  const match = text.match(/last\s*date\s*:\s*(\d{1,2}[-/]\d{1,2}[-/]\d{4})/i);
+  return match ? match[1].replace(/\//g, '-') : '';
 }
 
 function extractStatus(value) {
@@ -370,14 +345,17 @@ function cleanHtmlText(value) {
 function extractLinksFromHtml(html) {
   const links = {
     ordersUrl: '',
-    judgmentsUrl: ''
+    judgmentsUrl: '',
+    caseHistoryUrl: ''
   };
 
   for (const match of String(html || '').matchAll(/<a[^>]*href\s*=\s*['"]?([^'" >]+)['"]?[^>]*>([\s\S]*?)<\/a>/gi)) {
     const url = absolutizeUrl(match[1]);
     const text = sanitizeText(match[2]).toLowerCase();
 
-    if (text.includes('order')) {
+    if (url.includes('/online-cause-history/')) {
+      links.caseHistoryUrl = url;
+    } else if (text.includes('order')) {
       links.ordersUrl = url;
     } else if (text.includes('judgment')) {
       links.judgmentsUrl = url;
@@ -427,8 +405,270 @@ async function buildDebugPayload(page, input, extras = {}) {
   };
 }
 
+async function fetchDelhiCaseHistory(page, input, captchaText) {
+  const result = {
+    caseHistoryUrl: '',
+    filingsUrl: '',
+    listingsUrl: '',
+    caseHistory: emptyCaseHistory(),
+    summary: {},
+    rawMetadata: {}
+  };
+
+  await page.goto(CASE_HISTORY_SEARCH_URL, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60000
+  });
+  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+
+  await selectDelhiOption(page.locator('#case_type'), input.caseType, 'case type');
+  await page.locator('#case_number').fill(String(input.caseNumber).trim());
+  await selectDelhiOption(page.locator('#year'), String(input.year), 'year');
+
+  let historyResultsPayload = await requestCaseHistoryResults(page, input);
+  if (!Array.isArray(historyResultsPayload?.data) || !historyResultsPayload.data.length) {
+    historyResultsPayload = await tryDrawCaseHistoryTable(page);
+  }
+  if (!Array.isArray(historyResultsPayload?.data) || !historyResultsPayload.data.length) {
+    historyResultsPayload = await submitCaseHistorySearch(page, captchaText);
+  }
+
+  const rows = extractHistorySearchRows(historyResultsPayload);
+  let bestRow = pickBestRow(rows, input);
+
+  if (!bestRow?.links?.caseHistoryUrl) {
+    const href = await page
+      .locator('#caseTable tbody tr td:nth-child(2) a[href*="/online-cause-history/"]')
+      .first()
+      .getAttribute('href')
+      .catch(() => '');
+    if (href) {
+      bestRow = {
+        ...(bestRow || {}),
+        links: {
+          ...(bestRow?.links || {}),
+          caseHistoryUrl: absolutizeUrl(href)
+        }
+      };
+    }
+  }
+
+  const caseHistoryUrl = bestRow?.links?.caseHistoryUrl || '';
+  if (!caseHistoryUrl) {
+    return {
+      ...result,
+      rawMetadata: {
+        resultsCount: rows.length,
+        results: rows,
+        caseHistoryFound: false
+      }
+    };
+  }
+
+  await page.goto(caseHistoryUrl, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60000
+  });
+  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+  await page.locator('#printable-area').waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+
+  const parsed = await parseDelhiCaseHistoryPage(page);
+  return {
+    caseHistoryUrl,
+    filingsUrl: caseHistoryUrl,
+    listingsUrl: caseHistoryUrl,
+    caseHistory: parsed.caseHistory,
+    summary: parsed.summary,
+    rawMetadata: {
+      resultsCount: rows.length,
+      results: rows,
+      caseHistoryFound: true
+    }
+  };
+}
+
+async function tryDrawCaseHistoryTable(page) {
+  const resultsPromise = waitForHistoryResultsResponse(page).catch(() => null);
+  await page.evaluate(() => {
+    const table = window.jQuery && window.jQuery('#caseTable').DataTable ? window.jQuery('#caseTable').DataTable() : null;
+    if (table) table.draw();
+  }).catch(() => {});
+  const response = await resultsPromise;
+  return readJsonResponse(response);
+}
+
+async function requestCaseHistoryResults(page, input) {
+  const response = await page.context().request.get(CASE_HISTORY_SEARCH_URL, {
+    params: {
+      draw: '1',
+      start: '0',
+      length: '10',
+      case_type: String(input.caseType).trim(),
+      case_number: String(input.caseNumber).trim(),
+      case_year: String(input.year).trim()
+    },
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    timeout: 20000
+  }).catch(() => null);
+
+  if (!response || !response.ok()) {
+    return null;
+  }
+
+  return response.json().catch(() => null);
+}
+
+async function submitCaseHistorySearch(page, captchaText) {
+  const captchaInput = String(captchaText || '').trim();
+  if (!captchaInput) {
+    return null;
+  }
+
+  await page.locator('#captchaInput').fill(captchaInput);
+
+  const validationPromise = waitForCaptchaValidation(page).catch(() => null);
+  const resultsPromise = waitForHistoryResultsResponse(page).catch(() => null);
+  await page.locator('#search').click();
+
+  const validationResponse = await validationPromise;
+  const validationPayload = await readJsonResponse(validationResponse);
+  if (validationPayload && !validationPayload.success) {
+    return null;
+  }
+
+  const resultsResponse = await resultsPromise;
+  return readJsonResponse(resultsResponse);
+}
+
+function waitForHistoryResultsResponse(page) {
+  return page.waitForResponse((response) => {
+    const request = response.request();
+    return response.url().startsWith(CASE_HISTORY_SEARCH_URL) &&
+      request.method() === 'GET' &&
+      request.resourceType() === 'xhr' &&
+      response.url().includes('draw=');
+  }, { timeout: 20000 });
+}
+
+async function parseDelhiCaseHistoryPage(page) {
+  return page.evaluate(() => {
+    const normalizeText = (value) => String(value || '').replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+    const normalizeCaseNumber = (value) => normalizeText(value).replace(/\s*-\s*/, ' ').replace(/\s*\/\s*/g, '/');
+    const emptyCaseHistory = () => ({ filings: [], listings: [], hearings: [], orders: [], rawTables: [] });
+    const container = document.querySelector('#printable-area');
+    if (!container) {
+      return { summary: {}, caseHistory: emptyCaseHistory() };
+    }
+
+    const summary = {};
+    for (const label of Array.from(container.querySelectorAll('.form-group.group.row label'))) {
+      const bold = label.querySelector('b');
+      if (!bold) continue;
+      const key = normalizeText(bold.textContent).replace(/\s*:\s*$/, '');
+      if (!key) continue;
+      const fullText = normalizeText(label.textContent);
+      const value = normalizeText(fullText.replace(new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:?\\s*`), ''));
+      if (value) summary[key] = value;
+    }
+
+    const partyNode = Array.from(container.querySelectorAll('.row.justify-content-center.mb-4 label'))
+      .find((label) => /vs\./i.test(label.textContent || ''));
+    const caseTitle = partyNode ? normalizeText(partyNode.textContent).replace(/\s*Vs\.\s*/i, ' VS. ') : '';
+
+    const sectionTitles = Array.from(container.querySelectorAll('.listing-3d-box h5')).map((node) => normalizeText(node.textContent));
+    const tables = Array.from(container.querySelectorAll('table.table.table-bordered'));
+    const rawTables = tables.map((table, index) => {
+      const columns = Array.from(table.querySelectorAll('thead th')).map((cell) => normalizeText(cell.textContent));
+      const rows = Array.from(table.querySelectorAll('tbody tr')).map((row) => {
+        const cells = Array.from(row.querySelectorAll('td')).map((cell, cellIndex) => ({
+          label: columns[cellIndex] || '',
+          text: normalizeText(cell.textContent),
+          links: Array.from(cell.querySelectorAll('a[href]')).map((link) => link.href).filter(Boolean),
+          actions: []
+        }));
+        return {
+          cells,
+          text: normalizeText(row.textContent),
+          links: cells.flatMap((cell) => cell.links),
+          actions: []
+        };
+      });
+      return {
+        title: sectionTitles[index] || `Table ${index + 1}`,
+        columns,
+        rows
+      };
+    });
+
+    const filingTable = rawTables.find((table) => /filing details/i.test(table.title)) || rawTables[0] || null;
+    const listingTable = rawTables.find((table) => /listing details/i.test(table.title)) || rawTables[1] || null;
+
+    const filings = filingTable
+      ? filingTable.rows.map((row) => {
+          const serialNumber = row.cells[0]?.text || '';
+          const date = row.cells[1]?.text || '';
+          const details = row.cells[2]?.text || '';
+          const diaryMatch = details.match(/Diary No:\s*([A-Z0-9/.-]+)/i);
+          const statusMatch = details.match(/\(Status:\s*([A-Z])\s*\)/i);
+          return {
+            serialNumber,
+            date,
+            details,
+            diaryNumber: diaryMatch ? diaryMatch[1] : '',
+            status: statusMatch ? statusMatch[1] : ''
+          };
+        }).filter((entry) => entry.serialNumber || entry.date || entry.details)
+      : [];
+
+    const listings = listingTable
+      ? listingTable.rows.map((row) => ({
+          serialNumber: row.cells[0]?.text || '',
+          date: row.cells[1]?.text || '',
+          details: row.cells[2]?.text || '',
+          orderUrl: row.cells[1]?.links?.[0] || ''
+        })).filter((entry) => entry.serialNumber || entry.date || entry.details)
+      : [];
+
+    const orders = listings
+      .filter((entry) => entry.orderUrl)
+      .map((entry) => ({
+        serialNumber: entry.serialNumber,
+        date: entry.date,
+        details: entry.details,
+        url: entry.orderUrl,
+        sourceUrl: entry.orderUrl,
+        action: null
+      }));
+
+    return {
+      summary: {
+        caseNumber: normalizeCaseNumber(summary['Case No'] || ''),
+        cnrNumber: summary['CNR No.'] || '',
+        caseTitle,
+        caseStatus: summary.Status || '',
+        firstHearingDate: summary['Date of First Filing'] || '',
+        lastOrderDate: listings[1]?.date || listings[0]?.date || '',
+        courtNumber: ''
+      },
+      caseHistory: {
+        filings,
+        listings,
+        hearings: [],
+        orders,
+        rawTables
+      }
+    };
+  });
+}
+
 function formatCaseNumber(input) {
   return `${input.caseType} ${input.caseNumber}/${input.year}`;
+}
+
+function emptyCaseHistory() {
+  return { filings: [], listings: [], hearings: [], orders: [], rawTables: [] };
 }
 
 function normalizeOption(value) {

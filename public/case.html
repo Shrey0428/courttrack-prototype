@@ -21,49 +21,45 @@
         radial-gradient(circle at top left, rgba(15,98,254,.08), transparent 32%),
         linear-gradient(180deg, #f7f9fc 0%, var(--bg) 100%); color: var(--ink); }
       .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 48px; }
-      .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+      .topbar { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
       .brand { display:flex; align-items:center; gap:14px; }
       .brand-logo { width:66px; height:66px; object-fit:cover; border-radius:18px; box-shadow:0 14px 28px rgba(19,34,56,.12); }
-      .eyebrow { letter-spacing: .08em; text-transform: uppercase; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
-      h1, h2, h3 { margin: 0 0 10px; font-weight: 600; }
-      p { margin: 0 0 10px; }
-      .muted { color: var(--muted); }
-      .grid { display: grid; grid-template-columns: 1.3fr .7fr; gap: 18px; }
-      .stack { display: grid; gap: 18px; }
-      .card { background: rgba(255,255,255,.94); border: 1px solid rgba(217,225,236,.9); border-radius: 18px; padding: 20px; box-shadow: 0 18px 40px rgba(29,43,70,.08); }
-      .big-date { font-size: 38px; line-height: 1; margin-bottom: 10px; }
-      .meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
-      .meta { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: #fbfcfe; }
-      .meta strong { display: block; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-      .toolbar { display: flex; gap: 10px; flex-wrap: wrap; }
-      .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-      .section-head h2 { margin-bottom: 0; }
-      .toggle-btn { padding: 8px 12px; border-radius: 10px; }
-      button, input, textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); font: inherit; }
-      input[type="checkbox"] { width: auto; }
-      textarea { min-height: 108px; resize: vertical; }
-      button { width: auto; cursor: pointer; color: white; background: linear-gradient(135deg, #0f62fe, #0043ce); border: none; }
-      button.secondary { background: white; color: var(--accent); border: 1px solid var(--line); }
-      button.danger { background: #d92d20; }
-      label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
-      .form-row { display: grid; gap: 12px; }
-      .status { margin-top: 12px; min-height: 20px; color: var(--muted); }
-      .status.success { color: var(--success); }
-      .status.error { color: var(--danger); }
-      .check-row { display: flex; align-items: center; gap: 10px; color: var(--ink); margin: 0; }
-      .list { display: grid; gap: 12px; }
-      .item { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: #fbfcfe; }
-      .item time { display: block; color: var(--muted); font-size: 13px; margin-bottom: 6px; }
-      .pill { display: inline-block; padding: 4px 9px; border-radius: 999px; font-size: 12px; background: var(--accent-soft); color: var(--accent); }
-      .pill.status-pending { background: #e7f8ef; color: #027a48; }
-      .pill.status-disposed { background: #fdecec; color: #b42318; }
-      .history-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-      .history-table th, .history-table td { border: 1px solid var(--line); padding: 8px; vertical-align: top; text-align: left; }
-      .history-table th { background: #eef4ff; color: var(--ink); }
-      a { color: var(--accent); }
+      .eyebrow { letter-spacing:.08em; text-transform:uppercase; font-size:12px; color:var(--muted); margin-bottom:8px; }
+      h1,h2,h3 { margin:0 0 10px; font-weight:600; }
+      p { margin:0 0 10px; }
+      .muted { color:var(--muted); }
+      .grid { display:grid; grid-template-columns:1.3fr .7fr; gap:18px; }
+      .stack { display:grid; gap:18px; }
+      .card { background:rgba(255,255,255,.94); border:1px solid rgba(217,225,236,.9); border-radius:18px; padding:20px; box-shadow:0 18px 40px rgba(29,43,70,.08); }
+      .big-date { font-size:38px; line-height:1; margin-bottom:10px; }
+      .meta-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; margin-top:16px; }
+      .meta { border:1px solid var(--line); border-radius:14px; padding:14px; background:#fbfcfe; }
+      .meta strong { display:block; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+      .toolbar, .row-actions { display:flex; gap:10px; flex-wrap:wrap; }
+      button, input, textarea { width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--line); font:inherit; }
+      textarea { min-height:108px; resize:vertical; }
+      button { width:auto; cursor:pointer; color:white; background:linear-gradient(135deg, #0f62fe, #0043ce); border:none; }
+      button.secondary { background:white; color:var(--accent); border:1px solid var(--line); }
+      button.danger { background:#d92d20; }
+      label { display:block; font-size:14px; color:var(--muted); margin-bottom:6px; }
+      .form-row { display:grid; gap:12px; }
+      .status { margin-top:12px; min-height:20px; color:var(--muted); }
+      .status.success { color:var(--success); }
+      .status.error { color:var(--danger); }
+      .list { display:grid; gap:12px; }
+      .item { border:1px solid var(--line); border-radius:14px; padding:14px; background:#fbfcfe; }
+      .item time { display:block; color:var(--muted); font-size:13px; margin-bottom:6px; }
+      .pill { display:inline-block; padding:4px 9px; border-radius:999px; font-size:12px; background:var(--accent-soft); color:var(--accent); }
+      .pill.status-pending { background:#e7f8ef; color:#027a48; }
+      .pill.status-disposed { background:#fdecec; color:#b42318; }
+      a { color:var(--accent); }
+      .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:14px; background:#fbfcfe; }
+      table { width:100%; border-collapse:collapse; min-width:640px; }
+      th, td { padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; font-size:14px; }
+      .toggle-row { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
       @media (max-width: 900px) {
-        .grid, .meta-grid { grid-template-columns: 1fr; }
-        .big-date { font-size: 30px; }
+        .grid, .meta-grid { grid-template-columns:1fr; }
+        .big-date { font-size:30px; }
       }
     </style>
   </head>
@@ -97,28 +93,19 @@
           </section>
 
           <section class="card">
-            <h2>Official documents</h2>
-            <p class="muted" id="documentLinks">-</p>
-          </section>
-
-          <section class="card">
-            <h2>Case name</h2>
-            <div class="form-row">
-              <div>
-                <label for="manualCaseTitle">Manual case name</label>
-                <input id="manualCaseTitle" placeholder="Add a readable name for this case" />
-              </div>
-              <button id="saveCaseTitleBtn" type="button">Save case name</button>
+            <div class="toggle-row">
+              <h2>Official documents</h2>
+              <div id="documentLinks" class="muted">-</div>
             </div>
-            <div class="status" id="caseTitleFeedback"></div>
+            <div class="list" id="orderItems" style="margin-top:14px;"></div>
           </section>
 
           <section class="card">
-            <div class="section-head">
+            <div class="toggle-row">
               <h2>Case history</h2>
-              <button class="secondary toggle-btn" id="historyToggleBtn" type="button" hidden>Show more</button>
+              <button id="historyToggleBtn" class="secondary" type="button" style="display:none;">Show more</button>
             </div>
-            <div class="list" id="caseHistoryList"></div>
+            <div id="historyContent" class="list"></div>
           </section>
 
           <section class="card">
@@ -134,6 +121,19 @@
 
         <div class="stack">
           <section class="card">
+            <h2>Case name</h2>
+            <p class="muted">Use a manual label when the district site does not return a usable case title.</p>
+            <div class="form-row" style="margin-top: 16px;">
+              <div>
+                <label for="manualCaseTitle">Manual case title</label>
+                <input id="manualCaseTitle" placeholder="Enter a clearer case name" />
+              </div>
+              <button id="saveCaseTitleBtn" type="button">Save case title</button>
+            </div>
+            <div class="status" id="caseTitleFeedback"></div>
+          </section>
+
+          <section class="card">
             <h2>Email reminders</h2>
             <p class="muted" id="reminderStatusText">Loading reminder status...</p>
             <div class="form-row" style="margin-top: 16px;">
@@ -141,19 +141,21 @@
                 <label for="reminderEmails">Reminder emails</label>
                 <textarea id="reminderEmails" placeholder="person1@example.com, person2@example.com"></textarea>
               </div>
-              <label class="check-row"><input id="reminderEnabled" type="checkbox" /> Enable scheduled reminders</label>
               <div>
-                <label for="reminderDaysBefore">Reminder days before hearing</label>
+                <label for="reminderDaysBefore">Days before hearing</label>
                 <input id="reminderDaysBefore" placeholder="3, 2, 1, 0" />
               </div>
-              <label class="check-row"><input id="reminderSkipDisposed" type="checkbox" /> Skip disposed cases</label>
-              <button id="saveReminderBtn" type="button">Save reminder settings</button>
-              <button id="testReminderBtn" class="secondary" type="button">Send test email</button>
-              <button id="runReminderBtn" class="secondary" type="button">Run reminder check now</button>
-              <button id="forceReminderBtn" class="secondary" type="button">Force-send reminder now</button>
+              <label><input id="reminderEnabled" type="checkbox" style="width:auto; margin-right:8px;" />Enable reminders for this case</label>
+              <label><input id="reminderSkipDisposed" type="checkbox" style="width:auto; margin-right:8px;" />Skip disposed cases</label>
+              <div class="row-actions">
+                <button id="saveReminderBtn" type="button">Save reminder settings</button>
+                <button id="testReminderBtn" class="secondary" type="button">Send test email</button>
+                <button id="runReminderBtn" class="secondary" type="button">Run reminder check now</button>
+                <button id="forceReminderBtn" class="secondary" type="button">Force-send now</button>
+              </div>
             </div>
             <div class="status" id="reminderFeedback"></div>
-            <div class="list" id="reminderSweepResults" style="margin-top: 14px;"></div>
+            <div class="list" id="reminderSweepResults" style="margin-top:14px;"></div>
           </section>
 
           <section class="card">
@@ -168,8 +170,7 @@
       const caseId = new URLSearchParams(window.location.search).get('id');
       let currentCase = null;
       let reminderStatus = null;
-      let highCourtHistoryExpanded = false;
-      const DEFAULT_REMINDER_EMAIL = 'info@amitguptaadvocate.com';
+      let highCourtExpanded = false;
 
       async function api(url, options = {}) {
         const response = await fetch(url, {
@@ -189,35 +190,10 @@
         return data;
       }
 
-      function setReminderFeedback(message, cls = '') {
-        const el = document.getElementById('reminderFeedback');
+      function setFeedback(id, message, cls = '') {
+        const el = document.getElementById(id);
         el.className = `status ${cls}`.trim();
         el.textContent = message || '';
-      }
-
-      function setCaseTitleFeedback(message, cls = '') {
-        const el = document.getElementById('caseTitleFeedback');
-        el.className = `status ${cls}`.trim();
-        el.textContent = message || '';
-      }
-
-      function renderSweepResults(results) {
-        const el = document.getElementById('reminderSweepResults');
-        if (!results || !results.length) {
-          el.innerHTML = '';
-          return;
-        }
-
-        el.innerHTML = '';
-        for (const item of results) {
-          const div = document.createElement('div');
-          div.className = 'item';
-          div.innerHTML = `
-            <div><strong>${escapeHtml(item.caseNumber || item.caseId || 'Case')}</strong></div>
-            <p class="muted">${item.sent ? `Email sent to ${escapeHtml(item.email || '-')}${item.forced ? ' (forced)' : ''}` : escapeHtml(formatSkippedReason(item))}</p>
-          `;
-          el.appendChild(div);
-        }
       }
 
       function escapeHtml(value) {
@@ -231,73 +207,19 @@
         return '';
       }
 
+      function dateSourceLabel(source) {
+        if (source === 'district_case_number') return 'District details';
+        if (source === 'case_status_page') return 'Status page';
+        return source || '';
+      }
+
       function renderDocumentLinks(caseData) {
         const links = [];
-        const directOrderUrls = getDirectOrderUrls(caseData);
-        if (directOrderUrls.length) {
-          directOrderUrls.forEach((url, index) => links.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">Order PDF${directOrderUrls.length > 1 ? ' ' + (index + 1) : ''}</a>`));
-        } else if (
-          isUsableDocumentUrl(caseData?.latestOrdersUrl || caseData?.snapshots?.[0]?.payload?.ordersUrl) &&
-          (caseData?.provider !== 'districtCourtCnr' || /^\/api\/documents\//.test(caseData?.latestOrdersUrl || caseData?.snapshots?.[0]?.payload?.ordersUrl || ''))
-        ) {
-          const url = caseData.latestOrdersUrl || caseData.snapshots[0].payload.ordersUrl;
-          links.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">Orders</a>`);
-        }
-        if (isUsableDocumentUrl(caseData?.latestJudgmentsUrl || caseData?.snapshots?.[0]?.payload?.judgmentsUrl)) {
-          const url = caseData.latestJudgmentsUrl || caseData.snapshots[0].payload.judgmentsUrl;
-          links.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">Judgments</a>`);
-        }
-        if (isUsableDocumentUrl(caseData?.latestFilingsUrl || caseData?.snapshots?.[0]?.payload?.filingsUrl || caseData?.latestCaseHistoryUrl)) {
-          const url = caseData.latestFilingsUrl || caseData.snapshots?.[0]?.payload?.filingsUrl || caseData.latestCaseHistoryUrl;
-          links.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">Filings</a>`);
-        }
-        if (isUsableDocumentUrl(caseData?.latestListingsUrl || caseData?.snapshots?.[0]?.payload?.listingsUrl || caseData?.latestCaseHistoryUrl)) {
-          const url = caseData.latestListingsUrl || caseData.snapshots?.[0]?.payload?.listingsUrl || caseData.latestCaseHistoryUrl;
-          links.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">Listings</a>`);
-        }
+        if (caseData.latestOrdersUrl) links.push(`<a href="${caseData.latestOrdersUrl}" target="_blank" rel="noopener noreferrer">Orders</a>`);
+        if (caseData.latestJudgmentsUrl) links.push(`<a href="${caseData.latestJudgmentsUrl}" target="_blank" rel="noopener noreferrer">Judgments</a>`);
+        if (caseData.latestFilingsUrl) links.push(`<a href="${caseData.latestFilingsUrl}" target="_blank" rel="noopener noreferrer">Filings</a>`);
+        if (caseData.latestListingsUrl) links.push(`<a href="${caseData.latestListingsUrl}" target="_blank" rel="noopener noreferrer">Listings</a>`);
         return links.length ? links.join(' | ') : '-';
-      }
-
-      function getDirectOrderUrls(caseData) {
-        const history = caseData?.latestCaseHistory || caseData?.snapshots?.[0]?.payload?.caseHistory || {};
-        const orderLinks = Array.isArray(history.orders) ? history.orders.map((order) => getDistrictOrderLink(caseData, order)).filter(isUsableDocumentUrl) : [];
-        const rawLinks = Array.isArray(history.rawTables)
-          ? history.rawTables.flatMap((table) => table.rows || []).flatMap((row) => row.cells || []).flatMap((cell) => getDistrictCellLinks(caseData, cell)).filter((url) => isUsableDocumentUrl(url) && /order|display_pdf|\.pdf|download|district-order/i.test(url))
-          : [];
-        return Array.from(new Set([...orderLinks, ...rawLinks]));
-      }
-
-      function getDistrictOrderLink(caseData, order) {
-        if (caseData?.provider === 'districtCourtCnr' && order?.action) {
-          return `/api/cases/${encodeURIComponent(caseData.id)}/district-order?action=${encodeURIComponent(JSON.stringify(order.action))}`;
-        }
-        if (isUsableDocumentUrl(order?.url)) {
-          return order.url;
-        }
-        return order?.url || '';
-      }
-
-      function getDistrictCellLinks(caseData, cell) {
-        const actionLinks = caseData?.provider === 'districtCourtCnr' && Array.isArray(cell?.actions)
-          ? cell.actions.map((action) => `/api/cases/${encodeURIComponent(caseData.id)}/district-order?action=${encodeURIComponent(JSON.stringify(action))}`)
-          : [];
-        if (actionLinks.length) {
-          return Array.from(new Set(actionLinks));
-        }
-        const directLinks = Array.isArray(cell?.links) ? cell.links.filter(isUsableDocumentUrl) : [];
-        if (directLinks.length) {
-          return Array.from(new Set(directLinks));
-        }
-        return Array.from(new Set(actionLinks));
-      }
-
-      function isUsableDocumentUrl(url) {
-        const value = String(url || '').trim();
-        return Boolean(value && value !== '#' && !value.endsWith('/#') && !value.endsWith('#') && /^(https?:\/\/|\/)/i.test(value));
-      }
-
-      function getDisplayTitle(caseData) {
-        return caseData?.manualCaseTitle || caseData?.latestCaseTitle || caseData?.displayLabel || 'Case details';
       }
 
       function renderList(el, items, formatter, emptyText) {
@@ -316,35 +238,43 @@
 
       function renderCase(caseData) {
         currentCase = caseData;
-
-        document.title = `${caseData.latestCaseNumber || getDisplayTitle(caseData)} | CourtTrack`;
-        document.getElementById('pageTitle').textContent = getDisplayTitle(caseData);
-        document.getElementById('pageSubtitle').textContent = `${caseData.latestCaseNumber || caseData.caseLookup || '-'} | ${caseData.provider}`;
+        document.title = `${displayCaseTitle(caseData)} | CourtTrack`;
+        document.getElementById('pageTitle').textContent = displayCaseTitle(caseData);
+        document.getElementById('pageSubtitle').textContent = `${escapeHtml(caseData.latestCaseNumber || caseData.displayLabel || '-')}` + ` | ${escapeHtml(caseData.provider)}`;
         document.getElementById('hearingDate').textContent = caseData.latestNextHearingDate || 'No hearing date yet';
-        document.getElementById('hearingDate').title = formatDateSource(caseData.latestNextHearingDateSource);
-        document.getElementById('caseTitle').textContent = getDisplayTitle(caseData);
+        document.getElementById('caseTitle').textContent = displayCaseTitle(caseData);
         document.getElementById('caseNumber').textContent = caseData.latestCaseNumber || caseData.caseLookup || '-';
         document.getElementById('documentLinks').innerHTML = renderDocumentLinks(caseData);
         document.getElementById('manualCaseTitle').value = caseData.manualCaseTitle || '';
-        document.getElementById('reminderEmails').value = caseData.reminderEmailsLabel || caseData.reminderEmail || DEFAULT_REMINDER_EMAIL;
+
+        document.getElementById('reminderEmails').value = caseData.reminderEmailsLabel || caseData.reminderEmail || '';
         document.getElementById('reminderEnabled').checked = Boolean(caseData.reminderEnabled);
-        document.getElementById('reminderDaysBefore').value = (caseData.reminderDaysBefore || [3, 2, 1, 0]).join(', ');
         document.getElementById('reminderSkipDisposed').checked = caseData.reminderSkipDisposed !== false;
+        document.getElementById('reminderDaysBefore').value = Array.isArray(caseData.reminderDaysBefore) ? caseData.reminderDaysBefore.join(', ') : '3, 2, 1, 0';
 
         const metaGrid = document.getElementById('metaGrid');
         metaGrid.innerHTML = [
-          ['Date source', formatDateSource(caseData.latestNextHearingDateSource)],
-          ['Status-page date', escapeHtml(caseData.latestStatusPageNextHearingDate || '-')],
           ['Court', caseData.latestCourtName || '-'],
           ['Court number', caseData.latestCourtNumber || '-'],
           ['Status', `<span class="pill ${statusClass(caseData.latestStatus)}">${escapeHtml(caseData.latestStatus || '-')}</span>`],
+          ['Date source', escapeHtml(dateSourceLabel(caseData.latestNextHearingDateSource) || '-')],
           ['Official source', caseData.officialSourceUrl ? `<a href="${caseData.officialSourceUrl}" target="_blank" rel="noopener noreferrer">Open source</a>` : '-'],
-          ['Case type / lookup', caseData.provider === 'districtCourtCnr'
-            ? escapeHtml(caseData.displayLabel || '-')
-            : (caseData.queryMeta?.caseType ? `${escapeHtml(caseData.queryMeta.caseType)} ${escapeHtml(caseData.queryMeta.caseNumber || '')}/${escapeHtml(caseData.queryMeta.year || '')}` : escapeHtml(caseData.displayLabel || '-'))],
-          ['Manual case name', escapeHtml(caseData.manualCaseTitle || '-')],
           ['Reminder emails', escapeHtml(caseData.reminderEmailsLabel || 'Not configured')]
         ].map(([label, value]) => `<div class="meta"><strong>${label}</strong><div>${value}</div></div>`).join('');
+
+        const orders = caseData.latestCaseHistory?.orders || [];
+        renderList(
+          document.getElementById('orderItems'),
+          orders,
+          (order) => `
+            <div><strong>${escapeHtml(order.details || `Order ${order.serialNumber || ''}`)}</strong></div>
+            <p class="muted">${escapeHtml(order.date || '-')}</p>
+            <p>${order.url ? `<a href="${order.url}" target="_blank" rel="noopener noreferrer">Open order</a>` : 'No direct order link saved.'}</p>
+          `,
+          'No order rows are stored for this case yet.'
+        );
+
+        renderHistory(caseData);
 
         renderList(
           document.getElementById('eventsList'),
@@ -352,8 +282,6 @@
           (event) => `<time>${new Date(event.createdAt).toLocaleString()}</time><div>${escapeHtml(event.message)}</div>`,
           'No events recorded yet.'
         );
-
-        renderCaseHistory(caseData);
 
         renderList(
           document.getElementById('runsList'),
@@ -368,135 +296,128 @@
           (delivery) => `
             <time>${new Date(delivery.createdAt).toLocaleString()}</time>
             <div><span class="pill">${escapeHtml(delivery.status)}</span></div>
-            <p>${escapeHtml(delivery.email || '-')} ${delivery.kind ? `<span class="muted">(${escapeHtml(delivery.kind)})</span>` : ''}</p>
+            <p>${escapeHtml(delivery.email || '-')}</p>
             <p class="muted">Days until hearing: ${escapeHtml(delivery.daysUntilHearing ?? '-')}</p>
+            ${delivery.kind ? `<p class="muted">Type: ${escapeHtml(delivery.kind)}</p>` : ''}
             ${delivery.error ? `<p class="muted">${escapeHtml(delivery.error)}</p>` : ''}
           `,
           'No reminder emails have been attempted yet.'
         );
 
         const refreshBtn = document.getElementById('refreshBtn');
-        const manualCaptcha = caseData.provider === 'delhiManualCaptcha' || caseData.provider === 'districtCourtCnr';
-        refreshBtn.disabled = manualCaptcha;
-        refreshBtn.textContent = manualCaptcha ? 'Refresh via home page CAPTCHA' : 'Refresh case';
+        refreshBtn.disabled = caseData.provider === 'delhiManualCaptcha' || caseData.provider === 'districtCourtCnr';
+        refreshBtn.textContent = refreshBtn.disabled ? 'Refresh via home page CAPTCHA' : 'Refresh case';
       }
 
-      function renderCaseHistory(caseData) {
-        const el = document.getElementById('caseHistoryList');
+      function renderHistory(caseData) {
+        const history = caseData.latestCaseHistory || { filings: [], listings: [], hearings: [], orders: [], rawTables: [] };
+        const historyContent = document.getElementById('historyContent');
         const toggleBtn = document.getElementById('historyToggleBtn');
-        const history = caseData.latestCaseHistory || caseData.snapshots?.[0]?.payload?.caseHistory || {};
-        const filings = Array.isArray(history.filings) ? history.filings : [];
-        const listings = Array.isArray(history.listings) ? history.listings : [];
-        const hearings = Array.isArray(history.hearings) ? history.hearings : [];
-        const orders = Array.isArray(history.orders) ? history.orders : [];
-        const rawTables = Array.isArray(history.rawTables) ? history.rawTables : [];
-        const isDistrictCase = caseData.provider === 'districtCourtCnr';
-        const hasExpandableHighCourtSections = !isDistrictCase && Boolean(filings.length || listings.length);
-        let sectionsRendered = 0;
 
-        el.innerHTML = '';
-        toggleBtn.hidden = !hasExpandableHighCourtSections;
-        toggleBtn.textContent = highCourtHistoryExpanded ? 'Show less' : 'Show more';
-        if (!filings.length && !listings.length && !hearings.length && !orders.length && !rawTables.length) {
-          el.innerHTML = '<div class="item muted">No case-history filings or listings have been parsed yet.</div>';
-          return;
-        }
-
-        if (isDistrictCase && rawTables.length) {
-          for (const table of rawTables) {
-            const div = document.createElement('div');
-            div.className = 'item';
-            div.innerHTML = `
-              <h3>${escapeHtml(table.title || 'Case History')}</h3>
-              ${renderRawHistoryTable(table)}
-            `;
-            el.appendChild(div);
-            sectionsRendered += 1;
+        if (caseData.provider === 'districtCourtCnr') {
+          toggleBtn.style.display = 'none';
+          const tables = history.rawTables || [];
+          if (!tables.length) {
+            historyContent.innerHTML = `<div class="item muted">No district history tables are saved for this case yet.</div>`;
+            return;
           }
+          historyContent.innerHTML = tables.map((table) => renderRawTable(table)).join('');
           return;
         }
 
-        if (filings.length && highCourtHistoryExpanded) {
-          const div = document.createElement('div');
-          div.className = 'item';
-          div.innerHTML = `<h3>Filings</h3>${filings.slice(0, 10).map((filing) => `
-            <p><strong>${escapeHtml(filing.date || '-')}</strong></p>
-            <p>${escapeHtml(filing.details || '-')}</p>
-            ${filing.diaryNumber ? `<p class="muted">Diary No: ${escapeHtml(filing.diaryNumber)}</p>` : ''}
-          `).join('')}`;
-          el.appendChild(div);
-          sectionsRendered += 1;
+        const hasExtra = (history.filings || []).length || (history.listings || []).length;
+        toggleBtn.style.display = hasExtra ? 'inline-flex' : 'none';
+        toggleBtn.textContent = highCourtExpanded ? 'Show less' : 'Show more';
+
+        const sections = [];
+        sections.push(renderSimpleSection('Hearings', history.hearings || [], (item) => `
+          <div><strong>${escapeHtml(item.purpose || item.details || 'Hearing')}</strong></div>
+          <p class="muted">${escapeHtml(item.nextDate || item.date || item.businessDate || '-')}</p>
+          ${item.judge ? `<p>${escapeHtml(item.judge)}</p>` : ''}
+        `, 'No hearing entries saved yet.'));
+
+        if (highCourtExpanded) {
+          sections.push(renderSimpleSection('Filings', history.filings || [], (item) => `
+            <div><strong>${escapeHtml(item.details || 'Filing')}</strong></div>
+            <p class="muted">${escapeHtml(item.date || '-')}</p>
+            ${item.diaryNumber ? `<p>Diary No: ${escapeHtml(item.diaryNumber)}</p>` : ''}
+            ${item.status ? `<p>Status: ${escapeHtml(item.status)}</p>` : ''}
+          `, 'No filing entries saved yet.'));
+
+          sections.push(renderSimpleSection('Listings', history.listings || [], (item) => `
+            <div><strong>${escapeHtml(item.details || 'Listing')}</strong></div>
+            <p class="muted">${escapeHtml(item.date || '-')}</p>
+            ${item.orderUrl ? `<p><a href="${item.orderUrl}" target="_blank" rel="noopener noreferrer">Listing order</a></p>` : ''}
+          `, 'No listing entries saved yet.'));
         }
 
-        if (hearings.length) {
-          const div = document.createElement('div');
-          div.className = 'item';
-          div.innerHTML = `<h3>Hearing history</h3>${hearings.slice(0, 10).map((hearing) => `
-            <p><strong>${escapeHtml(hearing.businessDate || hearing.nextDate || '-')}</strong></p>
-            <p>${escapeHtml([hearing.purpose, hearing.business].filter(Boolean).join(' | ') || '-')}</p>
-            ${hearing.judge ? `<p class="muted">${escapeHtml(hearing.judge)}</p>` : ''}
-          `).join('')}`;
-          el.appendChild(div);
-          sectionsRendered += 1;
-        }
-
-        if (listings.length && highCourtHistoryExpanded) {
-          const div = document.createElement('div');
-          div.className = 'item';
-          div.innerHTML = `<h3>Listings</h3>${listings.slice(0, 10).map((listing) => `
-            <p><strong>${listing.orderUrl ? `<a href="${listing.orderUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(listing.date || '-')}</a>` : escapeHtml(listing.date || '-')}</strong></p>
-            <p>${escapeHtml(listing.details || '-')}</p>
-          `).join('')}`;
-          el.appendChild(div);
-          sectionsRendered += 1;
-        }
-
-        if (orders.length) {
-          const div = document.createElement('div');
-          div.className = 'item';
-          div.innerHTML = `<h3>Orders</h3>${orders.slice(0, 10).map((order) => `
-            <p><strong>${getDistrictOrderLink(caseData, order) ? `<a href="${getDistrictOrderLink(caseData, order)}" target="_blank" rel="noopener noreferrer">${escapeHtml(order.date || order.serialNumber || '-')}</a>` : escapeHtml(order.date || order.serialNumber || '-')}</strong></p>
-            <p>${escapeHtml(order.details || '-')}</p>
-          `).join('')}`;
-          el.appendChild(div);
-          sectionsRendered += 1;
-        }
-
-        if (!sectionsRendered && hasExpandableHighCourtSections && !highCourtHistoryExpanded) {
-          el.innerHTML = '<div class="item muted">Filings and listings are hidden in the compact view. Click Show more to expand them.</div>';
-        }
+        historyContent.innerHTML = sections.join('');
       }
 
-      function renderRawHistoryTable(table) {
-        const columns = Array.isArray(table.columns) && table.columns.length ? table.columns : [];
-        const rows = Array.isArray(table.rows) ? table.rows : [];
-        if (!columns.length || !rows.length) return '<p class="muted">No rows found.</p>';
+      function renderSimpleSection(title, items, formatter, emptyText) {
+        const body = items.length
+          ? items.map((item) => `<div class="item">${formatter(item)}</div>`).join('')
+          : `<div class="item muted">${emptyText}</div>`;
+        return `<div><h3>${escapeHtml(title)}</h3><div class="list">${body}</div></div>`;
+      }
 
+      function renderRawTable(table) {
+        const columns = table.columns || [];
+        const rows = table.rows || [];
         return `
-          <table class="history-table">
-            <thead><tr>${columns.map((column) => `<th>${escapeHtml(column)}</th>`).join('')}</tr></thead>
-            <tbody>
-              ${rows.map((row) => `<tr>${columns.map((column, index) => {
-                const cell = row.cells?.[index] || {};
-                return `<td>${renderHistoryCell(cell)}</td>`;
-              }).join('')}</tr>`).join('')}
-            </tbody>
-          </table>
+          <div>
+            <h3>${escapeHtml(table.title || 'Details')}</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>${columns.map((column) => `<th>${escapeHtml(column)}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                  ${rows.map((row) => `
+                    <tr>
+                      ${(row.cells || []).map((cell) => {
+                        const link = cell.links && cell.links[0] ? `<br><a href="${cell.links[0]}" target="_blank" rel="noopener noreferrer">Open link</a>` : '';
+                        return `<td>${escapeHtml(cell.text || '-')} ${link}</td>`;
+                      }).join('')}
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
         `;
       }
 
-      function renderHistoryCell(cell) {
-        const text = escapeHtml(cell?.text || '-');
-        const links = getDistrictCellLinks(currentCase, cell).filter(isUsableDocumentUrl);
-        if (!links.length) return text;
-        return `${text}<div class="muted">${links.map((url, index) => `<a href="${url}" target="_blank" rel="noopener noreferrer">PDF ${index + 1}</a>`).join(' | ')}</div>`;
+      function renderSweepResults(results) {
+        const el = document.getElementById('reminderSweepResults');
+        if (!results || !results.length) {
+          el.innerHTML = '';
+          return;
+        }
+
+        el.innerHTML = '';
+        for (const item of results) {
+          const div = document.createElement('div');
+          div.className = 'item';
+          div.innerHTML = `
+            <div><strong>${escapeHtml(item.caseNumber || item.caseId || 'Case')}</strong></div>
+            <p>${item.sent ? `Email sent to ${escapeHtml(item.email || '-')}` : escapeHtml(item.reason || 'No action taken.')}</p>
+            ${item.reasonCode ? `<p class="muted">Reason: ${escapeHtml(item.reasonCode)}</p>` : ''}
+            ${item.details ? `<p class="muted">${escapeHtml(JSON.stringify(item.details))}</p>` : ''}
+          `;
+          el.appendChild(div);
+        }
+      }
+
+      function displayCaseTitle(caseData) {
+        return caseData.manualCaseTitle || caseData.latestCaseTitle || caseData.displayLabel || caseData.latestCaseNumber || 'Tracked case';
       }
 
       async function loadReminderStatus() {
         reminderStatus = await api('/api/reminders/status');
         const text = reminderStatus.configured
-          ? `SMTP is configured via ${reminderStatus.host}:${reminderStatus.port}. Scheduled reminders follow each case's days-before settings.`
-          : 'SMTP is not configured yet. Save one or more emails now if you want, but reminders will only start sending after the SMTP env vars are set.';
+          ? `SMTP is configured via ${reminderStatus.host}:${reminderStatus.port}.`
+          : 'SMTP is not configured yet. You can still save reminder preferences now.';
         document.getElementById('reminderStatusText').textContent = text;
       }
 
@@ -506,28 +427,8 @@
           document.getElementById('pageSubtitle').textContent = 'No case id was provided.';
           return;
         }
-
         const caseData = await api(`/api/cases/${caseId}`);
         renderCase(caseData);
-      }
-
-      async function saveReminderSettings() {
-        if (!currentCase) return;
-        const reminderEmails = document.getElementById('reminderEmails').value.trim();
-        const reminderEnabled = document.getElementById('reminderEnabled').checked;
-        const reminderDaysBefore = parseReminderDaysBefore(document.getElementById('reminderDaysBefore').value);
-        const response = await api(`/api/cases/${currentCase.id}/reminders`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            reminderEmails,
-            reminderEnabled: reminderEnabled && Boolean(reminderEmails),
-            reminderDaysBefore,
-            reminderSkipDisposed: document.getElementById('reminderSkipDisposed').checked
-          })
-        });
-        setReminderFeedback(reminderEmails ? 'Reminder emails saved for this case.' : 'Reminder emails cleared for this case.', 'success');
-        reminderStatus = response.reminderStatus;
-        await loadCase();
       }
 
       async function saveCaseTitle() {
@@ -537,26 +438,48 @@
           method: 'PATCH',
           body: JSON.stringify({ manualCaseTitle })
         });
-        setCaseTitleFeedback(manualCaseTitle ? 'Case name saved.' : 'Manual case name cleared.', 'success');
+        setFeedback('caseTitleFeedback', manualCaseTitle ? 'Manual case title saved.' : 'Manual case title cleared.', 'success');
         await loadCase();
       }
 
-      async function runReminderCheck() {
+      async function saveReminderSettings() {
+        if (!currentCase) return;
+        const reminderEmails = document.getElementById('reminderEmails').value.trim();
+        const reminderEnabled = document.getElementById('reminderEnabled').checked;
+        const reminderSkipDisposed = document.getElementById('reminderSkipDisposed').checked;
+        const reminderDaysBefore = document.getElementById('reminderDaysBefore').value
+          .split(',')
+          .map((value) => Number(value.trim()))
+          .filter((value) => Number.isFinite(value));
+
+        await api(`/api/cases/${currentCase.id}/reminders`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            reminderEmails,
+            reminderEnabled,
+            reminderSkipDisposed,
+            reminderDaysBefore
+          })
+        });
+        setFeedback('reminderFeedback', 'Reminder settings saved for this case.', 'success');
+        await loadCase();
+      }
+
+      async function runReminderCheck(forceSend = false) {
         const result = await api('/api/reminders/run', {
           method: 'POST',
-          body: JSON.stringify({ caseId: currentCase?.id })
+          body: JSON.stringify({
+            caseId: currentCase?.id,
+            forceSend
+          })
         });
-        const sentCount = (result.results || []).filter((item) => item.sent).length;
         const caseResult = (result.results || []).find((item) => item.caseId === currentCase?.id);
-        setReminderFeedback(
-          result.skipped
-            ? result.reason
-            : caseResult
-              ? caseResult.sent
-                ? `Reminder sweep finished. Reminder emails were sent for this case.`
-                : `Reminder sweep finished. ${formatSkippedReason(caseResult)}`
-              : `Reminder sweep finished. ${sentCount} email${sentCount === 1 ? '' : 's'} sent.`,
-          result.skipped ? 'error' : 'success'
+        setFeedback(
+          'reminderFeedback',
+          caseResult
+            ? (caseResult.sent ? 'Reminder email sent for this case.' : caseResult.reason || 'No reminder was sent.')
+            : (result.reason || 'Reminder sweep finished.'),
+          caseResult?.sent ? 'success' : (result.skipped ? 'error' : 'success')
         );
         renderSweepResults(result.results || []);
         await loadCase();
@@ -565,22 +488,7 @@
       async function sendTestEmail() {
         if (!currentCase) return;
         const result = await api(`/api/cases/${currentCase.id}/reminders/test`, { method: 'POST' });
-        setReminderFeedback(`Test email sent to ${result.email}.`, 'success');
-        await loadCase();
-      }
-
-      async function forceSendReminder() {
-        if (!currentCase) return;
-        const result = await api('/api/reminders/run', {
-          method: 'POST',
-          body: JSON.stringify({ caseId: currentCase.id, forceSend: true })
-        });
-        const caseResult = (result.results || []).find((item) => item.caseId === currentCase.id);
-        setReminderFeedback(
-          caseResult?.sent ? `Forced reminder sent to ${caseResult.email}.` : `Force-send skipped. ${formatSkippedReason(caseResult || result)}`,
-          caseResult?.sent ? 'success' : 'error'
-        );
-        renderSweepResults(result.results || []);
+        setFeedback('reminderFeedback', `Test email sent to ${result.email}.`, 'success');
         await loadCase();
       }
 
@@ -594,42 +502,44 @@
         await loadCase();
       }
 
+      async function verifyDeletePassword() {
+        const password = window.prompt('Enter your account password to delete this case:');
+        if (password === null) return false;
+        await api('/auth/verify-password', {
+          method: 'POST',
+          body: JSON.stringify({ password })
+        });
+        return true;
+      }
+
       async function deleteCase() {
         if (!currentCase) return;
-        const deletePassword = window.prompt('Enter the delete password to remove this case.');
-        if (deletePassword === null) return;
-        await api(`/api/cases/${currentCase.id}`, {
-          method: 'DELETE',
-          body: JSON.stringify({ deletePassword })
-        });
+        const allowed = await verifyDeletePassword();
+        if (!allowed) return;
+        await api(`/api/cases/${currentCase.id}`, { method: 'DELETE' });
         window.location.href = '/';
       }
 
-      document.getElementById('saveReminderBtn').addEventListener('click', () => {
-        saveReminderSettings().catch((error) => setReminderFeedback(error.message, 'error'));
-      });
       document.getElementById('saveCaseTitleBtn').addEventListener('click', () => {
-        saveCaseTitle().catch((error) => setCaseTitleFeedback(error.message, 'error'));
+        saveCaseTitle().catch((error) => setFeedback('caseTitleFeedback', error.message, 'error'));
+      });
+      document.getElementById('saveReminderBtn').addEventListener('click', () => {
+        saveReminderSettings().catch((error) => setFeedback('reminderFeedback', error.message, 'error'));
       });
       document.getElementById('runReminderBtn').addEventListener('click', () => {
-        runReminderCheck().catch((error) => setReminderFeedback(error.message, 'error'));
-      });
-      document.getElementById('testReminderBtn').addEventListener('click', () => {
-        sendTestEmail().catch((error) => setReminderFeedback(error.message, 'error'));
+        runReminderCheck(false).catch((error) => setFeedback('reminderFeedback', error.message, 'error'));
       });
       document.getElementById('forceReminderBtn').addEventListener('click', () => {
-        forceSendReminder().catch((error) => setReminderFeedback(error.message, 'error'));
+        runReminderCheck(true).catch((error) => setFeedback('reminderFeedback', error.message, 'error'));
+      });
+      document.getElementById('testReminderBtn').addEventListener('click', () => {
+        sendTestEmail().catch((error) => setFeedback('reminderFeedback', error.message, 'error'));
       });
       document.getElementById('refreshBtn').addEventListener('click', () => {
-        refreshCase().catch((error) => setReminderFeedback(error.message, 'error'));
+        refreshCase().catch((error) => setFeedback('reminderFeedback', error.message, 'error'));
       });
       document.getElementById('deleteBtn').addEventListener('click', () => {
-        deleteCase().catch((error) => setReminderFeedback(error.message, 'error'));
-      });
-      document.getElementById('historyToggleBtn').addEventListener('click', () => {
-        if (!currentCase || currentCase.provider === 'districtCourtCnr') return;
-        highCourtHistoryExpanded = !highCourtHistoryExpanded;
-        renderCaseHistory(currentCase);
+        deleteCase().catch((error) => setFeedback('reminderFeedback', error.message, 'error'));
       });
       document.getElementById('logoutBtn').addEventListener('click', async () => {
         try {
@@ -638,34 +548,14 @@
           window.location.href = '/login.html';
         }
       });
-
-      Promise.all([loadReminderStatus(), loadCase()]).catch((error) => {
-        setReminderFeedback(error.message, 'error');
+      document.getElementById('historyToggleBtn').addEventListener('click', () => {
+        highCourtExpanded = !highCourtExpanded;
+        renderHistory(currentCase);
       });
 
-      function parseReminderDaysBefore(value) {
-        return String(value || '')
-          .split(/[\s,;]+/g)
-          .map((day) => Number(day))
-          .filter((day) => Number.isInteger(day) && day >= 0 && day <= 30);
-      }
-
-      function formatDateSource(source) {
-        if (source === 'latest_order') return 'Latest order';
-        if (source === 'case_status_page') return 'Delhi case-status page';
-        if (source === 'ecourts_cnr') return 'eCourts CNR history';
-        if (source === 'district_case_number') return 'District case-number page';
-        return 'Date source unavailable';
-      }
-
-      function formatSkippedReason(item) {
-        if (!item) return 'No result was returned.';
-        const details = item.details || {};
-        const parts = [item.reason || item.reasonCode || 'No action taken.'];
-        if (details.hearingDate) parts.push(`Hearing date: ${details.hearingDate}.`);
-        if (Array.isArray(details.reminderDaysBefore)) parts.push(`Reminder days: ${details.reminderDaysBefore.map((day) => `D-${day}`).join(', ')}.`);
-        return parts.join(' ');
-      }
+      Promise.all([loadReminderStatus(), loadCase()]).catch((error) => {
+        setFeedback('reminderFeedback', error.message, 'error');
+      });
     </script>
   </body>
 </html>

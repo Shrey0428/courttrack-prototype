@@ -3,200 +3,523 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CASE STATUS</title>
+    <title>Case Status</title>
     <style>
-      body { font-family: Arial, sans-serif; margin: 0; background: #f4f7fb; color: #14213d; }
-      .wrap { max-width: 1160px; margin: 0 auto; padding: 24px; }
-      .card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 4px 18px rgba(0,0,0,.06); margin-bottom: 16px; }
-      .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
-      .brand { display:flex; align-items:center; gap:14px; }
-      .brand-logo { width:64px; height:64px; object-fit:cover; border-radius:16px; box-shadow:0 8px 20px rgba(20,33,61,.12); }
-      h1,h2,h3 { margin-top: 0; }
-      .form-grid { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 12px; align-items: end; }
-      input, button, select, textarea { padding: 10px 12px; border-radius: 8px; border: 1px solid #d3dbe8; width: 100%; box-sizing: border-box; }
-      textarea { min-height: 88px; resize: vertical; }
-      button { background: #204ecf; color: white; cursor: pointer; border: none; width: auto; }
-      button.secondary { background: #e8eefc; color: #204ecf; }
-      button.danger { background: #c62828; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { padding: 10px; border-bottom: 1px solid #edf1f7; text-align: left; vertical-align: top; }
-      .pill { display: inline-block; padding: 4px 8px; background: #eaf3ff; color: #1248b5; border-radius: 999px; font-size: 12px; }
-      .pill.status-pending { background: #e7f8ef; color: #027a48; }
-      .pill.status-disposed { background: #fdecec; color: #b42318; }
-      .segmented { display:inline-flex; gap:4px; padding:4px; background:#eef3fb; border-radius:8px; border:1px solid #d3dbe8; }
-      .segmented button { background:transparent; color:#204ecf; border:0; padding:8px 10px; border-radius:6px; }
-      .segmented button.active { background:#204ecf; color:white; }
-      .grid2 { display: grid; grid-template-columns: 1.15fr .85fr; gap: 16px; }
-      .muted { color: #5c6b87; font-size: 14px; }
-      .date { font-size: 28px; font-weight: bold; }
-      .row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-      .inline-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      .captcha-box { display:none; margin-top: 16px; border-top: 1px solid #edf1f7; padding-top: 16px; }
-      .captcha-box img { max-width: 240px; border: 1px solid #d3dbe8; border-radius: 8px; background: #fff; }
-      .error { color: #b42318; }
-      .success { color: #027a48; }
-      @media (max-width: 980px) { .grid2, .form-grid, .inline-grid { grid-template-columns: 1fr; } }
+      :root {
+        --bg-top: #f5efe8;
+        --bg-bottom: #e8e2dc;
+        --panel: rgba(255, 252, 248, 0.92);
+        --panel-strong: rgba(255, 255, 255, 0.98);
+        --ink: #1f2748;
+        --muted: #716d74;
+        --line: rgba(135, 113, 96, 0.2);
+        --accent: #2a427f;
+        --accent-strong: #203465;
+        --accent-soft: #e7ebf8;
+        --copper: #b77b5a;
+        --copper-soft: #f1e1d5;
+        --stone: #f7f2ec;
+        --success: #25664d;
+        --danger: #b33d31;
+        --shadow: 0 20px 48px rgba(27, 31, 46, 0.10);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(183, 123, 90, 0.16), transparent 22%),
+          radial-gradient(circle at top right, rgba(42, 66, 127, 0.10), transparent 20%),
+          linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+      }
+      .wrap {
+        max-width: 1260px;
+        margin: 0 auto;
+        padding: 28px 24px 44px;
+      }
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .brand-logo {
+        width: 72px;
+        height: 72px;
+        object-fit: cover;
+        border-radius: 18px;
+        border: 1px solid rgba(183, 123, 90, 0.24);
+        box-shadow: 0 14px 32px rgba(72, 49, 39, 0.18);
+      }
+      .brand-mark {
+        font-size: 12px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--copper);
+        margin-bottom: 6px;
+      }
+      h1, h2, h3 { margin: 0 0 10px; }
+      h1 {
+        font-size: 40px;
+        line-height: 1.04;
+      }
+      h2 {
+        font-size: 28px;
+        line-height: 1.12;
+      }
+      p { margin: 0 0 10px; }
+      .muted { color: var(--muted); }
+      .small { font-size: 13px; }
+      .card {
+        background: var(--panel);
+        border: 1px solid rgba(255,255,255,.55);
+        border-radius: 24px;
+        padding: 22px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+        margin-bottom: 18px;
+      }
+      .hero-card {
+        position: relative;
+        overflow: hidden;
+      }
+      .hero-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto auto 0;
+        width: 260px;
+        height: 260px;
+        background: radial-gradient(circle, rgba(183, 123, 90, 0.18) 0%, transparent 70%);
+        pointer-events: none;
+      }
+      .hero-card > * { position: relative; }
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.4fr .9fr;
+        gap: 18px;
+      }
+      .segmented {
+        display: inline-flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 6px;
+        border-radius: 18px;
+        background: rgba(242, 235, 227, 0.9);
+        border: 1px solid rgba(183, 123, 90, 0.18);
+      }
+      .toolbar, .row-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      input, button, select, textarea {
+        width: 100%;
+        box-sizing: border-box;
+        font: inherit;
+        padding: 12px 14px;
+        border-radius: 14px;
+      }
+      input, select, textarea {
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,.78);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.84);
+      }
+      input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: rgba(183, 123, 90, 0.48);
+        box-shadow: 0 0 0 4px rgba(183, 123, 90, 0.12);
+      }
+      textarea {
+        min-height: 92px;
+        resize: vertical;
+      }
+      button {
+        width: auto;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+        box-shadow: 0 10px 24px rgba(42, 66, 127, 0.18);
+      }
+      button.secondary {
+        color: var(--accent);
+        background: linear-gradient(180deg, rgba(255,255,255,.95) 0%, rgba(242,236,230,.96) 100%);
+        border: 1px solid rgba(183, 123, 90, 0.24);
+        box-shadow: none;
+      }
+      button.danger {
+        background: linear-gradient(135deg, #c54a3b 0%, #aa3228 100%);
+        box-shadow: 0 10px 24px rgba(179, 61, 49, 0.18);
+      }
+      .segmented button {
+        background: transparent;
+        color: var(--accent);
+        box-shadow: none;
+        padding: 11px 16px;
+      }
+      .segmented button.active {
+        background: linear-gradient(135deg, var(--accent) 0%, #2c4d98 100%);
+        color: white;
+        box-shadow: 0 8px 18px rgba(42, 66, 127, 0.22);
+      }
+      .lookup-panel { display: none; }
+      .lookup-panel.active { display: block; }
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+        gap: 12px;
+        align-items: end;
+      }
+      .form-grid-compact {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+        gap: 12px;
+        align-items: end;
+      }
+      .status-inline {
+        margin-top: 14px;
+        color: var(--muted);
+      }
+      .note-box {
+        border: 1px solid rgba(183, 123, 90, 0.16);
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(255,255,255,.9) 0%, rgba(244, 233, 224, .95) 100%);
+        padding: 16px;
+        color: var(--muted);
+      }
+      .note-box strong { color: var(--ink); }
+      .captcha-box {
+        display: none;
+        margin-top: 20px;
+        border-top: 1px solid rgba(135, 113, 96, 0.12);
+        padding-top: 18px;
+      }
+      .captcha-box img {
+        max-width: 240px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: #fff;
+        box-shadow: 0 10px 20px rgba(72, 49, 39, 0.12);
+      }
+      .tracked-card {
+        background: var(--panel-strong);
+      }
+      .tracked-tools {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: end;
+        margin: 14px 0 16px;
+      }
+      .tracked-table-shell {
+        border: 1px solid rgba(183, 123, 90, 0.18);
+        border-radius: 20px;
+        overflow: hidden;
+        background: linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(249,245,240,.97) 100%);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+      }
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      th, td {
+        text-align: left;
+        vertical-align: top;
+        padding: 16px 14px;
+        border-bottom: 1px solid rgba(135, 113, 96, 0.12);
+      }
+      th {
+        background: linear-gradient(180deg, rgba(243,236,229,.92) 0%, rgba(250,247,243,.96) 100%);
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ink);
+      }
+      tbody tr:hover {
+        background: rgba(246, 238, 232, 0.64);
+      }
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+      .tracked-case-title {
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.24;
+        margin-bottom: 6px;
+      }
+      .tracked-case-subtext {
+        color: var(--muted);
+        line-height: 1.35;
+      }
+      .tracked-next-date {
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.1;
+        margin-bottom: 4px;
+      }
+      .tracked-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .pill {
+        display: inline-block;
+        padding: 7px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        background: #ebf0fa;
+        color: #2c4480;
+      }
+      .pill.status-pending { background: #e7f3ed; color: #25664d; }
+      .pill.status-disposed { background: #f8e7e5; color: #a73a30; }
+      .status-toast {
+        position: fixed;
+        top: 22px;
+        right: 22px;
+        width: min(330px, calc(100vw - 32px));
+        z-index: 40;
+        display: none;
+        border-radius: 16px;
+        background: rgba(255,255,255,.97);
+        border: 1px solid rgba(183, 123, 90, 0.22);
+        box-shadow: 0 20px 40px rgba(27, 31, 46, 0.16);
+        padding: 15px 16px;
+      }
+      .status-toast.visible { display: block; }
+      .status-toast .label {
+        font-size: 11px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--copper);
+        margin-bottom: 6px;
+      }
+      .status-toast.success .message { color: var(--success); }
+      .status-toast.error .message { color: var(--danger); }
+      .status-toast .time {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      .error { color: var(--danger); }
+      .success { color: var(--success); }
+      @media (max-width: 980px) {
+        .wrap {
+          padding: 22px 16px 34px;
+        }
+        h1 {
+          font-size: 34px;
+        }
+        .hero-grid,
+        .tracked-tools,
+        .form-grid,
+        .form-grid-compact {
+          grid-template-columns: 1fr;
+        }
+        .tracked-table-shell {
+          overflow-x: auto;
+        }
+      }
     </style>
   </head>
   <body>
+    <div id="statusToast" class="status-toast" aria-live="polite">
+      <div class="label">Live Update</div>
+      <div id="statusToastMessage" class="message"></div>
+      <div id="statusToastTime" class="time"></div>
+    </div>
+
     <div class="wrap">
       <div class="topbar">
         <div class="brand">
           <img src="/assets/logo.png" alt="Amit Gupta and Associates logo" class="brand-logo" />
           <div>
+            <div class="brand-mark">Amit Gupta and Associates</div>
             <h1>Case Status</h1>
-            <p class="muted">Amit Gupta and Associates</p>
+            <p class="muted">Delhi High Court and District Court tracking, arranged for quick follow-through.</p>
           </div>
         </div>
         <button class="secondary" type="button" onclick="logout()">Logout</button>
       </div>
 
-      <div class="card">
-        <h2>Case Status Lookup</h2>
-        <div class="inline-grid">
+      <div class="card hero-card">
+        <div class="hero-grid">
           <div>
-            <h3>Delhi High Court</h3>
-            <form id="manualForm">
-              <div class="form-grid" style="grid-template-columns: repeat(3, 1fr) auto;">
-                <div>
-                  <label>Case type</label>
-                  <select id="caseType">
-                    <option value="">Loading case types...</option>
-                  </select>
-                </div>
-                <div>
-                  <label>Case number</label>
-                  <input id="caseNumber" placeholder="171" />
-                </div>
-                <div>
-                  <label>Year</label>
-                  <input id="caseYear" placeholder="2026" />
-                </div>
-                <button type="submit">Load CAPTCHA</button>
+            <div class="section-head">
+              <div>
+                <h2>Case Status Lookup</h2>
+                <p class="muted">Use the official Delhi High Court or Delhi District Courts flow, solve the CAPTCHA once, and track the case inside the app.</p>
               </div>
-              <div style="margin-top:12px;">
-                <label>Reminder emails</label>
-                <textarea id="reminderEmails" placeholder="person1@example.com, person2@example.com"></textarea>
+              <div class="segmented">
+                <button id="courtTabHigh" type="button" class="active" onclick="switchLookupTab('highCourt')">High Court</button>
+                <button id="courtTabDistrict" type="button" class="secondary" onclick="switchLookupTab('districtCourt')">District Court</button>
               </div>
-            </form>
-            <p class="muted" style="margin-top:10px;"></p>
+            </div>
+
+            <div id="panelHighCourt" class="lookup-panel active">
+              <form id="manualForm">
+                <div class="form-grid-compact">
+                  <div>
+                    <label for="caseType">Case type</label>
+                    <input id="caseType" placeholder="W.P.(C)" />
+                  </div>
+                  <div>
+                    <label for="caseNumber">Case number</label>
+                    <input id="caseNumber" placeholder="171" />
+                  </div>
+                  <div>
+                    <label for="caseYear">Year</label>
+                    <input id="caseYear" placeholder="2026" />
+                  </div>
+                  <button type="submit">Load CAPTCHA</button>
+                </div>
+                <div style="margin-top:12px;">
+                  <label for="reminderEmails">Reminder emails</label>
+                  <textarea id="reminderEmails" placeholder="person1@example.com, person2@example.com"></textarea>
+                </div>
+              </form>
+            </div>
+
+            <div id="panelDistrictCourt" class="lookup-panel">
+              <form id="districtForm">
+                <div class="form-grid">
+                  <div>
+                    <label for="districtSlug">District</label>
+                    <select id="districtSlug"></select>
+                  </div>
+                  <div>
+                    <label for="courtComplexValue">Court complex</label>
+                    <select id="courtComplexValue"></select>
+                  </div>
+                  <div>
+                    <label for="districtCaseType">Case type</label>
+                    <input id="districtCaseType" placeholder="CS DJ" />
+                  </div>
+                  <div>
+                    <label for="districtCaseNumber">Case number</label>
+                    <input id="districtCaseNumber" placeholder="373" />
+                  </div>
+                  <div>
+                    <label for="districtCaseYear">Year</label>
+                    <input id="districtCaseYear" placeholder="2024" />
+                  </div>
+                  <button type="submit">Load CAPTCHA</button>
+                </div>
+                <div style="margin-top:12px;">
+                  <label for="districtReminderEmails">Reminder emails</label>
+                  <textarea id="districtReminderEmails" placeholder="person1@example.com, person2@example.com"></textarea>
+                </div>
+              </form>
+            </div>
+
+            <div class="status-inline">
+              <div id="statusMsg" class="muted"></div>
+            </div>
+
+            <div id="captchaBox" class="captcha-box">
+              <h3>Enter official CAPTCHA</h3>
+              <p id="captchaHelp" class="muted"></p>
+              <div class="hero-grid" style="grid-template-columns: .9fr 1.1fr; gap:16px;">
+                <div>
+                  <img id="captchaImage" alt="Official court CAPTCHA" />
+                </div>
+                <div>
+                  <label for="captchaText">CAPTCHA text</label>
+                  <input id="captchaText" placeholder="Type exactly what you see" />
+                  <div class="row-actions" style="margin-top:12px;">
+                    <button id="submitCaptchaBtn" type="button">Submit CAPTCHA</button>
+                    <button id="cancelCaptchaBtn" type="button" class="secondary">Cancel</button>
+                  </div>
+                  <p class="muted small" style="margin-top:12px;">The image is captured from the live official page. If the court rejects it, load a fresh CAPTCHA and try again.</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3>District Court / eCourts (CNR search)</h3>
-            <form id="districtCaseForm">
-              <div class="form-grid" style="grid-template-columns: 1fr auto;">
-                <div>
-                  <label>CNR number</label>
-                  <input id="districtCnrNumber" placeholder="DLST010012342026" />
-                </div>
-                <button type="submit">Load CAPTCHA</button>
-              </div>
-            </form>
-            <p class="muted" style="margin-top:10px;">Use the official 16-character eCourts CNR number for district court cases. This is the stable district-court lookup path.</p>
-          </div>
-          <div>
-            <label>Secondary providers</label>
-            <form id="quickForm">
-              <div class="form-grid" style="grid-template-columns: 1fr 1.3fr auto;">
-                <div>
-                  <select id="provider">
+
+          <div class="note-box">
+            <strong>Built for matter review.</strong>
+            <p style="margin-top:10px;">Track hearing dates, move into full case details fast, and keep the home screen focused on the matters that are moving next.</p>
+            <div style="margin-top:18px;">
+              <label for="provider">Secondary providers</label>
+              <form id="quickForm">
+                <div class="toolbar" style="align-items:stretch;">
+                  <select id="provider" style="flex:1 1 220px;">
                     <option value="delhiCauseList">delhiCauseList (secondary cause-list scan)</option>
                     <option value="mockHighCourt">mockHighCourt (demo)</option>
                   </select>
+                  <input id="quickLookup" style="flex:1 1 260px;" placeholder="W.P.(C) 171/2026" />
+                  <button type="submit">Track</button>
                 </div>
-                <div>
-                  <input id="quickLookup" placeholder="For cause list/demo: W.P.(C) 171/2026" />
-                </div>
-                <button type="submit">Track</button>
-              </div>
-            </form>
-            <p class="muted" style="margin-top:10px;">Use these only when you intentionally want a secondary cause-list scan or the mock provider.</p>
-          </div>
-        </div>
-
-        <div id="statusMsg" class="muted" style="margin-top:12px;"></div>
-
-        <div id="captchaBox" class="captcha-box">
-          <h3>Enter official CAPTCHA</h3>
-          <p id="captchaHelp" class="muted"></p>
-          <div class="inline-grid">
-            <div>
-              <img id="captchaImage" alt="Delhi High Court CAPTCHA" />
-            </div>
-            <div>
-              <label>CAPTCHA text</label>
-              <input id="captchaText" placeholder="Type exactly what you see" />
-              <div class="row-actions" style="margin-top:12px;">
-                <button id="submitCaptchaBtn" type="button">Submit CAPTCHA</button>
-                <button id="cancelCaptchaBtn" type="button" class="secondary">Cancel</button>
-              </div>
-              <p class="muted" style="margin-top:10px;">The CAPTCHA image is a server-side screenshot of the official Delhi CAPTCHA element. If it is rejected, load a fresh one and try again.</p>
+              </form>
+              <p class="muted small" style="margin-top:10px;">Keep these for demo or secondary scanning only.</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Latest lookup result</h2>
-        <div id="lookupResult" class="muted">RESULTS</div>
-      </div>
+      <div class="card tracked-card">
+        <div class="section-head">
+          <div>
+            <h2>Tracked Cases</h2>
+            <p class="muted">Your active High Court and District Court matters, sorted by the nearest hearing date.</p>
+          </div>
+          <button class="secondary" onclick="syncAll()">Refresh all</button>
+        </div>
 
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-          <h2>Tracked cases</h2>
-          <div class="row-actions">
-            <div class="segmented" role="group" aria-label="Case court filter">
-              <button id="filterAll" type="button" class="active" onclick="setCourtFilter('all')">All</button>
-              <button id="filterHighCourt" type="button" onclick="setCourtFilter('highCourt')">High Court</button>
-              <button id="filterDistrictCourt" type="button" onclick="setCourtFilter('districtCourt')">District Court</button>
-            </div>
-            <button class="secondary" onclick="syncAll()">Refresh all</button>
+        <div class="tracked-tools">
+          <div>
+            <label for="caseSearch">Search tracked cases</label>
+            <input id="caseSearch" placeholder="Search by case number, party, status, court, or date" />
+          </div>
+          <div class="segmented">
+            <button id="filterAll" type="button" class="active" onclick="setCourtFilter('all')">All</button>
+            <button id="filterHigh" type="button" class="secondary" onclick="setCourtFilter('highCourt')">High Court</button>
+            <button id="filterDistrict" type="button" class="secondary" onclick="setCourtFilter('districtCourt')">District Court</button>
           </div>
         </div>
-        <div style="margin: 10px 0 14px;">
-          <label for="caseSearch">Search tracked cases</label>
-          <input id="caseSearch" placeholder="Search by case number, party, status, court, or date" />
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Case</th>
-              <th>Court</th>
-              <th>Next hearing</th>
-              <th>Status</th>
-              <th>Last checked</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="caseRows"></tbody>
-        </table>
-      </div>
 
-      <div class="grid2">
-        <div class="card">
-          <h2>Case details</h2>
-          <div id="caseDetails" class="muted">Select a case to inspect events and scrape runs.</div>
-        </div>
-        <div class="card">
-          <h2>Notes</h2>
-          <ul>
-            <li><strong>Official lookup</strong> uses the Delhi case-wise status flow as the primary path.</li>
-            <li><strong>delhiCauseList</strong> remains available only as a secondary cause-list scan.</li>
-            <li>Auto-sync skips manual-CAPTCHA cases because the official site requires human input.</li>
-          </ul>
+        <div class="tracked-table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>Case</th>
+                <th>Court</th>
+                <th>Next hearing</th>
+                <th>Status</th>
+                <th>Last checked</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="caseRows"></tbody>
+          </table>
         </div>
       </div>
     </div>
 
     <script>
-      let selectedCaseId = null;
       let activeCaptchaSessionId = null;
-      let activeCaptchaTrackedCaseId = null;
-      let activeTrackedManualInput = null;
+      let activeLookupProvider = 'delhiManualCaptcha';
       let trackedCasesCache = [];
-      let delhiCaseTypes = [];
-      let courtFilter = 'all';
-      const DEFAULT_REMINDER_EMAIL = 'info@amitguptaadvocate.com';
+      let districtSites = [];
+      let currentCourtFilter = 'all';
+      let statusToastTimer = null;
 
       async function api(url, options = {}) {
         const response = await fetch(url, {
@@ -220,25 +543,36 @@
         const el = document.getElementById('statusMsg');
         el.className = cls;
         el.textContent = message || '';
+
+        const toast = document.getElementById('statusToast');
+        const toastMessage = document.getElementById('statusToastMessage');
+        const toastTime = document.getElementById('statusToastTime');
+        toast.className = `status-toast visible ${cls === 'success' ? 'success' : cls === 'error' ? 'error' : ''}`.trim();
+        toastMessage.textContent = message || '';
+        toastTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        clearTimeout(statusToastTimer);
+        statusToastTimer = setTimeout(() => {
+          toast.classList.remove('visible');
+        }, 5000);
       }
 
-      async function loadDelhiCaseTypes() {
-        const payload = await api('/api/lookup-options/delhi-case-types');
-        delhiCaseTypes = Array.isArray(payload.caseTypes) ? payload.caseTypes : [];
-        const select = document.getElementById('caseType');
-        const currentValue = select.value;
-        select.innerHTML = '<option value="">Select case type</option>' + delhiCaseTypes
-          .map((item) => `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`)
-          .join('');
-        if (currentValue && delhiCaseTypes.some((item) => item.value === currentValue || item.label === currentValue)) {
-          select.value = currentValue;
-        }
+      function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
       }
 
-      function showCaptchaBox(payload) {
+      function switchLookupTab(mode) {
+        const high = mode === 'highCourt';
+        document.getElementById('panelHighCourt').classList.toggle('active', high);
+        document.getElementById('panelDistrictCourt').classList.toggle('active', !high);
+        document.getElementById('courtTabHigh').className = high ? 'active' : 'secondary';
+        document.getElementById('courtTabDistrict').className = high ? 'secondary' : 'active';
+      }
+
+      function showCaptchaBox(payload, provider) {
         activeCaptchaSessionId = payload.sessionId;
+        activeLookupProvider = provider;
         document.getElementById('captchaImage').src = `data:image/png;base64,${payload.captchaImageBase64}`;
-        document.getElementById('captchaHelp').innerHTML = `${payload.instructions} <a href="${payload.sourceUrl}" target="_blank">Open source</a>`;
+        document.getElementById('captchaHelp').innerHTML = `${escapeHtml(payload.instructions)} <a href="${payload.sourceUrl}" target="_blank" rel="noopener noreferrer">Open source</a>`;
         document.getElementById('captchaText').value = '';
         document.getElementById('captchaBox').style.display = 'block';
       }
@@ -248,30 +582,102 @@
         activeCaptchaSessionId = null;
       }
 
-      function renderLookupResult(caseData) {
-        const el = document.getElementById('lookupResult');
-        if (!caseData) {
-          el.className = 'muted';
-          el.textContent = 'Run an official Delhi or district court lookup to see parsed case-status data and debug details here.';
-          return;
-        }
+      async function loadDistrictSites() {
+        const payload = await api('/api/district-courts');
+        districtSites = payload.districts || [];
+        const districtSelect = document.getElementById('districtSlug');
+        districtSelect.innerHTML = districtSites.map((district) => `<option value="${district.slug}">${escapeHtml(district.label)}</option>`).join('');
+        populateCourtComplexes();
+      }
 
-        const documentLinks = renderDocumentLinks(caseData);
-        el.className = '';
-        el.innerHTML = `
-          <p><strong>${escapeHtml(caseData.caseTitle || caseData.caseNumber || 'Lookup result')}</strong></p>
-          <p class="muted">${escapeHtml(caseData.caseNumber || '-')}</p>
-          <p><strong>Court:</strong> ${escapeHtml(caseData.courtName || '-')}</p>
-          <p><strong>Status:</strong> ${escapeHtml(caseData.caseStatus || '-')}</p>
-          <p><strong>Next hearing:</strong> ${escapeHtml(caseData.nextHearingDate || '-')}</p>
-          <p><strong>Date source:</strong> ${escapeHtml(formatDateSource(caseData.nextHearingDateSource))}</p>
-          <p><strong>Status-page date:</strong> ${escapeHtml(caseData.statusPageNextHearingDate || '-')}</p>
-          <p><strong>Court number:</strong> ${escapeHtml(caseData.courtNumber || '-')}</p>
-          <p><strong>Source URL:</strong> ${caseData.sourceUrl ? `<a href="${caseData.sourceUrl}" target="_blank">Open source</a>` : '-'}</p>
-          <p><strong>Orders / Judgments:</strong> ${documentLinks}</p>
-          <p><strong>Page title:</strong> ${escapeHtml(caseData.pageTitle || '-')}</p>
-          <p><strong>Invalid CAPTCHA detected:</strong> ${caseData.invalidCaptchaDetected ? 'Yes' : 'No'}</p>
-        `;
+      function populateCourtComplexes() {
+        const districtSlug = document.getElementById('districtSlug').value;
+        const district = districtSites.find((entry) => entry.slug === districtSlug);
+        const complexSelect = document.getElementById('courtComplexValue');
+        const options = district?.courtComplexes || [];
+        complexSelect.innerHTML = options.map((complex) => `<option value="${complex.value}">${escapeHtml(complex.label)}</option>`).join('');
+      }
+
+      async function startHighCourtLookup() {
+        setStatus('Loading Delhi High Court CAPTCHA...', 'muted');
+        const reminderEmails = document.getElementById('reminderEmails').value.trim();
+        const payload = await api('/lookup/start', {
+          method: 'POST',
+          body: JSON.stringify({
+            provider: 'delhiManualCaptcha',
+            caseType: document.getElementById('caseType').value.trim(),
+            caseNumber: document.getElementById('caseNumber').value.trim(),
+            year: document.getElementById('caseYear').value.trim(),
+            reminderEmails
+          })
+        });
+        showCaptchaBox(payload, 'delhiManualCaptcha');
+        setStatus('Delhi High Court CAPTCHA loaded. Enter it below to finish the lookup.');
+      }
+
+      async function startDistrictLookup() {
+        setStatus('Loading Delhi District Court CAPTCHA...', 'muted');
+        const district = districtSites.find((entry) => entry.slug === document.getElementById('districtSlug').value);
+        const courtComplexValue = document.getElementById('courtComplexValue').value;
+        const courtComplex = district?.courtComplexes?.find((entry) => entry.value === courtComplexValue);
+        const reminderEmails = document.getElementById('districtReminderEmails').value.trim();
+        const payload = await api('/lookup/start', {
+          method: 'POST',
+          body: JSON.stringify({
+            provider: 'districtCourtCnr',
+            districtSlug: district?.slug || '',
+            courtComplex: courtComplex?.label || '',
+            courtComplexValue,
+            caseType: document.getElementById('districtCaseType').value.trim(),
+            caseNumber: document.getElementById('districtCaseNumber').value.trim(),
+            year: document.getElementById('districtCaseYear').value.trim(),
+            reminderEmails
+          })
+        });
+        showCaptchaBox(payload, 'districtCourtCnr');
+        setStatus('District court CAPTCHA loaded. Enter it below to finish the lookup.');
+      }
+
+      async function submitCaptcha() {
+        setStatus('Submitting CAPTCHA and fetching the official case details...', 'muted');
+        const payload = await api('/lookup/complete', {
+          method: 'POST',
+          body: JSON.stringify({
+            sessionId: activeCaptchaSessionId,
+            captchaText: document.getElementById('captchaText').value.trim()
+          })
+        });
+
+        hideCaptchaBox();
+        if (payload.trackedCase) {
+          clearLookupInputs(payload.trackedCase.provider);
+          setCourtFilter(payload.trackedCase.provider === 'districtCourtCnr' ? 'districtCourt' : 'highCourt');
+          setStatus('Case tracked successfully.', 'success');
+        } else {
+          setStatus('Lookup completed, but no trackable case was found.', 'muted');
+        }
+        await loadCases();
+      }
+
+      async function cancelCaptcha() {
+        if (activeCaptchaSessionId) {
+          await api(`/lookup/${activeCaptchaSessionId}`, { method: 'DELETE' }).catch(() => {});
+        }
+        hideCaptchaBox();
+        setStatus('CAPTCHA session cancelled.');
+      }
+
+      function clearLookupInputs(provider) {
+        document.getElementById('caseSearch').value = '';
+        if (provider === 'districtCourtCnr') {
+          document.getElementById('districtCaseType').value = '';
+          document.getElementById('districtCaseNumber').value = '';
+          document.getElementById('districtCaseYear').value = '';
+        } else {
+          document.getElementById('caseType').value = '';
+          document.getElementById('caseNumber').value = '';
+          document.getElementById('caseYear').value = '';
+        }
       }
 
       async function loadCases() {
@@ -281,32 +687,41 @@
 
       function renderCaseRows() {
         const rows = document.getElementById('caseRows');
-        const searchTerm = document.getElementById('caseSearch')?.value.trim().toLowerCase() || '';
+        const searchTerm = document.getElementById('caseSearch').value.trim().toLowerCase();
         const cases = trackedCasesCache
-          .filter((c) => matchesCourtFilter(c))
-          .filter((c) => matchesCaseSearch(c, searchTerm))
+          .filter((trackedCase) => matchesCourtFilter(trackedCase))
+          .filter((trackedCase) => matchesCaseSearch(trackedCase, searchTerm))
           .sort(compareCasesByHearingDate);
-        rows.innerHTML = '';
 
+        rows.innerHTML = '';
         if (!cases.length) {
-          rows.innerHTML = `<tr><td colspan="6" class="muted">${trackedCasesCache.length ? 'No tracked cases match your search.' : 'No cases tracked yet.'}</td></tr>`;
+          rows.innerHTML = `<tr><td colspan="6" class="muted">${trackedCasesCache.length ? 'No tracked cases match the current filters.' : 'No cases tracked yet.'}</td></tr>`;
           return;
         }
 
-        for (const c of cases) {
-          const manual = c.provider === 'delhiManualCaptcha' || c.provider === 'districtCourtCnr';
+        for (const trackedCase of cases) {
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td><strong>${escapeHtml(getDisplayTitle(c))}</strong><br><span class="muted">${escapeHtml(c.latestCaseNumber || c.cnrNumber || c.caseLookup)}</span><br><span class="muted">${escapeHtml(c.provider)}</span></td>
-            <td>${escapeHtml(c.latestCourtName || '-')}</td>
-            <td>${renderHearingDateCell(c)}</td>
-            <td><span class="pill ${statusClass(c.latestStatus)}">${escapeHtml(c.latestStatus || 'Not synced')}</span></td>
-            <td>${c.lastCheckedAt ? new Date(c.lastCheckedAt).toLocaleString() : '-'}</td>
             <td>
-              <div class="row-actions">
-                <button onclick="openCasePage('${c.id}')">Open</button>
-                ${manual ? '<button class="secondary" onclick="prefillManualCaptchaFromCase(\'' + c.id + '\')">Refresh via CAPTCHA</button>' : '<button class="secondary" onclick="refreshCase(\'' + c.id + '\')">Refresh</button>'}
-                <button class="danger" onclick="removeCase('${c.id}')">Delete</button>
+              <div class="tracked-case-title">${escapeHtml(displayCaseTitle(trackedCase))}</div>
+              <div class="tracked-case-subtext">${escapeHtml(trackedCase.latestCaseNumber || trackedCase.caseLookup || trackedCase.displayLabel)}</div>
+              <div class="tracked-case-subtext">${escapeHtml(trackedCase.provider)}</div>
+            </td>
+            <td>
+              <div>${escapeHtml(trackedCase.latestCourtNumber || trackedCase.latestCourtName || '-')}</div>
+              ${trackedCase.latestCourtNumber && trackedCase.latestCourtName ? `<div class="tracked-case-subtext">${escapeHtml(trackedCase.latestCourtName)}</div>` : ''}
+            </td>
+            <td>
+              <div class="tracked-next-date">${escapeHtml(trackedCase.latestNextHearingDate || '-')}</div>
+              <div class="tracked-case-subtext">${escapeHtml(dateSourceLabel(trackedCase.latestNextHearingDateSource) || '-')}</div>
+            </td>
+            <td><span class="pill ${statusClass(trackedCase.latestStatus)}">${escapeHtml(trackedCase.latestStatus || 'Not synced')}</span></td>
+            <td>${trackedCase.lastCheckedAt ? new Date(trackedCase.lastCheckedAt).toLocaleString() : '-'}</td>
+            <td>
+              <div class="tracked-actions">
+                <button type="button" onclick="window.location.href='/case.html?id=${trackedCase.id}'">Open</button>
+                <button class="secondary" type="button" onclick="refreshCase('${trackedCase.id}')">${trackedCase.provider === 'delhiManualCaptcha' || trackedCase.provider === 'districtCourtCnr' ? 'Refresh via CAPTCHA' : 'Refresh'}</button>
+                <button class="danger" type="button" onclick="removeCase('${trackedCase.id}')">Delete</button>
               </div>
             </td>
           `;
@@ -314,65 +729,109 @@
         }
       }
 
-      function setCourtFilter(nextFilter) {
-        courtFilter = nextFilter;
-        for (const [id, value] of [['filterAll', 'all'], ['filterHighCourt', 'highCourt'], ['filterDistrictCourt', 'districtCourt']]) {
-          document.getElementById(id).classList.toggle('active', value === courtFilter);
-        }
-        renderCaseRows();
-      }
-
-      function getCourtFilterForProvider(provider) {
-        return provider === 'districtCourtCnr' ? 'districtCourt' : 'highCourt';
-      }
-
-      function matchesCourtFilter(c) {
-        if (courtFilter === 'all') return true;
-        if (courtFilter === 'districtCourt') return c.provider === 'districtCourtCnr';
-        if (courtFilter === 'highCourt') return c.provider !== 'districtCourtCnr';
+      function matchesCourtFilter(trackedCase) {
+        if (currentCourtFilter === 'highCourt') return trackedCase.provider !== 'districtCourtCnr';
+        if (currentCourtFilter === 'districtCourt') return trackedCase.provider === 'districtCourtCnr';
         return true;
       }
 
-      function matchesCaseSearch(c, searchTerm) {
+      function setCourtFilter(filter) {
+        currentCourtFilter = filter;
+        document.getElementById('filterAll').className = filter === 'all' ? 'active' : 'secondary';
+        document.getElementById('filterHigh').className = filter === 'highCourt' ? 'active' : 'secondary';
+        document.getElementById('filterDistrict').className = filter === 'districtCourt' ? 'active' : 'secondary';
+        renderCaseRows();
+      }
+
+      function matchesCaseSearch(trackedCase, searchTerm) {
         if (!searchTerm) return true;
-        return [
-          c.manualCaseTitle,
-          c.latestCaseTitle,
-          c.displayLabel,
-          c.latestCaseNumber,
-          c.cnrNumber,
-          c.caseLookup,
-          c.latestCourtName,
-          c.latestNextHearingDate,
-          c.latestStatus,
-          c.provider
-        ].some((value) => String(value || '').toLowerCase().includes(searchTerm));
+        const haystack = [
+          trackedCase.manualCaseTitle,
+          trackedCase.latestCaseTitle,
+          trackedCase.displayLabel,
+          trackedCase.latestCaseNumber,
+          trackedCase.caseLookup,
+          trackedCase.latestCourtName,
+          trackedCase.latestStatus,
+          trackedCase.latestNextHearingDate
+        ].join(' ').toLowerCase();
+        return haystack.includes(searchTerm);
       }
 
-      function compareCasesByHearingDate(a, b) {
-        const dateA = parseIndianDate(a.latestNextHearingDate);
-        const dateB = parseIndianDate(b.latestNextHearingDate);
-        const bucketA = hearingDateBucket(dateA);
-        const bucketB = hearingDateBucket(dateB);
-        if (bucketA !== bucketB) return bucketA - bucketB;
-        if (dateA && dateB) {
-          return bucketA === 1 ? dateB.getTime() - dateA.getTime() : dateA.getTime() - dateB.getTime();
+      function compareCasesByHearingDate(left, right) {
+        const leftTime = parseDate(left.latestNextHearingDate);
+        const rightTime = parseDate(right.latestNextHearingDate);
+        if (leftTime && rightTime) return leftTime - rightTime;
+        if (leftTime) return -1;
+        if (rightTime) return 1;
+        return displayCaseTitle(left).localeCompare(displayCaseTitle(right));
+      }
+
+      function parseDate(value) {
+        const match = String(value || '').match(/(\d{2})-(\d{2})-(\d{4})/);
+        if (!match) return 0;
+        return new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1])).getTime();
+      }
+
+      async function refreshCase(caseId) {
+        const trackedCase = trackedCasesCache.find((entry) => entry.id === caseId);
+        if (!trackedCase) return;
+        if (trackedCase.provider === 'delhiManualCaptcha' || trackedCase.provider === 'districtCourtCnr') {
+          setStatus('Open the matching lookup above and solve the official CAPTCHA again to refresh this case.');
+          if (trackedCase.provider === 'districtCourtCnr') switchLookupTab('districtCourt');
+          else switchLookupTab('highCourt');
+          return;
         }
-        return String(a.latestCaseNumber || a.displayLabel || '').localeCompare(String(b.latestCaseNumber || b.displayLabel || ''));
+        await api(`/api/cases/${caseId}/refresh`, { method: 'POST' });
+        await loadCases();
+        setStatus('Case refreshed.', 'success');
       }
 
-      function hearingDateBucket(date) {
-        if (!date) return 2;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return date.getTime() >= today.getTime() ? 0 : 1;
+      async function verifyDeletePassword() {
+        const password = window.prompt('Enter your account password to delete this case:');
+        if (password === null) return false;
+        await api('/auth/verify-password', {
+          method: 'POST',
+          body: JSON.stringify({ password })
+        });
+        return true;
       }
 
-      function parseIndianDate(value) {
-        const match = String(value || '').match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
-        if (!match) return null;
-        const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
-        return Number.isNaN(date.getTime()) ? null : date;
+      async function removeCase(caseId) {
+        const allowed = await verifyDeletePassword();
+        if (!allowed) return;
+        await api(`/api/cases/${caseId}`, { method: 'DELETE' });
+        await loadCases();
+        setStatus('Case deleted.', 'success');
+      }
+
+      async function syncAll() {
+        const result = await api('/api/sync-all', { method: 'POST' });
+        await loadCases();
+        setStatus(`Refresh finished for ${result.length} case(s).`, 'success');
+      }
+
+      async function trackSecondaryProvider(event) {
+        event.preventDefault();
+        const provider = document.getElementById('provider').value;
+        const lookup = document.getElementById('quickLookup').value.trim();
+        await api('/api/cases', {
+          method: 'POST',
+          body: JSON.stringify({
+            provider,
+            caseLookup: lookup,
+            displayLabel: lookup
+          })
+        });
+        document.getElementById('quickLookup').value = '';
+        setStatus('Secondary provider case added.', 'success');
+        await loadCases();
+      }
+
+      function dateSourceLabel(source) {
+        if (source === 'district_case_number') return 'District details';
+        if (source === 'case_status_page') return 'Status page';
+        return source || '';
       }
 
       function statusClass(status) {
@@ -382,8 +841,8 @@
         return '';
       }
 
-      function openCasePage(caseId) {
-        window.open(`/case.html?id=${encodeURIComponent(caseId)}`, '_blank', 'noopener');
+      function displayCaseTitle(trackedCase) {
+        return trackedCase.manualCaseTitle || trackedCase.latestCaseTitle || trackedCase.displayLabel || trackedCase.caseLookup || trackedCase.latestCaseNumber || 'Tracked case';
       }
 
       async function logout() {
@@ -394,310 +853,32 @@
         }
       }
 
-      async function showCase(caseId) {
-        selectedCaseId = caseId;
-        const c = await api(`/api/cases/${caseId}`);
-        const latest = c.snapshots[0]?.payload;
-        const queryMeta = c.queryMeta || {};
-        const documentLinks = renderDocumentLinks(c);
-        document.getElementById('caseDetails').innerHTML = `
-          <div class="date">${escapeHtml(c.latestNextHearingDate || latest?.nextHearingDate || 'No hearing date yet')}</div>
-          <p class="muted">${escapeHtml(formatDateSource(c.latestNextHearingDateSource || latest?.nextHearingDateSource))}</p>
-          <p><strong>${escapeHtml(getDisplayTitle(c))}</strong></p>
-          <p class="muted">${escapeHtml(c.latestCaseNumber || c.cnrNumber || c.caseLookup)}</p>
-          <p><strong>Court:</strong> ${escapeHtml(c.latestCourtName || '-')}</p>
-          <p><strong>Court number:</strong> ${escapeHtml(c.latestCourtNumber || '-')}</p>
-          <p><strong>Status:</strong> <span class="pill ${statusClass(c.latestStatus)}">${escapeHtml(c.latestStatus || '-')}</span></p>
-          <p><strong>Official link:</strong> ${c.officialSourceUrl ? `<a href="${c.officialSourceUrl}" target="_blank">Open source</a>` : '-'}</p>
-          <p><strong>Orders / Judgments:</strong> ${documentLinks}</p>
-          ${renderManualQuery(c)}
-          <hr />
-          <h3>Events</h3>
-          ${c.events.length ? `<ul>${c.events.map(e => `<li>${new Date(e.createdAt).toLocaleString()} — ${escapeHtml(e.message)}</li>`).join('')}</ul>` : '<p class="muted">No events yet.</p>'}
-          <h3>Recent sync runs</h3>
-          ${c.scrapeRuns.length ? `<ul>${c.scrapeRuns.map(r => `<li>${new Date(r.createdAt).toLocaleString()} — ${escapeHtml(r.status)}: ${escapeHtml(r.message)}</li>`).join('')}</ul>` : '<p class="muted">No runs yet.</p>'}
-        `;
-      }
-
-      async function refreshCase(caseId) {
-        try {
-          setStatus('Refreshing case...');
-          await api(`/api/cases/${caseId}/refresh`, { method: 'POST' });
-          await loadCases();
-          if (selectedCaseId === caseId) await showCase(caseId);
-          setStatus('Refresh completed.', 'success');
-        } catch (error) {
-          setStatus(error.message, 'error');
-        }
-      }
-
-      async function syncAll() {
-        try {
-          setStatus('Refreshing all automatic providers...');
-          await api('/api/sync-all', { method: 'POST' });
-          await loadCases();
-          if (selectedCaseId) await showCase(selectedCaseId);
-          setStatus('Refresh-all completed.', 'success');
-        } catch (error) {
-          setStatus(error.message, 'error');
-        }
-      }
-
-      async function removeCase(caseId) {
-        const deletePassword = window.prompt('Enter the delete password to remove this case.');
-        if (deletePassword === null) return;
-        await api(`/api/cases/${caseId}`, {
-          method: 'DELETE',
-          body: JSON.stringify({ deletePassword })
-        });
-        if (selectedCaseId === caseId) {
-          selectedCaseId = null;
-          document.getElementById('caseDetails').innerHTML = 'Select a case to inspect events and scrape runs.';
-        }
-        await loadCases();
-      }
-
-      async function prefillManualCaptchaFromCase(caseId) {
-        const c = await api(`/api/cases/${caseId}`);
-        const queryMeta = c.queryMeta || {};
-        activeCaptchaTrackedCaseId = caseId;
-        document.getElementById('caseType').value = c.provider === 'delhiManualCaptcha' ? (queryMeta.caseType || '') : '';
-        document.getElementById('caseNumber').value = c.provider === 'delhiManualCaptcha' ? (queryMeta.caseNumber || '') : '';
-        document.getElementById('caseYear').value = c.provider === 'delhiManualCaptcha' ? (queryMeta.year || '') : '';
-        document.getElementById('districtCnrNumber').value = c.provider === 'districtCourtCnr' ? (queryMeta.cnrNumber || c.cnrNumber || '') : '';
-        document.getElementById('reminderEmails').value = c.reminderEmailsLabel || c.reminderEmail || DEFAULT_REMINDER_EMAIL;
-        activeTrackedManualInput = {
-          provider: c.provider,
-          caseType: queryMeta.caseType || '',
-          caseNumber: queryMeta.caseNumber || '',
-          year: queryMeta.year || '',
-          cnrNumber: queryMeta.cnrNumber || c.cnrNumber || ''
-        };
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        setStatus('Ready to load a fresh CAPTCHA for this manual case.', 'muted');
-      }
-
-      document.getElementById('quickForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const provider = document.getElementById('provider').value;
-        const quickLookup = document.getElementById('quickLookup').value.trim();
-        if (!quickLookup) return alert('Enter a case lookup value.');
-
-        try {
-          setStatus('Adding case...');
-          const created = await api('/api/cases', {
-            method: 'POST',
-            body: JSON.stringify({ provider, caseLookup: quickLookup, cnrNumber: quickLookup, displayLabel: quickLookup })
-          });
-          await refreshCase(created.id);
-          document.getElementById('quickLookup').value = '';
-          await showCase(created.id);
-        } catch (error) {
-          setStatus(error.message, 'error');
-        }
+      document.getElementById('manualForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+        startHighCourtLookup().catch((error) => setStatus(error.message, 'error'));
       });
 
-      document.getElementById('manualForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const caseType = document.getElementById('caseType').value.trim();
-        const caseNumber = document.getElementById('caseNumber').value.trim();
-        const year = document.getElementById('caseYear').value.trim();
-        const reminderEmails = document.getElementById('reminderEmails').value.trim();
-        if (!caseType || !caseNumber || !year) return alert('Enter case type, case number, and year.');
-
-        try {
-          const trackedCaseId = activeCaptchaTrackedCaseId &&
-            activeTrackedManualInput &&
-            activeTrackedManualInput.provider === 'delhiManualCaptcha' &&
-            activeTrackedManualInput.caseType === caseType &&
-            activeTrackedManualInput.caseNumber === caseNumber &&
-            activeTrackedManualInput.year === year
-            ? activeCaptchaTrackedCaseId
-            : null;
-
-          setStatus('Loading official CAPTCHA from Delhi High Court...');
-          const payload = await api('/lookup/start', {
-            method: 'POST',
-            body: JSON.stringify({ provider: 'delhiManualCaptcha', caseType, caseNumber, year, trackedCaseId, reminderEmails })
-          });
-          showCaptchaBox(payload);
-          setStatus('CAPTCHA loaded. Enter it below to finish the official lookup.', 'success');
-        } catch (error) {
-          setStatus(error.message, 'error');
-        }
+      document.getElementById('districtForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+        startDistrictLookup().catch((error) => setStatus(error.message, 'error'));
       });
 
-      document.getElementById('districtCaseForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const cnrNumber = document.getElementById('districtCnrNumber').value.trim();
-        const reminderEmails = document.getElementById('reminderEmails').value.trim();
-        if (!cnrNumber) {
-          return alert('Enter the district court CNR number.');
-        }
-
-        try {
-          const trackedCaseId = activeCaptchaTrackedCaseId &&
-            activeTrackedManualInput &&
-            activeTrackedManualInput.provider === 'districtCourtCnr' &&
-            activeTrackedManualInput.cnrNumber === cnrNumber
-            ? activeCaptchaTrackedCaseId
-            : null;
-
-          setStatus('Loading official district court CAPTCHA...');
-          const payload = await api('/lookup/start', {
-            method: 'POST',
-            body: JSON.stringify({ provider: 'districtCourtCnr', cnrNumber, trackedCaseId, reminderEmails })
-          });
-          showCaptchaBox(payload);
-          setStatus('CAPTCHA loaded. Enter it below to fetch the district court case history by CNR.', 'success');
-        } catch (error) {
-          setStatus(error.message, 'error');
-        }
+      document.getElementById('quickForm').addEventListener('submit', (event) => {
+        trackSecondaryProvider(event).catch((error) => setStatus(error.message, 'error'));
       });
 
-      document.getElementById('submitCaptchaBtn').addEventListener('click', async () => {
-        if (!activeCaptchaSessionId) return;
-        const captchaText = document.getElementById('captchaText').value.trim();
-        if (!captchaText) return alert('Enter the CAPTCHA text.');
-
-        try {
-          setStatus('Submitting CAPTCHA and fetching case status...');
-          const result = await api('/lookup/complete', {
-            method: 'POST',
-            body: JSON.stringify({ sessionId: activeCaptchaSessionId, captchaText })
-          });
-          hideCaptchaBox();
-          activeCaptchaTrackedCaseId = null;
-          activeTrackedManualInput = null;
-          renderLookupResult(result.caseData);
-          await loadCases();
-          if (result.trackedCase?.id) {
-            document.getElementById('caseSearch').value = '';
-            setCourtFilter(getCourtFilterForProvider(result.trackedCase.provider));
-            await showCase(result.trackedCase.id);
-          }
-          setStatus(result.caseData.caseFound ? 'Official court lookup completed.' : 'Official court lookup completed, but no matching case was found.', result.caseData.caseFound ? 'success' : 'muted');
-        } catch (error) {
-          hideCaptchaBox();
-          if (error.invalidCaptchaDetected) {
-            renderLookupResult(error);
-            activeCaptchaTrackedCaseId = null;
-            activeTrackedManualInput = null;
-            setStatus('The official site rejected the CAPTCHA. Load a fresh CAPTCHA and try again.', 'error');
-            return;
-          }
-          setStatus(error.message, 'error');
-        }
+      document.getElementById('districtSlug').addEventListener('change', populateCourtComplexes);
+      document.getElementById('submitCaptchaBtn').addEventListener('click', () => {
+        submitCaptcha().catch((error) => setStatus(error.message, 'error'));
       });
-
-      document.getElementById('cancelCaptchaBtn').addEventListener('click', async () => {
-        if (activeCaptchaSessionId) {
-          try { await api(`/lookup/${activeCaptchaSessionId}`, { method: 'DELETE' }); } catch (_) {}
-        }
-        hideCaptchaBox();
-        activeCaptchaTrackedCaseId = null;
-        activeTrackedManualInput = null;
-        setStatus('CAPTCHA session cancelled.');
+      document.getElementById('cancelCaptchaBtn').addEventListener('click', () => {
+        cancelCaptcha().catch((error) => setStatus(error.message, 'error'));
       });
-
-      function escapeHtml(value) {
-        return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
-      }
-
-      function renderDocumentLinks(caseDataOrOrdersUrl, judgmentsUrl) {
-        const caseData = typeof caseDataOrOrdersUrl === 'object' && caseDataOrOrdersUrl !== null ? caseDataOrOrdersUrl : null;
-        const ordersUrl = caseData ? (caseData.ordersUrl || caseData.latestOrdersUrl || caseData.snapshots?.[0]?.payload?.ordersUrl) : caseDataOrOrdersUrl;
-        const finalJudgmentsUrl = caseData ? (caseData.judgmentsUrl || caseData.latestJudgmentsUrl || caseData.snapshots?.[0]?.payload?.judgmentsUrl) : judgmentsUrl;
-        const filingsUrl = caseData?.filingsUrl || caseData?.latestFilingsUrl || caseData?.caseHistoryUrl || caseData?.latestCaseHistoryUrl || caseData?.snapshots?.[0]?.payload?.filingsUrl;
-        const listingsUrl = caseData?.listingsUrl || caseData?.latestListingsUrl || caseData?.caseHistoryUrl || caseData?.latestCaseHistoryUrl || caseData?.snapshots?.[0]?.payload?.listingsUrl;
-        const directOrderUrls = getDirectOrderUrls(caseData);
-        const links = [];
-        if (directOrderUrls.length) {
-          directOrderUrls.slice(0, 3).forEach((url, index) => links.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">Order PDF${directOrderUrls.length > 1 ? ' ' + (index + 1) : ''}</a>`));
-        } else if (isUsableDocumentUrl(ordersUrl) && (caseData?.provider !== 'districtCourtCnr' || /^\/api\/documents\//.test(ordersUrl || ''))) {
-          links.push(`<a href="${ordersUrl}" target="_blank" rel="noopener noreferrer">Orders</a>`);
-        }
-        if (isUsableDocumentUrl(finalJudgmentsUrl)) links.push(`<a href="${finalJudgmentsUrl}" target="_blank" rel="noopener noreferrer">Judgments</a>`);
-        if (isUsableDocumentUrl(filingsUrl)) links.push(`<a href="${filingsUrl}" target="_blank" rel="noopener noreferrer">Filings</a>`);
-        if (isUsableDocumentUrl(listingsUrl)) links.push(`<a href="${listingsUrl}" target="_blank" rel="noopener noreferrer">Listings</a>`);
-        return links.length ? links.join(' | ') : '-';
-      }
-
-      function getDirectOrderUrls(caseData) {
-        const history = caseData?.caseHistory || caseData?.latestCaseHistory || caseData?.snapshots?.[0]?.payload?.caseHistory || {};
-        const orderLinks = Array.isArray(history.orders) ? history.orders.map((order) => getDistrictOrderLink(caseData, order)).filter(isUsableDocumentUrl) : [];
-        const rawLinks = Array.isArray(history.rawTables)
-          ? history.rawTables.flatMap((table) => table.rows || []).flatMap((row) => row.cells || []).flatMap((cell) => getDistrictCellLinks(caseData, cell)).filter((url) => isUsableDocumentUrl(url) && /order|display_pdf|\.pdf|download|district-order/i.test(url))
-          : [];
-        return Array.from(new Set([...orderLinks, ...rawLinks]));
-      }
-
-      function getDistrictOrderLink(caseData, order) {
-        if (caseData?.provider === 'districtCourtCnr' && order?.action && caseData?.id) {
-          return `/api/cases/${encodeURIComponent(caseData.id)}/district-order?action=${encodeURIComponent(JSON.stringify(order.action))}`;
-        }
-        if (isUsableDocumentUrl(order?.url)) {
-          return order.url;
-        }
-        return order?.url || '';
-      }
-
-      function getDistrictCellLinks(caseData, cell) {
-        const actionLinks = caseData?.provider === 'districtCourtCnr' && caseData?.id && Array.isArray(cell?.actions)
-          ? cell.actions.map((action) => `/api/cases/${encodeURIComponent(caseData.id)}/district-order?action=${encodeURIComponent(JSON.stringify(action))}`)
-          : [];
-        if (actionLinks.length) {
-          return Array.from(new Set(actionLinks));
-        }
-        const directLinks = Array.isArray(cell?.links) ? cell.links.filter(isUsableDocumentUrl) : [];
-        if (directLinks.length) {
-          return Array.from(new Set(directLinks));
-        }
-        return Array.from(new Set(actionLinks));
-      }
-
-      function isUsableDocumentUrl(url) {
-        const value = String(url || '').trim();
-        return Boolean(value && value !== '#' && !value.endsWith('/#') && !value.endsWith('#') && /^(https?:\/\/|\/)/i.test(value));
-      }
-
-      function renderManualQuery(c) {
-        const queryMeta = c.queryMeta || {};
-        if (c.provider === 'delhiManualCaptcha') {
-          return `<p class="muted"><strong>Manual query:</strong> ${escapeHtml(queryMeta.caseType || '')} ${escapeHtml(queryMeta.caseNumber || '')}/${escapeHtml(queryMeta.year || '')}</p>`;
-        }
-        if (c.provider === 'districtCourtCnr') {
-          return `<p class="muted"><strong>Manual query:</strong> ${escapeHtml(queryMeta.cnrNumber || c.cnrNumber || 'District Court CNR')}</p>`;
-        }
-        return '';
-      }
-
-      function getDisplayTitle(caseData) {
-        return caseData?.manualCaseTitle || caseData?.latestCaseTitle || caseData?.displayLabel || 'Case';
-      }
-
-      function renderHearingDateCell(c) {
-        return `
-          <div>${escapeHtml(c.latestNextHearingDate || '-')}</div>
-          <div class="muted">${escapeHtml(formatDateSource(c.latestNextHearingDateSource))}</div>
-        `;
-      }
-
-      function formatDateSource(source) {
-        if (source === 'latest_order') return 'Latest order';
-        if (source === 'case_status_page') return 'Delhi case-status page';
-        if (source === 'ecourts_cnr') return 'eCourts CNR history';
-        if (source === 'district_case_number') return 'District case-number page';
-        return 'Date source unavailable';
-      }
-
       document.getElementById('caseSearch').addEventListener('input', renderCaseRows);
-      document.getElementById('reminderEmails').value = DEFAULT_REMINDER_EMAIL;
-      renderLookupResult(null);
-      Promise.all([
-        loadDelhiCaseTypes().catch((error) => setStatus(error.message, 'error'))
-      ]);
-      loadCases();
+
+      Promise.all([loadDistrictSites(), loadCases()]).catch((error) => {
+        setStatus(error.message, 'error');
+      });
     </script>
   </body>
 </html>

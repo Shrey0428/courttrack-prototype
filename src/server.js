@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
 const path = require('path');
 const {
   clearAuthCookie,
@@ -20,8 +21,8 @@ const {
   getCase,
   addCase,
   deleteCase,
-  updateCaseMetadata,
   updateCaseReminderSettings,
+  updateCaseDetails,
   syncCase,
   syncCaseWithNormalizedResult,
   syncAllCases
@@ -29,13 +30,12 @@ const {
 const { createSession, getSession, deleteSession } = require('./sessionStore');
 const { REMINDER_INTERVAL_MS, getReminderStatus, runReminderSweep, sendTestReminderEmail } = require('./reminderService');
 const { parseReminderEmailsFromInput } = require('./reminderEmails');
-const { cacheDocumentBuffer, resolveCachedDocument, resolveCachedDocumentBySource } = require('./documentCache');
 const { listDelhiDistrictSites } = require('./delhiDistrictSites');
+const { resolveCachedDocument } = require('./documentCache');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const AUTO_SYNC_MS = Number(process.env.AUTO_SYNC_MS || 60000);
-const DELETE_CASE_PASSWORD = '5858';
 
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
@@ -49,9 +49,7 @@ app.get('/auth/status', (req, res) => {
   const session = getAuthSessionFromRequest(req);
   res.json({
     authenticated: Boolean(session),
-    username: session?.username || '',
-    displayName: session?.displayName || '',
-    role: session?.role || ''
+    username: session?.username || ''
   });
 });
 
@@ -72,6 +70,24 @@ app.post('/auth/login', (req, res) => {
 app.post('/auth/logout', (req, res) => {
   deleteAuthSession(getSessionTokenFromRequest(req));
   clearAuthCookie(res);
+  res.json({ ok: true });
+});
+
+app.post('/auth/verify-password', (req, res) => {
+  const session = getAuthSessionFromRequest(req);
+  if (!session?.username) {
+    return res.status(401).json({ error: 'Authentication required.' });
+  }
+
+  const password = String(req.body?.password || '');
+  if (!password) {
+    return res.status(400).json({ error: 'Password is required.' });
+  }
+
+  if (!verifyCredentials(session.username, password)) {
+    return res.status(401).json({ error: 'Incorrect password.' });
+  }
+
   res.json({ ok: true });
 });
 
@@ -107,30 +123,6 @@ app.get('/api/providers', (_req, res) => {
   res.json({ providers: listProviders() });
 });
 
-app.get('/api/lookup-options/delhi-case-types', async (_req, res) => {
-  try {
-    const provider = getProvider('delhiManualCaptcha');
-    const caseTypes = await provider.listCaseTypes();
-    res.json({ caseTypes });
-  } catch (error) {
-    res.status(500).json({ error: error.message || 'Could not load Delhi case types.' });
-  }
-});
-
-app.get('/api/lookup-options/district-case-types', async (req, res) => {
-  try {
-    const provider = getProvider('districtCourtCnr');
-    const caseTypes = await provider.listCaseTypes({
-      districtSlug: String(req.query.districtSlug || '').trim(),
-      courtComplex: String(req.query.courtComplex || '').trim()
-    });
-    res.json({ caseTypes });
-  } catch (error) {
-    logLookupDebug('district-case-types', error);
-    res.status(500).json({ error: formatLookupError(error), debug: extractLookupDebug(error) });
-  }
-});
-
 app.get('/api/district-courts', (_req, res) => {
   res.json({ districts: listDelhiDistrictSites() });
 });
@@ -143,14 +135,6 @@ app.get('/api/cases/:id', (req, res) => {
   const trackedCase = getCase(req.params.id);
   if (!trackedCase) return res.status(404).json({ error: 'Case not found' });
   res.json(trackedCase);
-});
-
-app.get('/api/documents/:caseId/:fileName', (req, res) => {
-  const absolutePath = resolveCachedDocument(req.params.caseId, req.params.fileName);
-  if (!absolutePath) {
-    return res.status(404).json({ error: 'Document not found' });
-  }
-  res.sendFile(absolutePath);
 });
 
 app.post('/api/cases', (req, res) => {
@@ -168,7 +152,7 @@ app.post('/api/cases', (req, res) => {
 
 app.patch('/api/cases/:id', (req, res) => {
   try {
-    const trackedCase = updateCaseMetadata(req.params.id, req.body || {});
+    const trackedCase = updateCaseDetails(req.params.id, req.body || {});
     res.json(trackedCase);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -184,73 +168,7 @@ app.patch('/api/cases/:id/reminders', (req, res) => {
   }
 });
 
-app.get('/api/cases/:id/district-order', async (req, res) => {
-  try {
-    const trackedCase = getCase(req.params.id);
-    if (!trackedCase) {
-      return res.status(404).json({ error: 'Case not found' });
-    }
-    if (trackedCase.provider !== 'districtCourtCnr') {
-      return res.status(400).json({ error: 'This order route is only available for district court cases.' });
-    }
-
-    const actionPayload = String(req.query.action || '').trim();
-    if (!actionPayload) {
-      return res.status(400).json({ error: 'Order action is required.' });
-    }
-
-    let action;
-    try {
-      action = JSON.parse(actionPayload);
-    } catch (_error) {
-      return res.status(400).json({ error: 'Order action could not be parsed.' });
-    }
-
-    const cacheBaseName = `${trackedCase.latestCaseNumber || trackedCase.cnrNumber || trackedCase.displayLabel || 'district-court'} order`;
-    const existingCachedPath = resolveCachedDocumentBySource(trackedCase.id, actionPayload, {
-      contentType: 'application/pdf',
-      baseName: cacheBaseName
-    });
-    if (existingCachedPath) {
-      return res.sendFile(existingCachedPath, {
-        headers: { 'Content-Type': 'application/pdf' }
-      });
-    }
-
-    const provider = getProvider('districtCourtCnr');
-    const access = trackedCase.snapshots?.[0]?.payload?.rawMetadata?.ecourtsAccess || null;
-    if (!access?.appToken || !Array.isArray(access.cookies) || !access.cookies.length) {
-      return res.status(409).json({ error: 'Refresh this district case via CAPTCHA once, then try opening the order again.' });
-    }
-    const download = await provider.downloadOrderAction(action, access);
-    if (!download?.buffer?.length) {
-      return res.status(404).json({ error: 'The order could not be fetched from eCourts.' });
-    }
-
-    const cached = await cacheDocumentBuffer(trackedCase.id, actionPayload || download.orderUrl || JSON.stringify(action), download.buffer, {
-      contentType: download.contentType,
-      baseName: cacheBaseName
-    }).catch(() => null);
-
-    if (cached?.absolutePath) {
-      return res.sendFile(cached.absolutePath, {
-        headers: { 'Content-Type': download.contentType || 'application/pdf' }
-      });
-    }
-
-    res.setHeader('Content-Type', download.contentType || 'application/pdf');
-    res.setHeader('Content-Disposition', 'inline');
-    res.send(download.buffer);
-  } catch (error) {
-    res.status(500).json({ error: error.message || 'The district court order could not be opened.' });
-  }
-});
-
 app.delete('/api/cases/:id', (req, res) => {
-  const deletePassword = String(req.body?.deletePassword || '').trim();
-  if (deletePassword !== DELETE_CASE_PASSWORD) {
-    return res.status(403).json({ error: 'Incorrect delete password.' });
-  }
   deleteCase(req.params.id);
   res.json({ ok: true });
 });
@@ -276,7 +194,7 @@ app.get('/api/reminders/status', (_req, res) => {
 app.post('/api/reminders/run', async (req, res) => {
   const result = await runReminderSweep({
     caseId: req.body?.caseId,
-    forceSend: req.body?.forceSend
+    forceSend: req.body?.forceSend === true
   });
   res.json(result);
 });
@@ -294,9 +212,22 @@ app.post('/api/cases/:id/reminders/test', async (req, res) => {
   }
 });
 
+app.get('/api/documents/:caseId/:fileName', (req, res) => {
+  const absolutePath = resolveCachedDocument(req.params.caseId, req.params.fileName);
+  if (!absolutePath) {
+    return res.status(404).json({ error: 'Document not found.' });
+  }
+  const stat = fs.statSync(absolutePath);
+  res.setHeader('Content-Length', stat.size);
+  if (absolutePath.toLowerCase().endsWith('.pdf')) {
+    res.type('application/pdf');
+  }
+  res.sendFile(absolutePath);
+});
+
 app.post('/lookup/start', async (req, res) => {
   try {
-    const { provider = 'delhiManualCaptcha', caseType, caseNumber, year, cnrNumber, districtSlug, courtComplex, trackedCaseId } = req.body;
+    const { provider = 'delhiManualCaptcha', trackedCaseId } = req.body;
     const providerInstance = getProvider(provider);
     if (typeof providerInstance.startLookup !== 'function') {
       return res.status(400).json({ error: 'This provider does not support the manual CAPTCHA lookup flow.' });
@@ -307,16 +238,24 @@ app.post('/lookup/start', async (req, res) => {
       return res.status(400).json({ error: `Invalid reminder email(s): ${parsedReminderEmails.invalid.join(', ')}` });
     }
 
-    const state = await providerInstance.startLookup({ caseType, caseNumber, year, cnrNumber, districtSlug, courtComplex });
+    const startArgs = provider === 'districtCourtCnr'
+      ? {
+          districtSlug: req.body?.districtSlug,
+          courtComplex: req.body?.courtComplex,
+          courtComplexValue: req.body?.courtComplexValue,
+          caseType: req.body?.caseType,
+          caseNumber: req.body?.caseNumber,
+          year: req.body?.year
+        }
+      : {
+          caseType: req.body?.caseType,
+          caseNumber: req.body?.caseNumber,
+          year: req.body?.year
+        };
+
+    const state = await providerInstance.startLookup(startArgs);
     const session = createSession({
       provider,
-      caseType: state.input.caseType || caseType || '',
-      caseNumber: state.input.caseNumber || caseNumber || '',
-      year: state.input.year || year || '',
-      cnrNumber: state.input.cnrNumber || cnrNumber || '',
-      districtSlug: state.input.districtSlug || districtSlug || '',
-      districtLabel: state.input.districtLabel || '',
-      courtComplex: state.input.courtComplex || courtComplex || '',
       trackedCaseId: trackedCaseId || '',
       reminderEmails: parsedReminderEmails.emails,
       browser: state.browser,
@@ -336,8 +275,7 @@ app.post('/lookup/start', async (req, res) => {
       sourceUrl: state.preview.sourceUrl
     });
   } catch (error) {
-    logLookupDebug('lookup/start', error);
-    res.status(500).json({ error: formatLookupError(error), debug: extractLookupDebug(error) });
+    res.status(500).json({ error: formatLookupError(error) });
   }
 });
 
@@ -366,29 +304,13 @@ app.post('/lookup/complete', async (req, res) => {
     if (lookupResult.caseData.caseFound) {
       let targetCaseId = session.trackedCaseId;
       if (!targetCaseId) {
-        const existingCase = findTrackedManualCase(session.provider, session.input);
+        const existingCase = findTrackedCase(session.provider, session.input);
         if (existingCase) {
           targetCaseId = existingCase.id;
           trackedCase = existingCase;
         } else {
-          const caseLookup = formatManualLookup(session.input);
-          trackedCase = addCase({
-            provider: session.provider,
-            caseLookup,
-            cnrNumber: session.input.cnrNumber || '',
-            displayLabel: caseLookup,
-            queryMeta: { ...session.input },
-            reminderEmails: session.reminderEmails
-          });
+          trackedCase = addCase(buildTrackedCaseInput(session.provider, session.input, session.reminderEmails));
           targetCaseId = trackedCase.id;
-        }
-      }
-
-      if (typeof provider.cacheLookupDocuments === 'function') {
-        try {
-          lookupResult.caseData = await provider.cacheLookupDocuments(session, lookupResult.caseData, { trackedCaseId: targetCaseId });
-        } catch (error) {
-          console.warn(`[lookup/complete] document caching skipped for ${targetCaseId}: ${error.message}`);
         }
       }
 
@@ -398,7 +320,9 @@ app.post('/lookup/complete', async (req, res) => {
       if (session.reminderEmails?.length) {
         trackedCase = updateCaseReminderSettings(targetCaseId, {
           reminderEmails: session.reminderEmails,
-          reminderEnabled: true
+          reminderEnabled: true,
+          reminderDaysBefore: trackedCase.reminderDaysBefore,
+          reminderSkipDisposed: trackedCase.reminderSkipDisposed
         });
       }
     }
@@ -409,8 +333,7 @@ app.post('/lookup/complete', async (req, res) => {
       syncResult
     });
   } catch (error) {
-    logLookupDebug('lookup/complete', error);
-    res.status(500).json({ error: formatLookupError(error), debug: extractLookupDebug(error) });
+    res.status(500).json({ error: formatLookupError(error) });
   } finally {
     await deleteSession(session.id);
   }
@@ -421,55 +344,55 @@ app.delete('/lookup/:sessionId', async (req, res) => {
   res.json({ ok: true });
 });
 
-function formatManualLookup(input) {
-  if (input.cnrNumber) return input.cnrNumber;
-  if (input.districtSlug || input.courtComplex || input.courtEstablishment || input.districtLabel) {
-    const prefix = [input.districtLabel || input.districtSlug || '', input.courtComplex || input.courtEstablishment || '']
-      .filter(Boolean)
-      .join(' | ');
-    const caseRef = `${input.caseType ? `${input.caseType} ` : ''}${input.caseNumber}/${input.year}`.trim();
-    return [prefix, caseRef].filter(Boolean).join(' | ');
+function buildTrackedCaseInput(provider, input, reminderEmails) {
+  if (provider === 'districtCourtCnr') {
+    const caseLookup = formatDistrictLookup(input);
+    return {
+      provider,
+      caseLookup,
+      displayLabel: caseLookup,
+      queryMeta: { ...input },
+      reminderEmails
+    };
   }
+
+  const caseLookup = formatDelhiLookup(input);
+  return {
+    provider,
+    caseLookup,
+    displayLabel: caseLookup,
+    queryMeta: { ...input },
+    reminderEmails
+  };
+}
+
+function formatDelhiLookup(input) {
   return `${input.caseType} ${input.caseNumber}/${input.year}`;
 }
 
-function findTrackedManualCase(provider, input) {
-  if (provider === 'districtCourtCnr') {
-    const cnrNumber = String(input.cnrNumber || '').trim();
-    if (cnrNumber) {
-      return listCases().find((trackedCase) => {
-        return trackedCase.provider === provider && (
-          trackedCase.cnrNumber === cnrNumber ||
-          trackedCase.caseLookup === cnrNumber ||
-          trackedCase.displayLabel === cnrNumber ||
-          trackedCase.queryMeta?.cnrNumber === cnrNumber
-        );
-      }) || null;
-    }
+function formatDistrictLookup(input) {
+  const prefix = [input.districtLabel, input.courtComplex].filter(Boolean).join(' | ');
+  const suffix = [input.caseType, `${input.caseNumber}/${input.year}`].filter(Boolean).join(' ');
+  return [prefix, suffix].filter(Boolean).join(' | ');
+}
 
-    const formattedLookup = formatManualLookup(input);
+function findTrackedCase(provider, input) {
+  if (provider === 'districtCourtCnr') {
     return listCases().find((trackedCase) => {
-      return trackedCase.provider === provider && (
-        (
-          String(trackedCase.queryMeta?.districtSlug || '') === String(input.districtSlug || '') &&
-          String(trackedCase.queryMeta?.courtComplex || trackedCase.queryMeta?.courtEstablishment || '') === String(input.courtComplex || input.courtEstablishment || '') &&
-          String(trackedCase.queryMeta?.caseNumber || '') === String(input.caseNumber || '') &&
-          String(trackedCase.queryMeta?.year || '') === String(input.year || '') &&
-          String(trackedCase.queryMeta?.caseType || '') === String(input.caseType || '')
-        ) ||
-        trackedCase.caseLookup === formattedLookup ||
-        trackedCase.displayLabel === formattedLookup
-      );
+      return trackedCase.provider === 'districtCourtCnr' &&
+        String(trackedCase.queryMeta?.districtSlug || '') === String(input.districtSlug || '') &&
+        String(trackedCase.queryMeta?.courtComplexValue || trackedCase.queryMeta?.courtComplex || '') === String(input.courtComplexValue || input.courtComplex || '') &&
+        String(trackedCase.queryMeta?.caseType || '') === String(input.caseType || '') &&
+        String(trackedCase.queryMeta?.caseNumber || '') === String(input.caseNumber || '') &&
+        String(trackedCase.queryMeta?.year || '') === String(input.year || '');
     }) || null;
   }
 
-  const formattedLookup = formatManualLookup(input);
-  const hasStructuredCaseLookup = Boolean(input.caseType || input.caseNumber || input.year);
+  const formattedLookup = formatDelhiLookup(input);
   return listCases().find((trackedCase) => {
     return trackedCase.provider === provider &&
       (
         (
-          hasStructuredCaseLookup &&
           String(trackedCase.queryMeta?.caseType || '') === String(input.caseType || '') &&
           String(trackedCase.queryMeta?.caseNumber || '') === String(input.caseNumber || '') &&
           String(trackedCase.queryMeta?.year || '') === String(input.year || '')
@@ -481,35 +404,11 @@ function findTrackedManualCase(provider, input) {
 }
 
 function formatLookupError(error) {
-  const message = String(error?.message || error || 'Lookup failed.');
-  if (error?.districtDebug?.events?.length) {
-    const lastEvent = error.districtDebug.events[error.districtDebug.events.length - 1];
-    if (lastEvent?.stage && /district:/i.test(message)) {
-      return `${message}. Last stage: ${lastEvent.stage}`;
-    }
-  }
-  if (/page\.waitForResponse: Timeout/i.test(message) || /waiting for event "response"/i.test(message)) {
+  const message = String(error?.message || 'Request failed.');
+  if (message.includes('page.waitForResponse')) {
     return 'The official court site did not return the expected response in time. Please load a fresh CAPTCHA and try again.';
   }
-  if (/Timeout .* exceeded/i.test(message) && /captcha|response|locator|wait/i.test(message)) {
-    return 'The official court site took too long to respond. Please load a fresh CAPTCHA and try again.';
-  }
   return message;
-}
-
-function extractLookupDebug(error) {
-  if (error?.districtDebug) {
-    return { districtDebug: error.districtDebug };
-  }
-  return undefined;
-}
-
-function logLookupDebug(scope, error) {
-  if (error?.districtDebug) {
-    console.error(`[${scope}] district debug`, JSON.stringify(error.districtDebug, null, 2));
-    return;
-  }
-  console.error(`[${scope}]`, String(error?.message || error || 'Lookup failed'));
 }
 
 setInterval(async () => {

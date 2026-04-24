@@ -12,6 +12,7 @@ const providers = {
   delhiManualCaptcha: delhiManualCaptchaProvider,
   districtCourtCnr: districtCourtCnrProvider
 };
+
 const DEFAULT_REMINDER_EMAIL = process.env.DEFAULT_REMINDER_EMAIL || 'info@amitguptaadvocate.com';
 
 function getProvider(name) {
@@ -30,14 +31,14 @@ function listCases() {
 
 function getCase(caseId) {
   const db = readDb();
-  const trackedCase = db.trackedCases.find((c) => c.id === caseId);
+  const trackedCase = db.trackedCases.find((candidate) => candidate.id === caseId);
   if (!trackedCase) return null;
 
   return {
     ...trackedCase,
-    snapshots: db.snapshots.filter((s) => s.trackedCaseId === caseId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    events: db.events.filter((e) => e.trackedCaseId === caseId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    scrapeRuns: db.scrapeRuns.filter((r) => r.trackedCaseId === caseId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    snapshots: db.snapshots.filter((snapshot) => snapshot.trackedCaseId === caseId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    events: db.events.filter((event) => event.trackedCaseId === caseId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    scrapeRuns: db.scrapeRuns.filter((run) => run.trackedCaseId === caseId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     reminderDeliveries: db.reminderDeliveries
       .filter((delivery) => delivery.trackedCaseId === caseId)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -46,11 +47,7 @@ function getCase(caseId) {
 
 function addCase(input) {
   const db = readDb();
-  const duplicate = db.trackedCases.find((c) =>
-    c.provider === input.provider &&
-    ((input.cnrNumber && c.cnrNumber === input.cnrNumber) || (input.caseLookup && c.caseLookup === input.caseLookup))
-  );
-
+  const duplicate = findDuplicateCase(db.trackedCases, input);
   if (duplicate) {
     throw new Error('This case is already being tracked.');
   }
@@ -65,17 +62,16 @@ function addCase(input) {
     provider: input.provider || 'mockHighCourt',
     cnrNumber: input.cnrNumber || '',
     caseLookup: input.caseLookup || '',
-    displayLabel: input.displayLabel || input.cnrNumber || input.caseLookup,
+    displayLabel: input.displayLabel || input.cnrNumber || input.caseLookup || '',
     queryMeta: input.queryMeta || {},
     latestCaseTitle: '',
     latestCourtName: '',
     latestCaseNumber: '',
     latestNextHearingDate: '',
-    latestNextHearingDateSource: '',
     latestStatusPageNextHearingDate: '',
+    latestNextHearingDateSource: '',
     latestCourtNumber: '',
     latestStatus: '',
-    officialSourceUrl: '',
     latestOrdersUrl: '',
     latestJudgmentsUrl: '',
     latestCaseHistoryUrl: '',
@@ -84,6 +80,9 @@ function addCase(input) {
     latestCaseHistory: { filings: [], listings: [], hearings: [], orders: [], rawTables: [] },
     latestOrderUrl: '',
     latestOrderDate: '',
+    latestPossibleHearingDates: [],
+    officialSourceUrl: '',
+    manualCaseTitle: '',
     reminderEmails: parsedReminderEmails.emails,
     reminderEmail: parsedReminderEmails.emails[0] || '',
     reminderEmailsLabel: formatReminderEmails(parsedReminderEmails.emails),
@@ -100,25 +99,19 @@ function addCase(input) {
   return trackedCase;
 }
 
-function applyDefaultReminderInput(input) {
-  const hasReminderInput = Object.prototype.hasOwnProperty.call(input, 'reminderEmail') ||
-    Object.prototype.hasOwnProperty.call(input, 'reminderEmails');
-  return hasReminderInput ? input : { ...input, reminderEmails: DEFAULT_REMINDER_EMAIL };
-}
-
 function deleteCase(caseId) {
   const db = readDb();
-  db.trackedCases = db.trackedCases.filter((c) => c.id !== caseId);
-  db.snapshots = db.snapshots.filter((s) => s.trackedCaseId !== caseId);
-  db.events = db.events.filter((e) => e.trackedCaseId !== caseId);
-  db.scrapeRuns = db.scrapeRuns.filter((r) => r.trackedCaseId !== caseId);
+  db.trackedCases = db.trackedCases.filter((candidate) => candidate.id !== caseId);
+  db.snapshots = db.snapshots.filter((snapshot) => snapshot.trackedCaseId !== caseId);
+  db.events = db.events.filter((event) => event.trackedCaseId !== caseId);
+  db.scrapeRuns = db.scrapeRuns.filter((run) => run.trackedCaseId !== caseId);
   db.reminderDeliveries = db.reminderDeliveries.filter((delivery) => delivery.trackedCaseId !== caseId);
   writeDb(db);
 }
 
 function updateCaseReminderSettings(caseId, input) {
   const db = readDb();
-  const trackedCase = db.trackedCases.find((c) => c.id === caseId);
+  const trackedCase = db.trackedCases.find((candidate) => candidate.id === caseId);
   if (!trackedCase) throw new Error('Tracked case not found');
 
   const parsedReminderEmails = parseReminderEmailsFromInput(input);
@@ -130,7 +123,7 @@ function updateCaseReminderSettings(caseId, input) {
   trackedCase.reminderEmail = parsedReminderEmails.emails[0] || '';
   trackedCase.reminderEmailsLabel = formatReminderEmails(parsedReminderEmails.emails);
   trackedCase.reminderEnabled = Boolean(input.reminderEnabled && parsedReminderEmails.emails.length);
-  trackedCase.reminderDaysBefore = normalizeReminderDaysBefore(input.reminderDaysBefore ?? trackedCase.reminderDaysBefore);
+  trackedCase.reminderDaysBefore = normalizeReminderDays(input.reminderDaysBefore);
   trackedCase.reminderSkipDisposed = input.reminderSkipDisposed !== false;
   trackedCase.updatedAt = new Date().toISOString();
 
@@ -138,24 +131,26 @@ function updateCaseReminderSettings(caseId, input) {
   return trackedCase;
 }
 
-function updateCaseMetadata(caseId, input) {
+function updateCaseDetails(caseId, input) {
   const db = readDb();
-  const trackedCase = db.trackedCases.find((c) => c.id === caseId);
+  const trackedCase = db.trackedCases.find((candidate) => candidate.id === caseId);
   if (!trackedCase) throw new Error('Tracked case not found');
 
-  trackedCase.manualCaseTitle = String(input.manualCaseTitle || '').trim().slice(0, 240);
-  trackedCase.updatedAt = new Date().toISOString();
+  if (Object.prototype.hasOwnProperty.call(input, 'manualCaseTitle')) {
+    trackedCase.manualCaseTitle = String(input.manualCaseTitle || '').trim();
+  }
 
+  trackedCase.updatedAt = new Date().toISOString();
   writeDb(db);
   return trackedCase;
 }
 
 async function syncCase(caseId) {
   const db = readDb();
-  const trackedCase = db.trackedCases.find((c) => c.id === caseId);
+  const trackedCase = db.trackedCases.find((candidate) => candidate.id === caseId);
   if (!trackedCase) throw new Error('Tracked case not found');
   if (trackedCase.provider === 'delhiManualCaptcha' || trackedCase.provider === 'districtCourtCnr') {
-    throw new Error('Manual CAPTCHA cases must be refreshed from the browser UI so you can solve the official CAPTCHA.');
+    throw new Error('This case must be refreshed from the browser UI so you can solve the official CAPTCHA.');
   }
 
   const provider = getProvider(trackedCase.provider);
@@ -180,7 +175,7 @@ async function syncCase(caseId) {
 
 async function syncCaseWithNormalizedResult(caseId, normalized) {
   const db = readDb();
-  const trackedCase = db.trackedCases.find((c) => c.id === caseId);
+  const trackedCase = db.trackedCases.find((candidate) => candidate.id === caseId);
   if (!trackedCase) throw new Error('Tracked case not found');
 
   const run = createRun(db, caseId);
@@ -210,7 +205,7 @@ function failRun(db, run, message) {
 
 function applyNormalizedResult(db, trackedCase, normalized, run) {
   const latestSnapshot = db.snapshots
-    .filter((s) => s.trackedCaseId === trackedCase.id)
+    .filter((snapshot) => snapshot.trackedCaseId === trackedCase.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
 
   const snapshot = {
@@ -233,8 +228,8 @@ function applyNormalizedResult(db, trackedCase, normalized, run) {
   trackedCase.latestCourtName = normalized.courtName || trackedCase.latestCourtName;
   trackedCase.latestCaseNumber = normalized.caseNumber || trackedCase.latestCaseNumber;
   trackedCase.latestNextHearingDate = normalized.nextHearingDate || trackedCase.latestNextHearingDate;
-  trackedCase.latestNextHearingDateSource = normalized.nextHearingDateSource || trackedCase.latestNextHearingDateSource;
   trackedCase.latestStatusPageNextHearingDate = normalized.statusPageNextHearingDate || trackedCase.latestStatusPageNextHearingDate;
+  trackedCase.latestNextHearingDateSource = normalized.nextHearingDateSource || trackedCase.latestNextHearingDateSource;
   trackedCase.latestCourtNumber = normalized.courtNumber || trackedCase.latestCourtNumber;
   trackedCase.latestStatus = normalized.caseStatus || trackedCase.latestStatus;
   trackedCase.officialSourceUrl = normalized.officialSourceUrl || trackedCase.officialSourceUrl;
@@ -243,9 +238,10 @@ function applyNormalizedResult(db, trackedCase, normalized, run) {
   trackedCase.latestCaseHistoryUrl = normalized.caseHistoryUrl || trackedCase.latestCaseHistoryUrl;
   trackedCase.latestFilingsUrl = normalized.filingsUrl || trackedCase.latestFilingsUrl;
   trackedCase.latestListingsUrl = normalized.listingsUrl || trackedCase.latestListingsUrl;
-  trackedCase.latestCaseHistory = normalizeCaseHistory(normalized.caseHistory || trackedCase.latestCaseHistory);
+  trackedCase.latestCaseHistory = normalized.caseHistory || trackedCase.latestCaseHistory;
   trackedCase.latestOrderUrl = normalized.latestOrderUrl || trackedCase.latestOrderUrl;
   trackedCase.latestOrderDate = normalized.latestOrderDate || trackedCase.latestOrderDate;
+  trackedCase.latestPossibleHearingDates = [];
   trackedCase.reminderEmail = trackedCase.reminderEmails[0] || '';
   trackedCase.reminderEmailsLabel = formatReminderEmails(trackedCase.reminderEmails);
   trackedCase.lastCheckedAt = new Date().toISOString();
@@ -266,44 +262,51 @@ function applyNormalizedResult(db, trackedCase, normalized, run) {
 async function syncAllCases() {
   const cases = listCases();
   const results = [];
-  for (const c of cases) {
-    if (c.provider === 'delhiManualCaptcha' || c.provider === 'districtCourtCnr') {
-      results.push({ caseId: c.id, ok: false, error: 'Skipped: manual CAPTCHA required' });
+  for (const trackedCase of cases) {
+    if (trackedCase.provider === 'delhiManualCaptcha' || trackedCase.provider === 'districtCourtCnr') {
+      results.push({ caseId: trackedCase.id, ok: false, error: 'Skipped: manual CAPTCHA required' });
       continue;
     }
     try {
-      const result = await syncCase(c.id);
-      results.push({ caseId: c.id, ok: true, result });
+      const result = await syncCase(trackedCase.id);
+      results.push({ caseId: trackedCase.id, ok: true, result });
     } catch (error) {
-      results.push({ caseId: c.id, ok: false, error: error.message });
+      results.push({ caseId: trackedCase.id, ok: false, error: error.message });
     }
   }
   return results;
 }
 
-function normalizeReminderDaysBefore(value) {
-  const values = Array.isArray(value)
-    ? value
-    : String(value ?? '3,2,1,0').split(/[\s,;]+/g);
-  const unique = [];
-  const seen = new Set();
-  for (const raw of values) {
-    const day = Number(raw);
-    if (!Number.isInteger(day) || day < 0 || day > 30 || seen.has(day)) continue;
-    seen.add(day);
-    unique.push(day);
-  }
-  return unique.length ? unique.sort((a, b) => b - a) : [3, 2, 1, 0];
+function applyDefaultReminderInput(input) {
+  const hasReminderInput = Object.prototype.hasOwnProperty.call(input, 'reminderEmail') ||
+    Object.prototype.hasOwnProperty.call(input, 'reminderEmails');
+  return hasReminderInput ? input : { ...input, reminderEmails: DEFAULT_REMINDER_EMAIL };
 }
 
-function normalizeCaseHistory(value) {
-  return {
-    filings: Array.isArray(value?.filings) ? value.filings : [],
-    listings: Array.isArray(value?.listings) ? value.listings : [],
-    hearings: Array.isArray(value?.hearings) ? value.hearings : [],
-    orders: Array.isArray(value?.orders) ? value.orders : [],
-    rawTables: Array.isArray(value?.rawTables) ? value.rawTables : []
-  };
+function normalizeReminderDays(days) {
+  const list = Array.isArray(days) ? days : [days];
+  const normalized = list
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value) && value >= 0 && value <= 30);
+  return normalized.length ? [...new Set(normalized)].sort((a, b) => b - a) : [3, 2, 1, 0];
+}
+
+function findDuplicateCase(cases, input) {
+  if (input.provider === 'districtCourtCnr') {
+    return cases.find((candidate) =>
+      candidate.provider === 'districtCourtCnr' &&
+      String(candidate.queryMeta?.districtSlug || '') === String(input.queryMeta?.districtSlug || '') &&
+      String(candidate.queryMeta?.courtComplexValue || candidate.queryMeta?.courtComplex || '') === String(input.queryMeta?.courtComplexValue || input.queryMeta?.courtComplex || '') &&
+      String(candidate.queryMeta?.caseType || '') === String(input.queryMeta?.caseType || '') &&
+      String(candidate.queryMeta?.caseNumber || '') === String(input.queryMeta?.caseNumber || '') &&
+      String(candidate.queryMeta?.year || '') === String(input.queryMeta?.year || '')
+    ) || null;
+  }
+
+  return cases.find((candidate) =>
+    candidate.provider === input.provider &&
+    ((input.cnrNumber && candidate.cnrNumber === input.cnrNumber) || (input.caseLookup && candidate.caseLookup === input.caseLookup))
+  ) || null;
 }
 
 module.exports = {
@@ -313,8 +316,8 @@ module.exports = {
   getCase,
   addCase,
   deleteCase,
-  updateCaseMetadata,
   updateCaseReminderSettings,
+  updateCaseDetails,
   syncCase,
   syncCaseWithNormalizedResult,
   syncAllCases
