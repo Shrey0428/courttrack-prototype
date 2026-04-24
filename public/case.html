@@ -593,7 +593,12 @@
 
       async function deleteCase() {
         if (!currentCase) return;
-        await api(`/api/cases/${currentCase.id}`, { method: 'DELETE' });
+        const deletePassword = window.prompt('Enter the delete password to remove this case.');
+        if (deletePassword === null) return;
+        await api(`/api/cases/${currentCase.id}`, {
+          method: 'DELETE',
+          body: JSON.stringify({ deletePassword })
+        });
         window.location.href = '/';
       }
 

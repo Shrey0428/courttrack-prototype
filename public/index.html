@@ -476,7 +476,12 @@
       }
 
       async function removeCase(caseId) {
-        await api(`/api/cases/${caseId}`, { method: 'DELETE' });
+        const deletePassword = window.prompt('Enter the delete password to remove this case.');
+        if (deletePassword === null) return;
+        await api(`/api/cases/${caseId}`, {
+          method: 'DELETE',
+          body: JSON.stringify({ deletePassword })
+        });
         if (selectedCaseId === caseId) {
           selectedCaseId = null;
           document.getElementById('caseDetails').innerHTML = 'Select a case to inspect events and scrape runs.';

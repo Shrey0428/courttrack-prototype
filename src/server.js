@@ -35,6 +35,7 @@ const { listDelhiDistrictSites } = require('./delhiDistrictSites');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const AUTO_SYNC_MS = Number(process.env.AUTO_SYNC_MS || 60000);
+const DELETE_CASE_PASSWORD = '5858';
 
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
@@ -211,6 +212,10 @@ app.get('/api/cases/:id/district-order', async (req, res) => {
 });
 
 app.delete('/api/cases/:id', (req, res) => {
+  const deletePassword = String(req.body?.deletePassword || '').trim();
+  if (deletePassword !== DELETE_CASE_PASSWORD) {
+    return res.status(403).json({ error: 'Incorrect delete password.' });
+  }
   deleteCase(req.params.id);
   res.json({ ok: true });
 });
