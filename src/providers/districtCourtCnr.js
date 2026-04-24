@@ -2,10 +2,13 @@ const { chromium } = require('playwright');
 const BaseProvider = require('./base');
 const { cacheDocumentBuffer } = require('../documentCache');
 const { getDelhiDistrictSite } = require('../delhiDistrictSites');
+const { getPlaywrightLaunchOptions, getPlaywrightContextOptions, prepareLookupPage } = require('../playwrightProfile');
 
 const ECOURTS_URL = 'https://services.ecourts.gov.in/ecourtindia_v6/';
 const COURT_NAME = 'District Court (eCourts)';
 const DISTRICT_NAVIGATION_TIMEOUT_MS = Number(process.env.DISTRICT_NAVIGATION_TIMEOUT_MS || 120000);
+const DISTRICT_CASE_TYPES_TTL_MS = 12 * 60 * 60 * 1000;
+const districtCaseTypesCache = new Map();
 
 class DistrictCourtCnrProvider extends BaseProvider {
   constructor() {
@@ -26,6 +29,55 @@ class DistrictCourtCnrProvider extends BaseProvider {
 
   async fetchCase() {
     throw new Error('District court lookups require the manual CAPTCHA flow.');
+  }
+
+  async listCaseTypes({ districtSlug, courtComplex }) {
+    const district = getDelhiDistrictSite(districtSlug);
+    if (!district) {
+      throw new Error('Select a valid Delhi district court first.');
+    }
+    if (!String(courtComplex || '').trim()) {
+      return [];
+    }
+
+    const cacheKey = `${district.slug}::${String(courtComplex).trim()}`;
+    const cached = districtCaseTypesCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.items;
+    }
+
+    const browser = await chromium.launch(getPlaywrightLaunchOptions());
+    const context = await browser.newContext(getPlaywrightContextOptions());
+    const page = await context.newPage();
+
+    try {
+      await prepareLookupPage(page);
+      await gotoWithFallback(page, district.url, { timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
+      await page.locator('#chkYes').check().catch(() => {});
+      await selectDistrictComplex(page, courtComplex);
+      await page.waitForFunction(() => {
+        const select = document.querySelector('#case_type');
+        return Boolean(select && !select.disabled && select.querySelectorAll('option').length > 1);
+      }, { timeout: 15000 }).catch(() => {});
+
+      const items = await page.evaluate(() => {
+        return [...document.querySelectorAll('#case_type option')]
+          .map((option) => ({
+            value: option.value || '',
+            label: (option.textContent || '').trim()
+          }))
+          .filter((option) => option.value && option.label);
+      });
+
+      districtCaseTypesCache.set(cacheKey, {
+        items,
+        expiresAt: Date.now() + DISTRICT_CASE_TYPES_TTL_MS
+      });
+      return items;
+    } finally {
+      await context.close().catch(() => {});
+      await browser.close().catch(() => {});
+    }
   }
 
   async startLookup({ cnrNumber, districtSlug, courtComplex, caseType, caseNumber, year }) {
@@ -60,9 +112,10 @@ async function startCnrLookup({ cnrNumber }) {
       throw new Error('District court lookup requires a 16-character CNR number.');
     }
 
-    const browser = await chromium.launch({ headless: process.env.PLAYWRIGHT_HEADLESS !== 'false' });
-    const context = await browser.newContext();
+    const browser = await chromium.launch(getPlaywrightLaunchOptions());
+    const context = await browser.newContext(getPlaywrightContextOptions());
     const page = await context.newPage();
+    await prepareLookupPage(page);
 
     await gotoWithFallback(page, ECOURTS_URL, { timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
 
@@ -96,9 +149,10 @@ async function startDistrictCaseNumberLookup({ districtSlug, courtComplex, caseT
     throw new Error('District court lookup requires case number and year.');
   }
 
-  const browser = await chromium.launch({ headless: process.env.PLAYWRIGHT_HEADLESS !== 'false' });
-  const context = await browser.newContext();
+  const browser = await chromium.launch(getPlaywrightLaunchOptions());
+  const context = await browser.newContext(getPlaywrightContextOptions());
   const page = await context.newPage();
+  await prepareLookupPage(page);
 
   await gotoWithFallback(page, district.url, { timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
 

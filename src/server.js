@@ -107,6 +107,29 @@ app.get('/api/providers', (_req, res) => {
   res.json({ providers: listProviders() });
 });
 
+app.get('/api/lookup-options/delhi-case-types', async (_req, res) => {
+  try {
+    const provider = getProvider('delhiManualCaptcha');
+    const caseTypes = await provider.listCaseTypes();
+    res.json({ caseTypes });
+  } catch (error) {
+    res.status(500).json({ error: error.message || 'Could not load Delhi case types.' });
+  }
+});
+
+app.get('/api/lookup-options/district-case-types', async (req, res) => {
+  try {
+    const provider = getProvider('districtCourtCnr');
+    const caseTypes = await provider.listCaseTypes({
+      districtSlug: String(req.query.districtSlug || '').trim(),
+      courtComplex: String(req.query.courtComplex || '').trim()
+    });
+    res.json({ caseTypes });
+  } catch (error) {
+    res.status(500).json({ error: error.message || 'Could not load district case types.' });
+  }
+});
+
 app.get('/api/district-courts', (_req, res) => {
   res.json({ districts: listDelhiDistrictSites() });
 });

@@ -11,10 +11,13 @@ const {
 } = require('./delhiCaseStatusSelectors');
 const { fetchDelhiCaseHistory } = require('./delhiCaseHistory');
 const { extractLatestOrderHearingDates } = require('./delhiOrders');
+const { getPlaywrightLaunchOptions, getPlaywrightContextOptions, prepareLookupPage } = require('../playwrightProfile');
 
 const CASE_STATUS_URL = 'https://delhihighcourt.nic.in/app/get-case-type-status';
 const SITE_ORIGIN = 'https://delhihighcourt.nic.in';
 const COURT_NAME = 'High Court of Delhi';
+const DELHI_CASE_TYPES_TTL_MS = 12 * 60 * 60 * 1000;
+let delhiCaseTypesCache = { items: null, expiresAt: 0 };
 
 class DelhiManualCaptchaProvider extends BaseProvider {
   constructor() {
@@ -37,14 +40,39 @@ class DelhiManualCaptchaProvider extends BaseProvider {
     throw new Error('Delhi case-status lookups require the manual CAPTCHA flow.');
   }
 
+  async listCaseTypes() {
+    const now = Date.now();
+    if (delhiCaseTypesCache.items && delhiCaseTypesCache.expiresAt > now) {
+      return delhiCaseTypesCache.items;
+    }
+
+    const response = await fetch(CASE_STATUS_URL, {
+      headers: {
+        'user-agent': 'CourtTrackPrototype/1.0 (+delhi case type options)'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`Delhi case types request returned HTTP ${response.status}`);
+    }
+
+    const html = await response.text();
+    const items = extractDelhiCaseTypesFromHtml(html);
+    delhiCaseTypesCache = {
+      items,
+      expiresAt: now + DELHI_CASE_TYPES_TTL_MS
+    };
+    return items;
+  }
+
   async startLookup({ caseType, caseNumber, year }) {
     if (!caseType || !caseNumber || !year) {
       throw new Error('Delhi case-status lookup requires case type, case number, and year.');
     }
 
-    const browser = await chromium.launch({ headless: process.env.PLAYWRIGHT_HEADLESS !== 'false' });
-    const context = await browser.newContext();
+    const browser = await chromium.launch(getPlaywrightLaunchOptions());
+    const context = await browser.newContext(getPlaywrightContextOptions());
     const page = await context.newPage();
+    await prepareLookupPage(page);
 
     await page.goto(CASE_STATUS_URL, {
       waitUntil: 'domcontentloaded',
@@ -120,6 +148,20 @@ class DelhiManualCaptchaProvider extends BaseProvider {
       caseData: await parseDelhiResult(page, input, resultsPayload)
     };
   }
+}
+
+function extractDelhiCaseTypesFromHtml(html) {
+  const selectMatch = String(html || '').match(/<select[^>]*id="case_type"[\s\S]*?<\/select>/i);
+  if (!selectMatch) {
+    throw new Error('Could not find Delhi case-type dropdown on the official page.');
+  }
+
+  return [...selectMatch[0].matchAll(/<option[^>]*value="([^"]*)"[^>]*>([\s\S]*?)<\/option>/gi)]
+    .map(([, value, label]) => ({
+      value: String(value || '').trim(),
+      label: String(label || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+    }))
+    .filter((option) => option.value);
 }
 
 function formatOfficialTimeout(error, fallbackMessage) {
