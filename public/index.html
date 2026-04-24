@@ -633,23 +633,26 @@
       }
 
       function getDistrictOrderLink(caseData, order) {
-        if (isUsableDocumentUrl(order?.url)) {
-          return order.url;
-        }
         if (caseData?.provider === 'districtCourtCnr' && order?.action && caseData?.id) {
           return `/api/cases/${encodeURIComponent(caseData.id)}/district-order?action=${encodeURIComponent(JSON.stringify(order.action))}`;
+        }
+        if (isUsableDocumentUrl(order?.url)) {
+          return order.url;
         }
         return order?.url || '';
       }
 
       function getDistrictCellLinks(caseData, cell) {
+        const actionLinks = caseData?.provider === 'districtCourtCnr' && caseData?.id && Array.isArray(cell?.actions)
+          ? cell.actions.map((action) => `/api/cases/${encodeURIComponent(caseData.id)}/district-order?action=${encodeURIComponent(JSON.stringify(action))}`)
+          : [];
+        if (actionLinks.length) {
+          return Array.from(new Set(actionLinks));
+        }
         const directLinks = Array.isArray(cell?.links) ? cell.links.filter(isUsableDocumentUrl) : [];
         if (directLinks.length) {
           return Array.from(new Set(directLinks));
         }
-        const actionLinks = caseData?.provider === 'districtCourtCnr' && caseData?.id && Array.isArray(cell?.actions)
-          ? cell.actions.map((action) => `/api/cases/${encodeURIComponent(caseData.id)}/district-order?action=${encodeURIComponent(JSON.stringify(action))}`)
-          : [];
         return Array.from(new Set(actionLinks));
       }
 

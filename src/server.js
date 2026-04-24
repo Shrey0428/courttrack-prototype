@@ -216,7 +216,7 @@ app.get('/api/cases/:id/district-order', async (req, res) => {
       return res.status(404).json({ error: 'The order could not be fetched from eCourts.' });
     }
 
-    const cached = await cacheDocumentBuffer(trackedCase.id, download.orderUrl || JSON.stringify(action), download.buffer, {
+    const cached = await cacheDocumentBuffer(trackedCase.id, actionPayload || download.orderUrl || JSON.stringify(action), download.buffer, {
       contentType: download.contentType,
       baseName: `${trackedCase.latestCaseNumber || trackedCase.cnrNumber || trackedCase.displayLabel || 'district-court'} order`
     }).catch(() => null);
