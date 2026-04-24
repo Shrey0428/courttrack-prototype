@@ -126,7 +126,8 @@ app.get('/api/lookup-options/district-case-types', async (req, res) => {
     });
     res.json({ caseTypes });
   } catch (error) {
-    res.status(500).json({ error: error.message || 'Could not load district case types.' });
+    logLookupDebug('district-case-types', error);
+    res.status(500).json({ error: formatLookupError(error), debug: extractLookupDebug(error) });
   }
 });
 
@@ -324,7 +325,8 @@ app.post('/lookup/start', async (req, res) => {
       sourceUrl: state.preview.sourceUrl
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logLookupDebug('lookup/start', error);
+    res.status(500).json({ error: formatLookupError(error), debug: extractLookupDebug(error) });
   }
 });
 
@@ -396,7 +398,8 @@ app.post('/lookup/complete', async (req, res) => {
       syncResult
     });
   } catch (error) {
-    res.status(500).json({ error: formatLookupError(error) });
+    logLookupDebug('lookup/complete', error);
+    res.status(500).json({ error: formatLookupError(error), debug: extractLookupDebug(error) });
   } finally {
     await deleteSession(session.id);
   }
@@ -468,6 +471,12 @@ function findTrackedManualCase(provider, input) {
 
 function formatLookupError(error) {
   const message = String(error?.message || error || 'Lookup failed.');
+  if (error?.districtDebug?.events?.length) {
+    const lastEvent = error.districtDebug.events[error.districtDebug.events.length - 1];
+    if (lastEvent?.stage && /district:/i.test(message)) {
+      return `${message}. Last stage: ${lastEvent.stage}`;
+    }
+  }
   if (/page\.waitForResponse: Timeout/i.test(message) || /waiting for event "response"/i.test(message)) {
     return 'The official court site did not return the expected response in time. Please load a fresh CAPTCHA and try again.';
   }
@@ -475,6 +484,21 @@ function formatLookupError(error) {
     return 'The official court site took too long to respond. Please load a fresh CAPTCHA and try again.';
   }
   return message;
+}
+
+function extractLookupDebug(error) {
+  if (error?.districtDebug) {
+    return { districtDebug: error.districtDebug };
+  }
+  return undefined;
+}
+
+function logLookupDebug(scope, error) {
+  if (error?.districtDebug) {
+    console.error(`[${scope}] district debug`, JSON.stringify(error.districtDebug, null, 2));
+    return;
+  }
+  console.error(`[${scope}]`, String(error?.message || error || 'Lookup failed'));
 }
 
 setInterval(async () => {

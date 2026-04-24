@@ -9,6 +9,7 @@ const COURT_NAME = 'District Court (eCourts)';
 const DISTRICT_NAVIGATION_TIMEOUT_MS = Number(process.env.DISTRICT_NAVIGATION_TIMEOUT_MS || 120000);
 const DISTRICT_CASE_TYPES_TTL_MS = 12 * 60 * 60 * 1000;
 const districtCaseTypesCache = new Map();
+const DISTRICT_DEBUG_PREVIEW_LIMIT = 900;
 
 class DistrictCourtCnrProvider extends BaseProvider {
   constructor() {
@@ -49,12 +50,17 @@ class DistrictCourtCnrProvider extends BaseProvider {
     const browser = await launchLookupBrowser(chromium);
     const context = await createLookupContext(browser);
     const page = await context.newPage();
+    const debug = createDistrictDebugTrace({ lookupMode: 'district_case_types', districtSlug, courtComplex });
 
     try {
       await prepareLookupPage(page);
+      pushDistrictDebug(debug, 'page-created');
       await gotoWithFallback(page, district.url, { timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
+      pushDistrictDebug(debug, 'district-page-opened', await collectDistrictPageSnapshot(page));
       await page.locator('#chkYes').check().catch(() => {});
+      pushDistrictDebug(debug, 'terms-checkbox-checked');
       await selectDistrictComplex(page, courtComplex);
+      pushDistrictDebug(debug, 'complex-selected', { courtComplex });
       await page.waitForFunction(() => {
         const select = document.querySelector('#case_type');
         return Boolean(select && !select.disabled && select.querySelectorAll('option').length > 1);
@@ -73,7 +79,10 @@ class DistrictCourtCnrProvider extends BaseProvider {
         items,
         expiresAt: Date.now() + DISTRICT_CASE_TYPES_TTL_MS
       });
+      pushDistrictDebug(debug, 'case-types-loaded', { caseTypeCount: items.length });
       return items;
+    } catch (error) {
+      throw await withDistrictDebug(error, debug, page, 'list-case-types');
     } finally {
       await context.close().catch(() => {});
       await browser.close().catch(() => {});
@@ -116,25 +125,37 @@ async function startCnrLookup({ cnrNumber }) {
       const context = await createLookupContext(browser);
     const page = await context.newPage();
     await prepareLookupPage(page);
+    const debug = createDistrictDebugTrace({ lookupMode: 'cnr', cnrNumber: cino });
 
-    await gotoWithFallback(page, ECOURTS_URL, { timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
+    try {
+      pushDistrictDebug(debug, 'page-created');
+      await gotoWithFallback(page, ECOURTS_URL, { timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
+      pushDistrictDebug(debug, 'ecourts-page-opened', await collectDistrictPageSnapshot(page));
 
-    await page.locator('#cino').fill(cino);
-    const captchaLocator = page.locator('#captcha_image').first();
-    await captchaLocator.waitFor({ state: 'visible', timeout: 15000 });
-    const captchaPng = await captchaLocator.screenshot({ type: 'png' });
+      await page.locator('#cino').fill(cino);
+      pushDistrictDebug(debug, 'cnr-filled', { cnrNumber: cino });
+      const captchaLocator = page.locator('#captcha_image').first();
+      await captchaLocator.waitFor({ state: 'visible', timeout: 15000 });
+      const captchaPng = await captchaLocator.screenshot({ type: 'png' });
+      pushDistrictDebug(debug, 'captcha-captured');
 
-    return {
-      browser,
-      context,
-      page,
-      input: { lookupMode: 'cnr', cnrNumber: cino },
-      preview: {
-        captchaImageBase64: captchaPng.toString('base64'),
-        instructions: 'Solve the CAPTCHA shown from the official eCourts CNR page, then submit it here to fetch the district court case history.',
-        sourceUrl: ECOURTS_URL
-      }
-    };
+      return {
+        browser,
+        context,
+        page,
+        debug,
+        input: { lookupMode: 'cnr', cnrNumber: cino },
+        preview: {
+          captchaImageBase64: captchaPng.toString('base64'),
+          instructions: 'Solve the CAPTCHA shown from the official eCourts CNR page, then submit it here to fetch the district court case history.',
+          sourceUrl: ECOURTS_URL
+        }
+      };
+    } catch (error) {
+      await context.close().catch(() => {});
+      await browser.close().catch(() => {});
+      throw await withDistrictDebug(error, debug, page, 'start-cnr-lookup');
+    }
   }
 
 async function startDistrictCaseNumberLookup({ districtSlug, courtComplex, caseType, caseNumber, year }) {
@@ -153,41 +174,64 @@ async function startDistrictCaseNumberLookup({ districtSlug, courtComplex, caseT
     const context = await createLookupContext(browser);
   const page = await context.newPage();
   await prepareLookupPage(page);
+  const debug = createDistrictDebugTrace({ lookupMode: 'district_case_number', districtSlug, courtComplex, caseType, caseNumber, year });
 
-  await gotoWithFallback(page, district.url, { timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
+  try {
+    pushDistrictDebug(debug, 'page-created');
+    await gotoWithFallback(page, district.url, { timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
+    pushDistrictDebug(debug, 'district-page-opened', await collectDistrictPageSnapshot(page));
 
-  await page.locator('#chkYes').check().catch(() => {});
+    await page.locator('#chkYes').check().catch(() => {});
+    pushDistrictDebug(debug, 'terms-checkbox-checked');
 
-  const complex = await selectDistrictComplex(page, courtComplex);
-  await page.locator('#reg_no').fill(String(caseNumber || '').trim());
-  await page.locator('#reg_year').fill(String(year || '').trim());
+    const complex = await selectDistrictComplex(page, courtComplex);
+    pushDistrictDebug(debug, 'complex-selected', {
+      requestedComplex: courtComplex,
+      selectedComplex: complex.text,
+      complexValue: complex.value
+    });
+    await page.locator('#reg_no').fill(String(caseNumber || '').trim());
+    await page.locator('#reg_year').fill(String(year || '').trim());
+    pushDistrictDebug(debug, 'case-number-filled', { caseNumber: String(caseNumber || '').trim(), year: String(year || '').trim() });
 
-  const selectedCaseType = await trySelectDistrictCaseType(page, caseType);
-  const captchaLocator = page.locator('#siwp_captcha_image_0').first();
-  await captchaLocator.waitFor({ state: 'visible', timeout: 15000 });
-  const captchaPng = await captchaLocator.screenshot({ type: 'png' });
+    const selectedCaseType = await trySelectDistrictCaseType(page, caseType);
+    pushDistrictDebug(debug, 'case-type-selected', {
+      requestedCaseType: caseType,
+      selectedCaseType,
+      availableCaseTypes: await getDistrictCaseTypeOptions(page)
+    });
+    const captchaLocator = page.locator('#siwp_captcha_image_0').first();
+    await captchaLocator.waitFor({ state: 'visible', timeout: 15000 });
+    const captchaPng = await captchaLocator.screenshot({ type: 'png' });
+    pushDistrictDebug(debug, 'captcha-captured', await collectDistrictPageSnapshot(page));
 
-  return {
-    browser,
-    context,
-    page,
-    input: {
-      lookupMode: 'district_case_number',
-      districtSlug: district.slug,
-      districtLabel: district.label,
-      districtUrl: district.url,
-      courtComplex: complex.text,
-      courtComplexValue: complex.value,
-      caseType: selectedCaseType || String(caseType || '').trim(),
-      caseNumber: String(caseNumber || '').trim(),
-      year: String(year || '').trim()
-    },
-    preview: {
-      captchaImageBase64: captchaPng.toString('base64'),
-      instructions: `Solve the CAPTCHA shown from ${district.label} case-number search, then submit it here to fetch the district court case history.`,
-      sourceUrl: district.url
-    }
-  };
+    return {
+      browser,
+      context,
+      page,
+      debug,
+      input: {
+        lookupMode: 'district_case_number',
+        districtSlug: district.slug,
+        districtLabel: district.label,
+        districtUrl: district.url,
+        courtComplex: complex.text,
+        courtComplexValue: complex.value,
+        caseType: selectedCaseType || String(caseType || '').trim(),
+        caseNumber: String(caseNumber || '').trim(),
+        year: String(year || '').trim()
+      },
+      preview: {
+        captchaImageBase64: captchaPng.toString('base64'),
+        instructions: `Solve the CAPTCHA shown from ${district.label} case-number search, then submit it here to fetch the district court case history.`,
+        sourceUrl: district.url
+      }
+    };
+  } catch (error) {
+    await context.close().catch(() => {});
+    await browser.close().catch(() => {});
+    throw await withDistrictDebug(error, debug, page, 'start-district-case-number-lookup');
+  }
 }
 
 async function gotoWithFallback(page, url, options = {}) {
@@ -250,36 +294,60 @@ async function completeCnrLookup(session, cleanedCaptcha) {
 
 async function completeDistrictCaseNumberLookup(session, cleanedCaptcha) {
   const { page, input } = session;
+  const debug = session.debug || createDistrictDebugTrace(input);
   const resultPromise = waitForDistrictCaseNumberResult(page);
 
-  await page.locator('#siwp_captcha_value_0').fill(cleanedCaptcha);
-  await page.locator('input[name="submit"][value="Search"]').first().click();
+  try {
+    pushDistrictDebug(debug, 'captcha-submit-start', { captchaLength: cleanedCaptcha.length });
+    await page.locator('#siwp_captcha_value_0').fill(cleanedCaptcha);
+    await page.locator('input[name="submit"][value="Search"]').first().click();
+    pushDistrictDebug(debug, 'captcha-submitted');
 
-  const result = await resultPromise;
-  const payload = result.payload || await readDistrictPayloadFromPage(page);
-  await page.waitForTimeout(500);
+    const result = await resultPromise;
+    pushDistrictDebug(debug, 'search-response-received', { responseSource: result?.source || 'unknown' });
+    const payload = result.payload || await readDistrictPayloadFromPage(page);
+    pushDistrictDebug(debug, 'search-payload-read', {
+      invalidCaptchaDetected: Boolean(payload?.invalidCaptchaDetected),
+      payloadKeys: Object.keys(payload || {})
+    });
+    await page.waitForTimeout(500);
 
-  if (!payload || payload.invalidCaptchaDetected) {
-    return {
-      status: 'invalidCaptcha',
-      debug: buildFailurePayload(input, payload, 'Invalid CAPTCHA. Load a fresh CAPTCHA and try again.')
+    if (!payload || payload.invalidCaptchaDetected) {
+      pushDistrictDebug(debug, 'invalid-captcha-detected', await collectDistrictPageSnapshot(page));
+      const failure = buildFailurePayload(input, payload, 'Invalid CAPTCHA. Load a fresh CAPTCHA and try again.');
+      failure.rawMetadata = {
+        ...(failure.rawMetadata || {}),
+        districtDebug: debug
+      };
+      return {
+        status: 'invalidCaptcha',
+        debug: failure
+      };
+    }
+
+    const detailHtml = await openDistrictCaseDetailsWithinPage(page, input).catch(() => '');
+    pushDistrictDebug(debug, 'details-open-attempted', { detailHtmlLength: detailHtml.length });
+    const detailedPayload = detailHtml
+      ? { success: true, data: String(payload?.data || ''), detailData: detailHtml, searchData: String(payload?.data || '') }
+      : await fetchDistrictCnrDetailsPayload(page, input, payload).catch(() => null);
+    pushDistrictDebug(debug, 'details-payload-ready', {
+      usedInlineDetails: Boolean(detailHtml),
+      hasDetailedPayload: Boolean(detailedPayload)
+    });
+    const caseData = parseDistrictCaseNumberResult(input, detailedPayload || payload);
+    caseData.rawMetadata = {
+      ...(caseData.rawMetadata || {}),
+      ecourtsAccess: await captureEcourtsAccess(session).catch(() => null),
+      districtDebug: debug
     };
+
+    return {
+      status: 'success',
+      caseData
+    };
+  } catch (error) {
+    throw await withDistrictDebug(error, debug, page, 'complete-district-case-number-lookup');
   }
-
-  const detailHtml = await openDistrictCaseDetailsWithinPage(page, input).catch(() => '');
-  const detailedPayload = detailHtml
-    ? { success: true, data: String(payload?.data || ''), detailData: detailHtml, searchData: String(payload?.data || '') }
-    : await fetchDistrictCnrDetailsPayload(page, input, payload).catch(() => null);
-  const caseData = parseDistrictCaseNumberResult(input, detailedPayload || payload);
-  caseData.rawMetadata = {
-    ...(caseData.rawMetadata || {}),
-    ecourtsAccess: await captureEcourtsAccess(session).catch(() => null)
-  };
-
-  return {
-    status: 'success',
-    caseData
-  };
 }
 
 DistrictCourtCnrProvider.prototype.cacheLookupDocuments = async function cacheLookupDocuments(session, caseData, options = {}) {
@@ -613,6 +681,15 @@ async function trySelectDistrictCaseType(page, desiredValue) {
 
   await setSelectValue(page, '#case_type', matched.value);
   return matched.text;
+}
+
+async function getDistrictCaseTypeOptions(page) {
+  return page.evaluate(() => {
+    return [...document.querySelectorAll('#case_type option')]
+      .map((option) => (option.textContent || '').trim())
+      .filter(Boolean)
+      .slice(0, 120);
+  }).catch(() => []);
 }
 
 async function setSelectValue(page, selector, value) {
@@ -1322,6 +1399,49 @@ function buildFailurePayload(input, payload, message) {
     rawTextPreview: cleanHtmlText(payload?.casetype_list || '').slice(0, 1200),
     rawMetadata: { ecourtsStatus: payload?.status ?? null }
   };
+}
+
+function createDistrictDebugTrace(input) {
+  return {
+    lookupMode: input?.lookupMode || '',
+    startedAt: new Date().toISOString(),
+    events: []
+  };
+}
+
+function pushDistrictDebug(trace, stage, details = {}) {
+  if (!trace || !Array.isArray(trace.events)) return;
+  trace.events.push({
+    at: new Date().toISOString(),
+    stage,
+    ...details
+  });
+}
+
+async function collectDistrictPageSnapshot(page) {
+  if (!page) return {};
+  return {
+    url: page.url(),
+    title: await page.title().catch(() => ''),
+    bodyPreview: await page.locator('body').innerText().then((text) => cleanHtmlText(text).slice(0, DISTRICT_DEBUG_PREVIEW_LIMIT)).catch(() => ''),
+    hasCaptchaImage: await page.locator('#siwp_captcha_image_0, #captcha_image').first().count().then((count) => count > 0).catch(() => false),
+    complexOptions: await page.locator('#est_code option').count().catch(() => 0),
+    caseTypeDisabled: await page.locator('#case_type').evaluate((element) => Boolean(element?.disabled)).catch(() => null),
+    caseTypeOptions: await page.locator('#case_type option').count().catch(() => 0)
+  };
+}
+
+async function withDistrictDebug(error, trace, page, stage) {
+  pushDistrictDebug(trace, 'error', {
+    stage,
+    message: String(error?.message || error || 'Unknown district court error'),
+    snapshot: await collectDistrictPageSnapshot(page)
+  });
+
+  const wrapped = new Error(`[district:${stage}] ${String(error?.message || error || 'Unknown district court error')}`);
+  wrapped.districtDebug = trace;
+  wrapped.cause = error;
+  return wrapped;
 }
 
 function normalizeCnr(value) {
