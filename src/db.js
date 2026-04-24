@@ -144,11 +144,41 @@ function hasCaseHistory(value) {
 
 function deriveHistorySummary(caseHistory) {
   return {
-    nextHearingDate: normalizeDate(pickHistoryField(caseHistory, ['Next Hearing Date', 'Next Date', 'Next Listing Date'])),
+    nextHearingDate: deriveNextHearingDate(caseHistory)
+      || normalizeDate(pickHistoryField(caseHistory, ['Next Hearing Date', 'Next Date', 'Next Listing Date'])),
     caseStatus: pickHistoryField(caseHistory, ['Case Status', 'Status', 'Stage of Case', 'Case Stage']),
     caseNumber: pickHistoryField(caseHistory, ['Registration Number', 'Case Number']),
     courtNumber: pickHistoryField(caseHistory, ['Court Number and Judge', 'Court Number', 'Judge'])
   };
+}
+
+function deriveNextHearingDate(caseHistory) {
+  const hearingCandidates = (Array.isArray(caseHistory?.hearings) ? caseHistory.hearings : [])
+    .filter((row) => row?.nextDate)
+    .map((row, index) => ({
+      nextDate: normalizeDate(row.nextDate),
+      businessDate: normalizeDate(row.businessDate),
+      index
+    }))
+    .filter((row) => row.nextDate)
+    .sort((a, b) => {
+      const businessDiff = dateSortValue(b.businessDate) - dateSortValue(a.businessDate);
+      if (businessDiff) return businessDiff;
+      const nextDiff = dateSortValue(b.nextDate) - dateSortValue(a.nextDate);
+      if (nextDiff) return nextDiff;
+      return a.index - b.index;
+    });
+
+  if (hearingCandidates[0]?.nextDate) {
+    return hearingCandidates[0].nextDate;
+  }
+
+  const listingCandidates = (Array.isArray(caseHistory?.listings) ? caseHistory.listings : [])
+    .map((row) => normalizeDate(row?.date))
+    .filter(Boolean)
+    .sort((a, b) => dateSortValue(b) - dateSortValue(a));
+
+  return listingCandidates[0] || '';
 }
 
 function pickHistoryField(caseHistory, names) {
