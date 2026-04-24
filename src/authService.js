@@ -97,7 +97,7 @@ function setAuthCookie(res, sessionId) {
     `Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`
   ];
 
-  if (String(process.env.NODE_ENV || '').toLowerCase() === 'production') {
+  if (shouldUseSecureCookies()) {
     parts.push('Secure');
   }
 
@@ -179,6 +179,13 @@ function timingSafeEqualString(left, right) {
   const rightBuffer = Buffer.from(String(right || ''));
   if (leftBuffer.length !== rightBuffer.length) return false;
   return crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function shouldUseSecureCookies() {
+  const override = String(process.env.AUTH_COOKIE_SECURE || '').trim().toLowerCase();
+  if (override === 'true') return true;
+  if (override === 'false') return false;
+  return String(process.env.NODE_ENV || '').toLowerCase() === 'production';
 }
 
 module.exports = {
