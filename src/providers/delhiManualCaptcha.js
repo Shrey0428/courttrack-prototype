@@ -11,7 +11,7 @@ const {
 } = require('./delhiCaseStatusSelectors');
 const { fetchDelhiCaseHistory } = require('./delhiCaseHistory');
 const { extractLatestOrderHearingDates } = require('./delhiOrders');
-const { getPlaywrightLaunchOptions, getPlaywrightContextOptions, prepareLookupPage } = require('../playwrightProfile');
+const { createLookupContext, launchLookupBrowser, prepareLookupPage } = require('../playwrightProfile');
 
 const CASE_STATUS_URL = 'https://delhihighcourt.nic.in/app/get-case-type-status';
 const SITE_ORIGIN = 'https://delhihighcourt.nic.in';
@@ -69,8 +69,8 @@ class DelhiManualCaptchaProvider extends BaseProvider {
       throw new Error('Delhi case-status lookup requires case type, case number, and year.');
     }
 
-    const browser = await chromium.launch(getPlaywrightLaunchOptions());
-    const context = await browser.newContext(getPlaywrightContextOptions());
+    const browser = await launchLookupBrowser(chromium);
+    const context = await createLookupContext(browser);
     const page = await context.newPage();
     await prepareLookupPage(page);
 

@@ -2,7 +2,7 @@ const { chromium } = require('playwright');
 const BaseProvider = require('./base');
 const { cacheDocumentBuffer } = require('../documentCache');
 const { getDelhiDistrictSite } = require('../delhiDistrictSites');
-const { getPlaywrightLaunchOptions, getPlaywrightContextOptions, prepareLookupPage } = require('../playwrightProfile');
+const { createLookupContext, launchLookupBrowser, prepareLookupPage } = require('../playwrightProfile');
 
 const ECOURTS_URL = 'https://services.ecourts.gov.in/ecourtindia_v6/';
 const COURT_NAME = 'District Court (eCourts)';
@@ -46,8 +46,8 @@ class DistrictCourtCnrProvider extends BaseProvider {
       return cached.items;
     }
 
-    const browser = await chromium.launch(getPlaywrightLaunchOptions());
-    const context = await browser.newContext(getPlaywrightContextOptions());
+    const browser = await launchLookupBrowser(chromium);
+    const context = await createLookupContext(browser);
     const page = await context.newPage();
 
     try {
@@ -112,8 +112,8 @@ async function startCnrLookup({ cnrNumber }) {
       throw new Error('District court lookup requires a 16-character CNR number.');
     }
 
-    const browser = await chromium.launch(getPlaywrightLaunchOptions());
-    const context = await browser.newContext(getPlaywrightContextOptions());
+      const browser = await launchLookupBrowser(chromium);
+      const context = await createLookupContext(browser);
     const page = await context.newPage();
     await prepareLookupPage(page);
 
@@ -149,8 +149,8 @@ async function startDistrictCaseNumberLookup({ districtSlug, courtComplex, caseT
     throw new Error('District court lookup requires case number and year.');
   }
 
-  const browser = await chromium.launch(getPlaywrightLaunchOptions());
-  const context = await browser.newContext(getPlaywrightContextOptions());
+    const browser = await launchLookupBrowser(chromium);
+    const context = await createLookupContext(browser);
   const page = await context.newPage();
   await prepareLookupPage(page);
 

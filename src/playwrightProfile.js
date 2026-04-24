@@ -19,6 +19,25 @@ function getPlaywrightContextOptions() {
   };
 }
 
+async function launchLookupBrowser(chromium) {
+  return chromium.launch(getPlaywrightLaunchOptions());
+}
+
+async function createLookupContext(browser) {
+  try {
+    return await browser.newContext(getPlaywrightContextOptions());
+  } catch (error) {
+    const message = String(error?.message || error || '');
+    if (!/expected pattern|string did not match/i.test(message)) {
+      throw error;
+    }
+    return browser.newContext({
+      viewport: { width: 1366, height: 900 },
+      ignoreHTTPSErrors: true
+    });
+  }
+}
+
 async function prepareLookupPage(page) {
   await page.route('**/*', (route) => {
     const request = route.request();
@@ -47,7 +66,9 @@ async function prepareLookupPage(page) {
 }
 
 module.exports = {
+  createLookupContext,
   getPlaywrightLaunchOptions,
   getPlaywrightContextOptions,
+  launchLookupBrowser,
   prepareLookupPage
 };
