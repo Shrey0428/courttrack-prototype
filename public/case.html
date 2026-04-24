@@ -218,7 +218,9 @@
         if (caseData.latestOrdersUrl) links.push(`<a href="${caseData.latestOrdersUrl}" target="_blank" rel="noopener noreferrer">Orders</a>`);
         if (caseData.latestJudgmentsUrl) links.push(`<a href="${caseData.latestJudgmentsUrl}" target="_blank" rel="noopener noreferrer">Judgments</a>`);
         if (caseData.latestFilingsUrl) links.push(`<a href="${caseData.latestFilingsUrl}" target="_blank" rel="noopener noreferrer">Filings</a>`);
-        if (caseData.latestListingsUrl) links.push(`<a href="${caseData.latestListingsUrl}" target="_blank" rel="noopener noreferrer">Listings</a>`);
+        if (caseData.provider === 'districtCourtCnr' && caseData.latestListingsUrl) {
+          links.push(`<a href="${caseData.latestListingsUrl}" target="_blank" rel="noopener noreferrer">Listings</a>`);
+        }
         return links.length ? links.join(' | ') : '-';
       }
 
@@ -325,7 +327,9 @@
           return;
         }
 
-        const hasExtra = (history.filings || []).length || (history.listings || []).length;
+        const filings = history.filings || [];
+        const listings = history.listings || [];
+        const hasExtra = filings.length || listings.length;
         toggleBtn.style.display = hasExtra ? 'inline-flex' : 'none';
         toggleBtn.textContent = highCourtExpanded ? 'Show less' : 'Show more';
 
@@ -337,18 +341,22 @@
         `, 'No hearing entries saved yet.'));
 
         if (highCourtExpanded) {
-          sections.push(renderSimpleSection('Filings', history.filings || [], (item) => `
-            <div><strong>${escapeHtml(item.details || 'Filing')}</strong></div>
-            <p class="muted">${escapeHtml(item.date || '-')}</p>
-            ${item.diaryNumber ? `<p>Diary No: ${escapeHtml(item.diaryNumber)}</p>` : ''}
-            ${item.status ? `<p>Status: ${escapeHtml(item.status)}</p>` : ''}
-          `, 'No filing entries saved yet.'));
+          if (filings.length) {
+            sections.push(renderSimpleSection('Filings', filings, (item) => `
+              <div><strong>${escapeHtml(item.details || 'Filing')}</strong></div>
+              <p class="muted">${escapeHtml(item.date || '-')}</p>
+              ${item.diaryNumber ? `<p>Diary No: ${escapeHtml(item.diaryNumber)}</p>` : ''}
+              ${item.status ? `<p>Status: ${escapeHtml(item.status)}</p>` : ''}
+            `, 'No filing entries saved yet.'));
+          }
 
-          sections.push(renderSimpleSection('Listings', history.listings || [], (item) => `
-            <div><strong>${escapeHtml(item.details || 'Listing')}</strong></div>
-            <p class="muted">${escapeHtml(item.date || '-')}</p>
-            ${item.orderUrl ? `<p><a href="${item.orderUrl}" target="_blank" rel="noopener noreferrer">Listing order</a></p>` : ''}
-          `, 'No listing entries saved yet.'));
+          if (listings.length) {
+            sections.push(renderSimpleSection('Listings', listings, (item) => `
+              <div><strong>${escapeHtml(item.details || 'Listing')}</strong></div>
+              <p class="muted">${escapeHtml(item.date || '-')}</p>
+              ${item.orderUrl ? `<p><a href="${item.orderUrl}" target="_blank" rel="noopener noreferrer">Listing order</a></p>` : ''}
+            `, 'No listing entries saved yet.'));
+          }
         }
 
         historyContent.innerHTML = sections.join('');
