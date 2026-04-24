@@ -5,11 +5,13 @@ const { getDelhiDistrictSite } = require('../delhiDistrictSites');
 const { createLookupContext, launchLookupBrowser, prepareLookupPage } = require('../playwrightProfile');
 
 const ECOURTS_URL = 'https://services.ecourts.gov.in/ecourtindia_v6/';
+const ECOURTS_CASE_STATUS_URL = `${ECOURTS_URL}?p=casestatus/index&app_token=`;
 const COURT_NAME = 'District Court (eCourts)';
 const DISTRICT_NAVIGATION_TIMEOUT_MS = Number(process.env.DISTRICT_NAVIGATION_TIMEOUT_MS || 120000);
 const DISTRICT_CASE_TYPES_TTL_MS = 12 * 60 * 60 * 1000;
 const districtCaseTypesCache = new Map();
 const DISTRICT_DEBUG_PREVIEW_LIMIT = 900;
+const DELHI_STATE_CODE = '26';
 
 class DistrictCourtCnrProvider extends BaseProvider {
   constructor() {
@@ -107,7 +109,7 @@ class DistrictCourtCnrProvider extends BaseProvider {
       throw new Error('CAPTCHA text is required.');
     }
 
-    if (session.input?.lookupMode === 'district_case_number') {
+    if (session.input?.lookupMode === 'district_case_number' || session.input?.lookupMode === 'district_case_number_ecourts') {
       return completeDistrictCaseNumberLookup(session, cleanedCaptcha);
     }
 
@@ -159,6 +161,10 @@ async function startCnrLookup({ cnrNumber }) {
   }
 
 async function startDistrictCaseNumberLookup({ districtSlug, courtComplex, caseType, caseNumber, year }) {
+  return startDistrictCaseNumberLookupViaEcourts({ districtSlug, courtComplex, caseType, caseNumber, year });
+}
+
+async function startDistrictCaseNumberLookupViaEcourts({ districtSlug, courtComplex, caseType, caseNumber, year }) {
   const district = getDelhiDistrictSite(districtSlug);
   if (!district) {
     throw new Error('Select a valid Delhi district court first.');
@@ -170,37 +176,43 @@ async function startDistrictCaseNumberLookup({ districtSlug, courtComplex, caseT
     throw new Error('District court lookup requires case number and year.');
   }
 
-    const browser = await launchLookupBrowser(chromium);
-    const context = await createLookupContext(browser);
+  const browser = await launchLookupBrowser(chromium);
+  const context = await createLookupContext(browser);
   const page = await context.newPage();
   await prepareLookupPage(page);
-  const debug = createDistrictDebugTrace({ lookupMode: 'district_case_number', districtSlug, courtComplex, caseType, caseNumber, year });
+  const debug = createDistrictDebugTrace({
+    lookupMode: 'district_case_number_ecourts',
+    districtSlug,
+    courtComplex,
+    caseType,
+    caseNumber,
+    year
+  });
 
   try {
     pushDistrictDebug(debug, 'page-created');
-    await gotoWithFallback(page, district.url, { timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
-    pushDistrictDebug(debug, 'district-page-opened', await collectDistrictPageSnapshot(page));
+    await gotoWithFallback(page, ECOURTS_CASE_STATUS_URL, { timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
+    pushDistrictDebug(debug, 'ecourts-case-status-opened', await collectDistrictPageSnapshot(page));
 
-    await page.locator('#chkYes').check().catch(() => {});
-    pushDistrictDebug(debug, 'terms-checkbox-checked');
+    const districtOption = await loadEcourtsDistrictOption(page, district.label);
+    pushDistrictDebug(debug, 'district-selected', districtOption);
 
-    const complex = await selectDistrictComplex(page, courtComplex);
+    const complexOption = await loadEcourtsComplexOption(page, districtOption.value, courtComplex);
     pushDistrictDebug(debug, 'complex-selected', {
       requestedComplex: courtComplex,
-      selectedComplex: complex.text,
-      complexValue: complex.value
+      selectedComplex: complexOption.text,
+      complexValue: complexOption.value
     });
-    await page.locator('#reg_no').fill(String(caseNumber || '').trim());
-    await page.locator('#reg_year').fill(String(year || '').trim());
-    pushDistrictDebug(debug, 'case-number-filled', { caseNumber: String(caseNumber || '').trim(), year: String(year || '').trim() });
 
-    const selectedCaseType = await trySelectDistrictCaseType(page, caseType);
-    pushDistrictDebug(debug, 'case-type-selected', {
-      requestedCaseType: caseType,
-      selectedCaseType,
-      availableCaseTypes: await getDistrictCaseTypeOptions(page)
+    const establishmentOptions = await loadEcourtsEstablishmentOptions(page, districtOption.value, complexOption.value);
+    pushDistrictDebug(debug, 'establishments-loaded', {
+      establishmentCount: establishmentOptions.length,
+      establishments: establishmentOptions.map((option) => option.text)
     });
-    const captchaLocator = page.locator('#siwp_captcha_image_0').first();
+
+    const captchaPayload = await refreshEcourtsCaptcha(page);
+    pushDistrictDebug(debug, 'captcha-refreshed');
+    const captchaLocator = page.locator('#captcha_image').first();
     await captchaLocator.waitFor({ state: 'visible', timeout: 15000 });
     const captchaPng = await captchaLocator.screenshot({ type: 'png' });
     pushDistrictDebug(debug, 'captcha-captured', await collectDistrictPageSnapshot(page));
@@ -211,20 +223,26 @@ async function startDistrictCaseNumberLookup({ districtSlug, courtComplex, caseT
       page,
       debug,
       input: {
-        lookupMode: 'district_case_number',
+        lookupMode: 'district_case_number_ecourts',
         districtSlug: district.slug,
         districtLabel: district.label,
         districtUrl: district.url,
-        courtComplex: complex.text,
-        courtComplexValue: complex.value,
-        caseType: selectedCaseType || String(caseType || '').trim(),
+        ecourtsSourceUrl: ECOURTS_CASE_STATUS_URL,
+        stateCode: DELHI_STATE_CODE,
+        districtCode: districtOption.value,
+        courtComplex: complexOption.text,
+        courtComplexValue: complexOption.value,
+        courtComplexCode: extractEcourtsComplexCode(complexOption.value),
+        courtComplexRequiresEstablishment: ecourtsComplexRequiresEstablishment(complexOption.value),
+        establishmentOptions,
+        caseType: String(caseType || '').trim(),
         caseNumber: String(caseNumber || '').trim(),
         year: String(year || '').trim()
       },
       preview: {
         captchaImageBase64: captchaPng.toString('base64'),
-        instructions: `Solve the CAPTCHA shown from ${district.label} case-number search, then submit it here to fetch the district court case history.`,
-        sourceUrl: district.url
+        instructions: `Solve the CAPTCHA shown from the official eCourts district case-status page, then submit it here to fetch the ${district.label} case history.`,
+        sourceUrl: ECOURTS_CASE_STATUS_URL
       }
     };
   } catch (error) {
@@ -262,6 +280,188 @@ async function gotoWithFallback(page, url, options = {}) {
   throw lastError || new Error(`Unable to open ${url}`);
 }
 
+async function ecourtsPostJsonWithinPage(page, route, data = {}) {
+  return page.evaluate(async ({ route: requestRoute, data: requestData, baseUrl }) => {
+    const body = new URLSearchParams();
+    for (const [key, value] of Object.entries(requestData || {})) {
+      if (value === undefined || value === null) continue;
+      body.set(key, String(value));
+    }
+
+    const appToken = document.querySelector('#app_token, input[name="app_token"], [name="app_token"]')?.value
+      || globalThis.app_token
+      || globalThis.appToken
+      || '';
+    body.set('ajax_req', 'true');
+    body.set('app_token', appToken);
+
+    const response = await fetch(`${baseUrl}?p=${requestRoute}`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'x-requested-with': 'XMLHttpRequest',
+        'accept': 'application/json, text/javascript, */*; q=0.01'
+      },
+      body: body.toString()
+    });
+    return response.json().catch(() => null);
+  }, { route, data, baseUrl: ECOURTS_URL });
+}
+
+function parseEcourtsOptionHtml(html) {
+  return [...String(html || '').matchAll(/<option\b([^>]*)>([\s\S]*?)<\/option>/gi)]
+    .map((match) => ({
+      value: extractAttribute(match[1] || '', 'value').trim(),
+      text: cleanHtmlText(match[2] || '')
+    }))
+    .filter((option) => option.value && option.text && !/^select\b/i.test(option.text));
+}
+
+function normalizeDistrictLabel(label) {
+  return String(label || '')
+    .replace(/\bdistrict\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function loadEcourtsDistrictOption(page, districtLabel) {
+  const payload = await ecourtsPostJsonWithinPage(page, 'casestatus/fillDistrict', {
+    state_code: DELHI_STATE_CODE
+  });
+  const options = parseEcourtsOptionHtml(payload?.dist_list);
+  const matched = matchOption(options, normalizeDistrictLabel(districtLabel));
+  if (!matched) {
+    throw new Error(`District not found in eCourts. Available options: ${options.map((option) => option.text).join('; ')}`);
+  }
+  await page.selectOption('#sess_state_code', DELHI_STATE_CODE).catch(() => {});
+  await page.selectOption('#sess_dist_code', matched.value).catch(() => {});
+  return matched;
+}
+
+async function loadEcourtsComplexOption(page, districtCode, courtComplex) {
+  const payload = await ecourtsPostJsonWithinPage(page, 'casestatus/fillcomplex', {
+    state_code: DELHI_STATE_CODE,
+    dist_code: districtCode
+  });
+  const options = parseEcourtsOptionHtml(payload?.complex_list);
+  const matched = matchOption(options, courtComplex);
+  if (!matched) {
+    throw new Error(`Court complex not found in eCourts. Available options: ${options.map((option) => option.text).join('; ')}`);
+  }
+  await page.selectOption('#court_complex_code', matched.value).catch(() => {});
+  return matched;
+}
+
+async function loadEcourtsEstablishmentOptions(page, districtCode, courtComplexValue) {
+  const requiresEstablishment = ecourtsComplexRequiresEstablishment(courtComplexValue);
+  const complexCode = extractEcourtsComplexCode(courtComplexValue);
+  if (!requiresEstablishment || !complexCode) {
+    return [{ value: '', text: '' }];
+  }
+
+  const payload = await ecourtsPostJsonWithinPage(page, 'casestatus/fillCourtEstablishment', {
+    state_code: DELHI_STATE_CODE,
+    dist_code: districtCode,
+    court_complex_code: complexCode
+  });
+  const options = parseEcourtsOptionHtml(payload?.establishment_list);
+  if (!options.length) {
+    throw new Error('No court establishments were returned for the selected district court complex.');
+  }
+  return options;
+}
+
+function extractEcourtsComplexCode(value) {
+  return String(value || '').split('@')[0] || '';
+}
+
+function ecourtsComplexRequiresEstablishment(value) {
+  return String(value || '').split('@')[2] === 'Y';
+}
+
+async function refreshEcourtsCaptcha(page) {
+  const payload = await ecourtsPostJsonWithinPage(page, 'casestatus/getCaptcha', {});
+  if (payload?.div_captcha) {
+    await page.evaluate((html) => {
+      const target = document.querySelector('#div_captcha_caseno');
+      if (target) target.innerHTML = html;
+    }, payload.div_captcha).catch(() => {});
+  }
+  return payload;
+}
+
+function getEcourtsEstablishmentAttempts(input) {
+  if (!input?.courtComplexRequiresEstablishment) {
+    return [{ value: '', text: '' }];
+  }
+  const items = Array.isArray(input?.establishmentOptions) ? input.establishmentOptions : [];
+  return items.filter((option) => option?.value);
+}
+
+async function seedEcourtsCaseNumberResult(page, details) {
+  await page.evaluate((payload) => {
+    const setValue = (selector, value) => {
+      const element = document.querySelector(selector);
+      if (!element) return;
+      element.value = value;
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      element.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    setValue('#sess_state_code', payload.stateCode || '');
+    setValue('#sess_dist_code', payload.districtCode || '');
+    setValue('#court_complex_code', payload.courtComplexValue || '');
+    setValue('#court_est_code', payload.establishmentValue || '');
+    setValue('#case_type', payload.caseTypeValue || '');
+    setValue('#search_case_no', payload.caseNumber || '');
+    setValue('#rgyear', payload.year || '');
+
+    const results = document.querySelector('#case_no_res');
+    if (results) results.innerHTML = payload.searchHtml || '';
+  }, details);
+}
+
+async function openEcourtsCaseNumberDetailsWithinPage(page, input) {
+  const targetCaseRef = normalizeChoice(`${input.caseType || ''} ${input.caseNumber || ''}/${input.year || ''}`);
+  const rows = page.locator('#case_no_res tr');
+  const rowCount = await rows.count().catch(() => 0);
+  let clicked = false;
+
+  for (let index = 0; index < rowCount; index += 1) {
+    const row = rows.nth(index);
+    const text = normalizeChoice(await row.innerText().catch(() => ''));
+    const action = row.locator('[onclick*="viewHistory("]').first();
+    const hasAction = await action.count().catch(() => 0);
+    if (!hasAction) continue;
+    if (targetCaseRef && text && !text.includes(targetCaseRef)) continue;
+    await action.click().catch(() => {});
+    clicked = true;
+    break;
+  }
+
+  if (!clicked) {
+    const fallback = page.locator('#case_no_res [onclick*="viewHistory("]').first();
+    if (await fallback.count().catch(() => 0)) {
+      await fallback.click().catch(() => {});
+      clicked = true;
+    }
+  }
+
+  if (!clicked) return '';
+
+  await page.waitForFunction(() => {
+    const detail = document.querySelector('#caseBusinessDiv_csNo');
+    const summary = document.querySelector('#CScaseNumber');
+    const text = (detail?.innerText || summary?.innerText || '').trim();
+    return Boolean(text && text.length > 40);
+  }, { timeout: 20000 }).catch(() => null);
+
+  return await page.locator('#caseBusinessDiv_csNo').innerHTML().catch(async () => {
+    return page.locator('#CScaseNumber').innerHTML().catch(() => '');
+  });
+}
+
 async function completeCnrLookup(session, cleanedCaptcha) {
   const { page, input } = session;
   const resultPromise = waitForCnrResult(page);
@@ -292,7 +492,136 @@ async function completeCnrLookup(session, cleanedCaptcha) {
   };
 }
 
+async function completeDistrictCaseNumberLookupViaEcourts(session, cleanedCaptcha) {
+  const { page, input } = session;
+  const debug = session.debug || createDistrictDebugTrace(input);
+
+  try {
+    pushDistrictDebug(debug, 'ecourts-submit-start', { captchaLength: cleanedCaptcha.length });
+    const establishments = getEcourtsEstablishmentAttempts(input);
+    pushDistrictDebug(debug, 'ecourts-establishment-attempts', {
+      establishmentCount: establishments.length,
+      establishments: establishments.map((option) => option.text || option.value || '')
+    });
+
+    for (const establishment of establishments) {
+      const caseTypesPayload = await ecourtsPostJsonWithinPage(page, 'casestatus/fillCaseType', {
+        state_code: input.stateCode || DELHI_STATE_CODE,
+        dist_code: input.districtCode,
+        court_complex_code: input.courtComplexCode || extractEcourtsComplexCode(input.courtComplexValue),
+        est_code: establishment.value || '',
+        search_type: 'c_no'
+      });
+      const caseTypeOptions = parseEcourtsOptionHtml(caseTypesPayload?.casetype_list);
+      const matchedCaseType = matchOption(caseTypeOptions, input.caseType);
+      pushDistrictDebug(debug, 'ecourts-case-types-loaded', {
+        establishment: establishment.text || establishment.value || '',
+        caseTypeCount: caseTypeOptions.length,
+        matchedCaseType: matchedCaseType?.text || ''
+      });
+
+      if (!matchedCaseType) {
+        continue;
+      }
+
+      const submitPayload = await ecourtsPostJsonWithinPage(page, 'casestatus/submitCaseNo', {
+        case_type: matchedCaseType.value,
+        search_case_no: input.caseNumber,
+        rgyear: input.year,
+        case_captcha_code: cleanedCaptcha,
+        state_code: input.stateCode || DELHI_STATE_CODE,
+        dist_code: input.districtCode,
+        court_complex_code: input.courtComplexCode || extractEcourtsComplexCode(input.courtComplexValue),
+        est_code: establishment.value || '',
+        case_no: input.caseNumber
+      });
+
+      pushDistrictDebug(debug, 'ecourts-submit-response', {
+        establishment: establishment.text || establishment.value || '',
+        status: submitPayload?.status ?? null,
+        hasCaseData: Boolean(String(submitPayload?.case_data || '').trim()),
+        errorMessage: String(submitPayload?.errormsg || '')
+      });
+
+      if (Number(submitPayload?.status) === 0 || /invalid captcha/i.test(String(submitPayload?.errormsg || ''))) {
+        const failure = buildFailurePayload(input, submitPayload, 'Invalid CAPTCHA. Load a fresh CAPTCHA and try again.');
+        failure.invalidCaptchaDetected = true;
+        failure.rawMetadata = {
+          ...(failure.rawMetadata || {}),
+          districtDebug: debug
+        };
+        return {
+          status: 'invalidCaptcha',
+          debug: failure
+        };
+      }
+
+      const searchHtml = String(submitPayload?.case_data || '');
+      if (!searchHtml || /case not found|record not found|does not exist/i.test(cleanHtmlText(searchHtml))) {
+        continue;
+      }
+
+      await seedEcourtsCaseNumberResult(page, {
+        stateCode: input.stateCode || DELHI_STATE_CODE,
+        districtCode: input.districtCode,
+        courtComplexValue: input.courtComplexValue,
+        establishmentValue: establishment.value || '',
+        caseTypeValue: matchedCaseType.value,
+        caseNumber: input.caseNumber,
+        year: input.year,
+        searchHtml
+      });
+
+      const detailHtml = await openEcourtsCaseNumberDetailsWithinPage(page, input).catch(() => '');
+      pushDistrictDebug(debug, 'ecourts-details-opened', {
+        establishment: establishment.text || establishment.value || '',
+        detailHtmlLength: detailHtml.length
+      });
+
+      const caseData = parseEcourtsResult({
+        ...input,
+        lookupMode: 'district_case_number'
+      }, {
+        status: submitPayload?.status ?? 1,
+        casetype_list: detailHtml || searchHtml,
+        div_captcha: String(submitPayload?.div_captcha || '')
+      });
+
+      caseData.rawMetadata = {
+        ...(caseData.rawMetadata || {}),
+        searchResults: {
+          rawTextPreview: cleanHtmlText(searchHtml).slice(0, 2000)
+        },
+        ecourtsAccess: await captureEcourtsAccess(session).catch(() => null),
+        districtDebug: debug,
+        selectedEstablishment: establishment.text || establishment.value || ''
+      };
+
+      return {
+        status: 'success',
+        caseData
+      };
+    }
+
+    const failure = buildFailurePayload(input, null, 'No matching district court case was found for this case-number search.');
+    failure.rawMetadata = {
+      ...(failure.rawMetadata || {}),
+      districtDebug: debug
+    };
+    return {
+      status: 'success',
+      caseData: failure
+    };
+  } catch (error) {
+    throw await withDistrictDebug(error, debug, page, 'complete-district-case-number-lookup');
+  }
+}
+
 async function completeDistrictCaseNumberLookup(session, cleanedCaptcha) {
+  if (session?.input?.lookupMode === 'district_case_number_ecourts') {
+    return completeDistrictCaseNumberLookupViaEcourts(session, cleanedCaptcha);
+  }
+
   const { page, input } = session;
   const debug = session.debug || createDistrictDebugTrace(input);
   const resultPromise = waitForDistrictCaseNumberResult(page);
@@ -741,7 +1070,7 @@ function parseEcourtsResult(input, payload) {
   const history = extractCaseHistory(html);
   const historyFields = extractHistorySummaryFields(history);
   const isDistrictCaseNumberLookup = input?.lookupMode === 'district_case_number';
-  const sourceUrl = input?.districtUrl || ECOURTS_URL;
+  const sourceUrl = input?.ecourtsSourceUrl || input?.districtUrl || ECOURTS_URL;
 
   if (!html || /case code does not|case not found|does not exist|record not found/i.test(text)) {
     return buildFailurePayload(
@@ -1381,7 +1710,7 @@ function extractJsStringArgs(value) {
 }
 
 function buildFailurePayload(input, payload, message) {
-  const sourceUrl = input?.districtUrl || ECOURTS_URL;
+  const sourceUrl = input?.ecourtsSourceUrl || input?.districtUrl || ECOURTS_URL;
   return {
     provider: 'districtCourtCnr',
     caseFound: false,
