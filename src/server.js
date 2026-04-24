@@ -240,7 +240,6 @@ app.post('/lookup/start', async (req, res) => {
 
     const startArgs = provider === 'districtCourtCnr'
       ? {
-          cnrNumber: req.body?.cnrNumber,
           districtSlug: req.body?.districtSlug,
           courtComplex: req.body?.courtComplex,
           courtComplexValue: req.body?.courtComplexValue,
@@ -347,17 +346,6 @@ app.delete('/lookup/:sessionId', async (req, res) => {
 
 function buildTrackedCaseInput(provider, input, reminderEmails) {
   if (provider === 'districtCourtCnr') {
-    if (input.cnrNumber) {
-      return {
-        provider,
-        cnrNumber: input.cnrNumber,
-        caseLookup: input.cnrNumber,
-        displayLabel: input.cnrNumber,
-        queryMeta: { ...input },
-        reminderEmails
-      };
-    }
-
     const caseLookup = formatDistrictLookup(input);
     return {
       provider,
@@ -383,9 +371,6 @@ function formatDelhiLookup(input) {
 }
 
 function formatDistrictLookup(input) {
-  if (input.cnrNumber) {
-    return input.cnrNumber;
-  }
   const prefix = [input.districtLabel, input.courtComplex].filter(Boolean).join(' | ');
   const suffix = [input.caseType, `${input.caseNumber}/${input.year}`].filter(Boolean).join(' ');
   return [prefix, suffix].filter(Boolean).join(' | ');
@@ -393,16 +378,6 @@ function formatDistrictLookup(input) {
 
 function findTrackedCase(provider, input) {
   if (provider === 'districtCourtCnr') {
-    if (input.cnrNumber) {
-      return listCases().find((trackedCase) => {
-        return trackedCase.provider === 'districtCourtCnr' &&
-          (
-            String(trackedCase.cnrNumber || '') === String(input.cnrNumber || '') ||
-            String(trackedCase.queryMeta?.cnrNumber || '') === String(input.cnrNumber || '')
-          );
-      }) || null;
-    }
-
     return listCases().find((trackedCase) => {
       return trackedCase.provider === 'districtCourtCnr' &&
         String(trackedCase.queryMeta?.districtSlug || '') === String(input.districtSlug || '') &&

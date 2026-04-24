@@ -399,10 +399,26 @@
 
             <div id="panelDistrictCourt" class="lookup-panel">
               <form id="districtForm">
-                <div class="form-grid-compact">
+                <div class="form-grid">
                   <div>
-                    <label for="districtCnrNumber">CNR number</label>
-                    <input id="districtCnrNumber" placeholder="DLST010012342026" />
+                    <label for="districtSlug">District</label>
+                    <select id="districtSlug"></select>
+                  </div>
+                  <div>
+                    <label for="courtComplexValue">Court complex</label>
+                    <select id="courtComplexValue"></select>
+                  </div>
+                  <div>
+                    <label for="districtCaseType">Case type</label>
+                    <input id="districtCaseType" placeholder="CS DJ" />
+                  </div>
+                  <div>
+                    <label for="districtCaseNumber">Case number</label>
+                    <input id="districtCaseNumber" placeholder="373" />
+                  </div>
+                  <div>
+                    <label for="districtCaseYear">Year</label>
+                    <input id="districtCaseYear" placeholder="2024" />
                   </div>
                   <button type="submit">Load CAPTCHA</button>
                 </div>
@@ -410,7 +426,6 @@
                   <label for="districtReminderEmails">Reminder emails</label>
                   <textarea id="districtReminderEmails" placeholder="person1@example.com, person2@example.com"></textarea>
                 </div>
-                <p class="muted small" style="margin-top:12px;">Use the official 16-character district court CNR number. This avoids the slower district microsite path.</p>
               </form>
             </div>
 
@@ -502,6 +517,7 @@
       let activeCaptchaSessionId = null;
       let activeLookupProvider = 'delhiManualCaptcha';
       let trackedCasesCache = [];
+      let districtSites = [];
       let currentCourtFilter = 'all';
       let statusToastTimer = null;
 
@@ -566,6 +582,22 @@
         activeCaptchaSessionId = null;
       }
 
+      async function loadDistrictSites() {
+        const payload = await api('/api/district-courts');
+        districtSites = payload.districts || [];
+        const districtSelect = document.getElementById('districtSlug');
+        districtSelect.innerHTML = districtSites.map((district) => `<option value="${district.slug}">${escapeHtml(district.label)}</option>`).join('');
+        populateCourtComplexes();
+      }
+
+      function populateCourtComplexes() {
+        const districtSlug = document.getElementById('districtSlug').value;
+        const district = districtSites.find((entry) => entry.slug === districtSlug);
+        const complexSelect = document.getElementById('courtComplexValue');
+        const options = district?.courtComplexes || [];
+        complexSelect.innerHTML = options.map((complex) => `<option value="${complex.value}">${escapeHtml(complex.label)}</option>`).join('');
+      }
+
       async function startHighCourtLookup() {
         setStatus('Loading Delhi High Court CAPTCHA...', 'muted');
         const reminderEmails = document.getElementById('reminderEmails').value.trim();
@@ -584,22 +616,26 @@
       }
 
       async function startDistrictLookup() {
-        setStatus('Loading district court CAPTCHA from the official eCourts CNR page...', 'muted');
-        const cnrNumber = document.getElementById('districtCnrNumber').value.trim();
+        setStatus('Loading Delhi District Court CAPTCHA...', 'muted');
+        const district = districtSites.find((entry) => entry.slug === document.getElementById('districtSlug').value);
+        const courtComplexValue = document.getElementById('courtComplexValue').value;
+        const courtComplex = district?.courtComplexes?.find((entry) => entry.value === courtComplexValue);
         const reminderEmails = document.getElementById('districtReminderEmails').value.trim();
-        if (!cnrNumber) {
-          throw new Error('Enter the district court CNR number.');
-        }
         const payload = await api('/lookup/start', {
           method: 'POST',
           body: JSON.stringify({
             provider: 'districtCourtCnr',
-            cnrNumber,
+            districtSlug: district?.slug || '',
+            courtComplex: courtComplex?.label || '',
+            courtComplexValue,
+            caseType: document.getElementById('districtCaseType').value.trim(),
+            caseNumber: document.getElementById('districtCaseNumber').value.trim(),
+            year: document.getElementById('districtCaseYear').value.trim(),
             reminderEmails
           })
         });
         showCaptchaBox(payload, 'districtCourtCnr');
-        setStatus('District court CAPTCHA loaded. Enter it below to finish the CNR lookup.');
+        setStatus('District court CAPTCHA loaded. Enter it below to finish the lookup.');
       }
 
       async function submitCaptcha() {
@@ -634,7 +670,9 @@
       function clearLookupInputs(provider) {
         document.getElementById('caseSearch').value = '';
         if (provider === 'districtCourtCnr') {
-          document.getElementById('districtCnrNumber').value = '';
+          document.getElementById('districtCaseType').value = '';
+          document.getElementById('districtCaseNumber').value = '';
+          document.getElementById('districtCaseYear').value = '';
         } else {
           document.getElementById('caseType').value = '';
           document.getElementById('caseNumber').value = '';
@@ -829,6 +867,7 @@
         trackSecondaryProvider(event).catch((error) => setStatus(error.message, 'error'));
       });
 
+      document.getElementById('districtSlug').addEventListener('change', populateCourtComplexes);
       document.getElementById('submitCaptchaBtn').addEventListener('click', () => {
         submitCaptcha().catch((error) => setStatus(error.message, 'error'));
       });
@@ -837,9 +876,7 @@
       });
       document.getElementById('caseSearch').addEventListener('input', renderCaseRows);
 
-      document.getElementById('districtReminderEmails').value = 'info@amitguptaadvocate.com';
-
-      Promise.all([loadCases()]).catch((error) => {
+      Promise.all([loadDistrictSites(), loadCases()]).catch((error) => {
         setStatus(error.message, 'error');
       });
     </script>

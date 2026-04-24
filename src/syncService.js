@@ -293,17 +293,6 @@ function normalizeReminderDays(days) {
 
 function findDuplicateCase(cases, input) {
   if (input.provider === 'districtCourtCnr') {
-    if (input.cnrNumber || input.queryMeta?.cnrNumber) {
-      const candidateCnr = String(input.cnrNumber || input.queryMeta?.cnrNumber || '');
-      return cases.find((candidate) =>
-        candidate.provider === 'districtCourtCnr' &&
-        (
-          String(candidate.cnrNumber || '') === candidateCnr ||
-          String(candidate.queryMeta?.cnrNumber || '') === candidateCnr
-        )
-      ) || null;
-    }
-
     return cases.find((candidate) =>
       candidate.provider === 'districtCourtCnr' &&
       String(candidate.queryMeta?.districtSlug || '') === String(input.queryMeta?.districtSlug || '') &&
