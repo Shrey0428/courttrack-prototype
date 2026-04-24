@@ -102,6 +102,9 @@
                   <select id="districtCaseType" disabled>
                     <option value="">Select district and complex first</option>
                   </select>
+                  <div style="margin-top:8px;">
+                    <input id="districtCaseTypeManual" placeholder="Or enter case type manually" />
+                  </div>
                 </div>
                 <div>
                   <label>Case number</label>
@@ -114,7 +117,7 @@
                 <button type="submit">Load CAPTCHA</button>
               </div>
             </form>
-            <p class="muted" style="margin-top:10px;">Pick the Delhi district first, then use the court complex and case-number details from that district court page.</p>
+            <p class="muted" style="margin-top:10px;">Pick the Delhi district first, then use the court complex and case-number details from that district court page. If case types do not load, enter the case type manually exactly as shown on the district court website.</p>
           </div>
           <div>
             <label>Secondary providers</label>
@@ -290,6 +293,12 @@
         const select = document.getElementById('districtCaseType');
         select.disabled = true;
         select.innerHTML = `<option value="">${escapeHtml(message)}</option>`;
+      }
+
+      function getDistrictCaseTypeValue() {
+        const manualValue = document.getElementById('districtCaseTypeManual').value.trim();
+        if (manualValue) return manualValue;
+        return document.getElementById('districtCaseType').value.trim();
       }
 
       async function loadDistrictCaseTypes() {
@@ -554,6 +563,7 @@
         document.getElementById('districtCourtSite').value = c.provider === 'districtCourtCnr' ? (queryMeta.districtSlug || '') : '';
         populateDistrictComplexes(queryMeta.districtSlug || '', queryMeta.courtComplex || queryMeta.courtEstablishment || '');
         document.getElementById('districtCaseType').value = c.provider === 'districtCourtCnr' ? (queryMeta.caseType || '') : '';
+        document.getElementById('districtCaseTypeManual').value = c.provider === 'districtCourtCnr' ? (queryMeta.caseType || '') : '';
         if (c.provider === 'districtCourtCnr' && queryMeta.districtSlug && (queryMeta.courtComplex || queryMeta.courtEstablishment)) {
           await loadDistrictCaseTypes();
           document.getElementById('districtCaseType').value = queryMeta.caseType || '';
@@ -628,7 +638,7 @@
         e.preventDefault();
         const districtSlug = document.getElementById('districtCourtSite').value.trim();
         const courtComplex = document.getElementById('districtCourtComplex').value.trim();
-        const caseType = document.getElementById('districtCaseType').value.trim();
+        const caseType = getDistrictCaseTypeValue();
         const caseNumber = document.getElementById('districtCaseNumber').value.trim();
         const year = document.getElementById('districtCaseYear').value.trim();
         const reminderEmails = document.getElementById('reminderEmails').value.trim();
