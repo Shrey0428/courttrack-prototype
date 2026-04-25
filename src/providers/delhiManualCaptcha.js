@@ -130,7 +130,11 @@ async function selectDelhiOption(selectLocator, value, fieldName) {
   );
 
   const target = normalizeOption(exactValue);
-  const match = options.find((option) => normalizeOption(option.value) === target || normalizeOption(option.text) === target);
+  const flexibleTarget = normalizeFlexibleOption(exactValue);
+  const match = options.find((option) => normalizeOption(option.value) === target || normalizeOption(option.text) === target) ||
+    options.find((option) => normalizeFlexibleOption(option.value) === flexibleTarget || normalizeFlexibleOption(option.text) === flexibleTarget) ||
+    options.find((option) => normalizeFlexibleOption(option.value).includes(flexibleTarget) || normalizeFlexibleOption(option.text).includes(flexibleTarget)) ||
+    options.find((option) => flexibleTarget.includes(normalizeFlexibleOption(option.value)) || flexibleTarget.includes(normalizeFlexibleOption(option.text)));
 
   if (!match) {
     throw new Error(`Could not find Delhi ${fieldName} "${value}" in the official dropdown.`);
@@ -676,6 +680,12 @@ function normalizeOption(value) {
     .toUpperCase()
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function normalizeFlexibleOption(value) {
+  return String(value || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
 }
 
 function normalizeSearchText(value) {

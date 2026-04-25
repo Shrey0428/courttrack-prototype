@@ -252,19 +252,36 @@ function prepareDistrictInput(input) {
 
 async function selectCaseType(page, desiredValue) {
   const select = page.locator('#case_type');
-  const target = String(desiredValue || '').trim().toLowerCase();
+  const exactValue = String(desiredValue || '').trim();
+  const target = normalizeDistrictOption(exactValue);
+  const flexibleTarget = normalizeFlexibleDistrictOption(exactValue);
   const options = await select.locator('option').evaluateAll((nodes) =>
     nodes.map((node) => ({
       value: node.getAttribute('value') || '',
       text: (node.textContent || '').trim()
     }))
   );
-  const match = options.find((option) => option.text.toLowerCase() === target || option.value === desiredValue) ||
-    options.find((option) => option.text.toLowerCase().includes(target));
+  const match = options.find((option) => normalizeDistrictOption(option.value) === target || normalizeDistrictOption(option.text) === target) ||
+    options.find((option) => normalizeFlexibleDistrictOption(option.value) === flexibleTarget || normalizeFlexibleDistrictOption(option.text) === flexibleTarget) ||
+    options.find((option) => normalizeFlexibleDistrictOption(option.value).includes(flexibleTarget) || normalizeFlexibleDistrictOption(option.text).includes(flexibleTarget)) ||
+    options.find((option) => flexibleTarget.includes(normalizeFlexibleDistrictOption(option.value)) || flexibleTarget.includes(normalizeFlexibleDistrictOption(option.text)));
   if (!match) {
     throw new Error(`Could not find district case type "${desiredValue}" in the official dropdown.`);
   }
   await select.selectOption(match.value);
+}
+
+function normalizeDistrictOption(value) {
+  return String(value || '')
+    .toUpperCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeFlexibleDistrictOption(value) {
+  return String(value || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
 }
 
 async function parseSearchResults(page, html, input) {
