@@ -4,6 +4,9 @@ const { formatReminderEmails } = require('./reminderEmails');
 
 const REMINDER_INTERVAL_MS = Number(process.env.REMINDER_INTERVAL_MS || 60 * 60 * 1000);
 const DAY_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_REMINDER_EMAIL = process.env.DEFAULT_REMINDER_EMAIL || 'info@amitguptaadvocate.com';
+const REMINDER_SEND_HOURS = parseReminderSendHours(process.env.REMINDER_SEND_HOURS || '11,12');
+const INDIA_OFFSET_MINUTES = 330;
 
 let transporter;
 
@@ -30,10 +33,13 @@ function getReminderStatus() {
   return {
     configured,
     authenticated,
+    defaultEmail: DEFAULT_REMINDER_EMAIL,
     from: config.from,
     host: config.host,
     port: config.port,
-    secure: config.secure
+    secure: config.secure,
+    sendHours: REMINDER_SEND_HOURS.slice(),
+    nextScheduledRunAt: getNextReminderRunAt().toISOString()
   };
 }
 
@@ -41,7 +47,7 @@ async function runReminderSweep(options = {}) {
   const db = readDb();
   const status = getReminderStatus();
   const now = new Date();
-  const today = startOfDay(now);
+  const today = startOfIndiaDay(now);
   const results = [];
   const forceSend = Boolean(options.forceSend);
   const targetCaseId = options.caseId ? String(options.caseId) : '';
@@ -357,12 +363,56 @@ function parseIndianDate(value) {
   if (!match) return null;
 
   const [, dd, mm, yyyy] = match;
-  const date = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
-  return Number.isNaN(date.getTime()) ? null : startOfDay(date);
+  const date = createIndiaDate(Number(yyyy), Number(mm) - 1, Number(dd), 0, 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function startOfIndiaDay(date) {
+  const parts = getIndiaDateParts(date);
+  return createIndiaDate(parts.year, parts.month, parts.day, 0, 0, 0);
+}
+
+function getIndiaDateParts(date) {
+  const shifted = new Date(date.getTime() + INDIA_OFFSET_MINUTES * 60 * 1000);
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth(),
+    day: shifted.getUTCDate(),
+    hour: shifted.getUTCHours(),
+    minute: shifted.getUTCMinutes(),
+    second: shifted.getUTCSeconds()
+  };
+}
+
+function createIndiaDate(year, month, day, hour, minute, second) {
+  return new Date(Date.UTC(year, month, day, hour, minute, second, 0) - INDIA_OFFSET_MINUTES * 60 * 1000);
+}
+
+function parseReminderSendHours(value) {
+  const values = String(value || '11,12')
+    .split(/[\s,;]+/g)
+    .map((entry) => Number(entry))
+    .filter((entry) => Number.isInteger(entry) && entry >= 0 && entry <= 23);
+  return values.length ? [...new Set(values)].sort((a, b) => a - b) : [11, 12];
+}
+
+function getNextReminderRunAt(now = new Date()) {
+  const parts = getIndiaDateParts(now);
+
+  for (let dayOffset = 0; dayOffset < 3; dayOffset += 1) {
+    for (const hour of REMINDER_SEND_HOURS) {
+      const candidate = createIndiaDate(parts.year, parts.month, parts.day + dayOffset, hour, 0, 0);
+      if (candidate.getTime() > now.getTime() + 1000) {
+        return candidate;
+      }
+    }
+  }
+
+  return new Date(now.getTime() + 60 * 60 * 1000);
 }
 
 function formatDateKey(date) {
@@ -414,8 +464,11 @@ function escapeHtml(value) {
 }
 
 module.exports = {
+  DEFAULT_REMINDER_EMAIL,
   REMINDER_INTERVAL_MS,
+  REMINDER_SEND_HOURS,
   getReminderStatus,
+  getNextReminderRunAt,
   runReminderSweep,
   sendTestReminderEmail
 };

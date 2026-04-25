@@ -392,7 +392,7 @@
                 </div>
                 <div style="margin-top:12px;">
                   <label for="reminderEmails">Reminder emails</label>
-                  <textarea id="reminderEmails" placeholder="person1@example.com, person2@example.com"></textarea>
+                  <textarea id="reminderEmails" placeholder="person1@example.com, person2@example.com">info@amitguptaadvocate.com</textarea>
                 </div>
               </form>
             </div>
@@ -424,7 +424,7 @@
                 </div>
                 <div style="margin-top:12px;">
                   <label for="districtReminderEmails">Reminder emails</label>
-                  <textarea id="districtReminderEmails" placeholder="person1@example.com, person2@example.com"></textarea>
+                  <textarea id="districtReminderEmails" placeholder="person1@example.com, person2@example.com">info@amitguptaadvocate.com</textarea>
                 </div>
               </form>
             </div>
@@ -520,6 +520,7 @@
       let districtSites = [];
       let currentCourtFilter = 'all';
       let statusToastTimer = null;
+      const DEFAULT_REMINDER_EMAIL = 'info@amitguptaadvocate.com';
 
       async function api(url, options = {}) {
         const response = await fetch(url, {
@@ -673,10 +674,12 @@
           document.getElementById('districtCaseType').value = '';
           document.getElementById('districtCaseNumber').value = '';
           document.getElementById('districtCaseYear').value = '';
+          document.getElementById('districtReminderEmails').value = DEFAULT_REMINDER_EMAIL;
         } else {
           document.getElementById('caseType').value = '';
           document.getElementById('caseNumber').value = '';
           document.getElementById('caseYear').value = '';
+          document.getElementById('reminderEmails').value = DEFAULT_REMINDER_EMAIL;
         }
       }
 
@@ -875,6 +878,8 @@
         cancelCaptcha().catch((error) => setStatus(error.message, 'error'));
       });
       document.getElementById('caseSearch').addEventListener('input', renderCaseRows);
+      document.getElementById('reminderEmails').value = document.getElementById('reminderEmails').value.trim() || DEFAULT_REMINDER_EMAIL;
+      document.getElementById('districtReminderEmails').value = document.getElementById('districtReminderEmails').value.trim() || DEFAULT_REMINDER_EMAIL;
 
       Promise.all([loadDistrictSites(), loadCases()]).catch((error) => {
         setStatus(error.message, 'error');

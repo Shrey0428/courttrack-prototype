@@ -28,7 +28,14 @@ const {
   syncAllCases
 } = require('./syncService');
 const { createSession, getSession, deleteSession } = require('./sessionStore');
-const { REMINDER_INTERVAL_MS, getReminderStatus, runReminderSweep, sendTestReminderEmail } = require('./reminderService');
+const {
+  DEFAULT_REMINDER_EMAIL,
+  REMINDER_INTERVAL_MS,
+  getNextReminderRunAt,
+  getReminderStatus,
+  runReminderSweep,
+  sendTestReminderEmail
+} = require('./reminderService');
 const { parseReminderEmailsFromInput } = require('./reminderEmails');
 const { listDelhiDistrictSites } = require('./delhiDistrictSites');
 const { resolveCachedDocument } = require('./documentCache');
@@ -233,7 +240,7 @@ app.post('/lookup/start', async (req, res) => {
       return res.status(400).json({ error: 'This provider does not support the manual CAPTCHA lookup flow.' });
     }
 
-    const parsedReminderEmails = parseReminderEmailsFromInput(req.body || {});
+    const parsedReminderEmails = parseReminderEmailsFromInput(withDefaultReminderInput(req.body || {}));
     if (parsedReminderEmails.invalid.length) {
       return res.status(400).json({ error: `Invalid reminder email(s): ${parsedReminderEmails.invalid.join(', ')}` });
     }
@@ -421,19 +428,48 @@ setInterval(async () => {
   }
 }, AUTO_SYNC_MS).unref();
 
-setInterval(async () => {
-  try {
-    const result = await runReminderSweep();
-    if (!result.skipped) {
-      console.log(`[reminders] checked ${result.results.length} case(s) at ${new Date().toISOString()}`);
-    }
-  } catch (error) {
-    console.error('[reminders] failed', error.message);
-  }
-}, REMINDER_INTERVAL_MS).unref();
+scheduleReminderSweep();
 
 app.listen(PORT, () => {
   console.log(`CourtTrack Prototype running on http://localhost:${PORT}`);
   console.log(`Auto sync interval: ${AUTO_SYNC_MS} ms`);
   console.log(`Reminder interval: ${REMINDER_INTERVAL_MS} ms`);
 });
+
+function withDefaultReminderInput(input) {
+  const reminderEmail = typeof input?.reminderEmail === 'string' ? input.reminderEmail.trim() : '';
+  const reminderEmails = Array.isArray(input?.reminderEmails)
+    ? input.reminderEmails.filter((value) => String(value || '').trim())
+    : (typeof input?.reminderEmails === 'string' ? input.reminderEmails.trim() : '');
+
+  if (reminderEmail || (Array.isArray(reminderEmails) ? reminderEmails.length : reminderEmails)) {
+    return input;
+  }
+
+  return {
+    ...input,
+    reminderEmails: DEFAULT_REMINDER_EMAIL
+  };
+}
+
+function scheduleReminderSweep() {
+  const nextRunAt = getNextReminderRunAt();
+  const delay = Math.max(1000, nextRunAt.getTime() - Date.now());
+
+  console.log(`[reminders] next scheduled sweep at ${nextRunAt.toISOString()}`);
+
+  const timer = setTimeout(async () => {
+    try {
+      const result = await runReminderSweep();
+      if (!result.skipped) {
+        console.log(`[reminders] checked ${result.results.length} case(s) at ${new Date().toISOString()}`);
+      }
+    } catch (error) {
+      console.error('[reminders] failed', error.message);
+    } finally {
+      scheduleReminderSweep();
+    }
+  }, delay);
+
+  timer.unref();
+}

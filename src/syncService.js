@@ -278,8 +278,11 @@ async function syncAllCases() {
 }
 
 function applyDefaultReminderInput(input) {
-  const hasReminderInput = Object.prototype.hasOwnProperty.call(input, 'reminderEmail') ||
-    Object.prototype.hasOwnProperty.call(input, 'reminderEmails');
+  const reminderEmail = typeof input?.reminderEmail === 'string' ? input.reminderEmail.trim() : '';
+  const reminderEmails = Array.isArray(input?.reminderEmails)
+    ? input.reminderEmails.filter((value) => String(value || '').trim())
+    : (typeof input?.reminderEmails === 'string' ? input.reminderEmails.trim() : '');
+  const hasReminderInput = Boolean(reminderEmail || (Array.isArray(reminderEmails) ? reminderEmails.length : reminderEmails));
   return hasReminderInput ? input : { ...input, reminderEmails: DEFAULT_REMINDER_EMAIL };
 }
 

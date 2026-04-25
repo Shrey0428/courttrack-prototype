@@ -249,8 +249,8 @@
         document.getElementById('documentLinks').innerHTML = renderDocumentLinks(caseData);
         document.getElementById('manualCaseTitle').value = caseData.manualCaseTitle || '';
 
-        document.getElementById('reminderEmails').value = caseData.reminderEmailsLabel || caseData.reminderEmail || '';
-        document.getElementById('reminderEnabled').checked = Boolean(caseData.reminderEnabled);
+        document.getElementById('reminderEmails').value = caseData.reminderEmailsLabel || caseData.reminderEmail || 'info@amitguptaadvocate.com';
+        document.getElementById('reminderEnabled').checked = caseData.reminderEnabled !== false;
         document.getElementById('reminderSkipDisposed').checked = caseData.reminderSkipDisposed !== false;
         document.getElementById('reminderDaysBefore').value = Array.isArray(caseData.reminderDaysBefore) ? caseData.reminderDaysBefore.join(', ') : '3, 2, 1, 0';
 
@@ -424,9 +424,19 @@
       async function loadReminderStatus() {
         reminderStatus = await api('/api/reminders/status');
         const text = reminderStatus.configured
-          ? `SMTP is configured via ${reminderStatus.host}:${reminderStatus.port}.`
+          ? `SMTP is configured via ${reminderStatus.host}:${reminderStatus.port}. Automatic reminders go out at ${formatReminderSchedule(reminderStatus.sendHours || [])} IST.`
           : 'SMTP is not configured yet. You can still save reminder preferences now.';
         document.getElementById('reminderStatusText').textContent = text;
+      }
+
+      function formatReminderSchedule(hours) {
+        const values = Array.isArray(hours) ? hours : [];
+        if (!values.length) return '11:00 AM';
+        return values.map((hour) => {
+          const suffix = hour >= 12 ? 'PM' : 'AM';
+          const hour12 = hour % 12 || 12;
+          return `${hour12}:00 ${suffix}`;
+        }).join(' or ');
       }
 
       async function loadCase() {

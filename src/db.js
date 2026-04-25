@@ -7,6 +7,7 @@ const DB_PATH = process.env.DB_PATH
   : path.join(__dirname, '..', 'data', 'db.json');
 
 const DEFAULT_REMINDER_DAYS = [3, 2, 1, 0];
+const DEFAULT_REMINDER_EMAIL = process.env.DEFAULT_REMINDER_EMAIL || 'info@amitguptaadvocate.com';
 
 const initialDb = {
   trackedCases: [],
@@ -75,7 +76,10 @@ function normalizeSnapshot(snapshot) {
 
 function normalizeTrackedCase(trackedCase, latestPayload) {
   const payload = normalizeSnapshotPayload(latestPayload || {});
-  const reminderEmails = parseReminderEmails(trackedCase.reminderEmails || trackedCase.reminderEmail || '').emails;
+  const storedReminderEmails = parseReminderEmails(trackedCase.reminderEmails || trackedCase.reminderEmail || '').emails;
+  const reminderEmails = storedReminderEmails.length
+    ? storedReminderEmails
+    : parseReminderEmails(DEFAULT_REMINDER_EMAIL).emails;
   const latestCaseHistory = normalizeCaseHistory(trackedCase.latestCaseHistory || payload.caseHistory);
   const latestOrder = pickLatestOrder(latestCaseHistory.orders);
   const normalized = {
@@ -105,7 +109,9 @@ function normalizeTrackedCase(trackedCase, latestPayload) {
     officialSourceUrl: '',
     ...trackedCase,
     reminderEmails,
-    reminderEnabled: trackedCase.reminderEnabled !== false && reminderEmails.length > 0,
+    reminderEnabled: storedReminderEmails.length
+      ? trackedCase.reminderEnabled !== false && reminderEmails.length > 0
+      : reminderEmails.length > 0,
     reminderDaysBefore: normalizeReminderDaysBefore(trackedCase.reminderDaysBefore),
     reminderSkipDisposed: trackedCase.reminderSkipDisposed !== false,
     latestCaseHistory,
