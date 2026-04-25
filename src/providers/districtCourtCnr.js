@@ -41,14 +41,7 @@ class DistrictCourtCnrProvider extends BaseProvider {
     await prepareDistrictLookupPage(page);
     await gotoDistrictPage(page, prepared.districtUrl);
 
-    await page.locator('#chkYes').waitFor({ state: 'attached', timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(() => {});
-    await page.locator('#est_code').waitFor({ state: 'attached', timeout: DISTRICT_SELECTOR_TIMEOUT_MS });
-    await page.check('#chkYes').catch(() => {});
-    await page.selectOption('#est_code', prepared.courtComplexValue);
-    await page.waitForFunction(() => {
-      const select = document.querySelector('#case_type');
-      return Boolean(select && !select.disabled);
-    }, { timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(() => {});
+    await ensureDistrictCaseTypeDropdownReady(page, prepared.courtComplexValue);
 
     const captchaLocator = page.locator('img[id^="siwp_captcha_image_"]').first();
     await captchaLocator.waitFor({ state: 'visible', timeout: DISTRICT_SELECTOR_TIMEOUT_MS });
@@ -80,6 +73,7 @@ class DistrictCourtCnrProvider extends BaseProvider {
     const { page, input } = session;
 
     if (input.caseType) {
+      await ensureDistrictCaseTypeDropdownReady(page, input.courtComplexValue);
       await selectCaseType(page, input.caseType);
     }
 
@@ -173,6 +167,8 @@ async function gotoDistrictPage(page, url) {
     try {
       await page.goto(url, { waitUntil: 'commit', timeout: DISTRICT_NAVIGATION_TIMEOUT_MS });
       await page.locator('body').waitFor({ state: 'attached', timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(() => {});
+      await page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
+      await page.waitForLoadState('load', { timeout: 15000 }).catch(() => {});
 
       const bodyText = await page.locator('body').innerText({ timeout: 5000 }).catch(() => '');
       if (/ERR_CONNECTION_TIMED_OUT|This site can[’']?t be reached|connection timed out/i.test(bodyText)) {
@@ -190,6 +186,50 @@ async function gotoDistrictPage(page, url) {
 
   const message = String(lastError?.message || '').replace(/\s+/g, ' ').trim();
   throw new Error(`District court page could not be opened in time. ${message || url}`);
+}
+
+async function ensureDistrictCaseTypeDropdownReady(page, courtComplexValue) {
+  await page.locator('#chkYes').waitFor({ state: 'attached', timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(() => {});
+  await page.locator('#est_code').waitFor({ state: 'attached', timeout: DISTRICT_SELECTOR_TIMEOUT_MS });
+  await page.check('#chkYes').catch(() => {});
+  await waitForDistrictScriptsReady(page);
+
+  const currentValue = await page.locator('#est_code').inputValue().catch(() => '');
+  const caseTypeReady = await page.locator('#case_type').evaluate((select) => {
+    return Boolean(select && !select.disabled && select.options.length > 1);
+  }).catch(() => false);
+
+  if (currentValue !== courtComplexValue || !caseTypeReady) {
+    const responsePromise = page.waitForResponse((response) => {
+      const request = response.request();
+      const postData = request.postData() || '';
+      return request.method() === 'POST' &&
+        response.url().includes('/wp-admin/admin-ajax.php') &&
+        postData.includes('action=get_case_types');
+    }, { timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(() => null);
+
+    await page.selectOption('#est_code', courtComplexValue);
+    await responsePromise;
+  }
+
+  await page.waitForFunction(() => {
+    const select = document.querySelector('#case_type');
+    return Boolean(select && !select.disabled && select.options.length > 1);
+  }, { timeout: DISTRICT_SELECTOR_TIMEOUT_MS });
+}
+
+async function waitForDistrictScriptsReady(page) {
+  await page.waitForFunction(() => {
+    const select = document.querySelector('#est_code');
+    const $ = window.jQuery;
+    if (!select || typeof $ !== 'function' || typeof $._data !== 'function') {
+      return false;
+    }
+    const events = $._data(select, 'events');
+    return Boolean(events && Array.isArray(events.change) && events.change.length);
+  }, { timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(async () => {
+    await page.waitForTimeout(1500).catch(() => {});
+  });
 }
 
 async function prepareDistrictLookupPage(page) {
