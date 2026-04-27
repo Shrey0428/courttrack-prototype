@@ -520,6 +520,7 @@
       let districtSites = [];
       let currentCourtFilter = 'all';
       let statusToastTimer = null;
+      let pendingRefreshCaseId = null;
       const DEFAULT_REMINDER_EMAIL = 'info@amitguptaadvocate.com';
 
       async function api(url, options = {}) {
@@ -572,6 +573,7 @@
       function showCaptchaBox(payload, provider) {
         activeCaptchaSessionId = payload.sessionId;
         activeLookupProvider = provider;
+        pendingRefreshCaseId = null;
         document.getElementById('captchaImage').src = `data:image/png;base64,${payload.captchaImageBase64}`;
         document.getElementById('captchaHelp').innerHTML = `${escapeHtml(payload.instructions)} <a href="${payload.sourceUrl}" target="_blank" rel="noopener noreferrer">Open source</a>`;
         document.getElementById('captchaText').value = '';
@@ -609,7 +611,8 @@
             caseType: document.getElementById('caseType').value.trim(),
             caseNumber: document.getElementById('caseNumber').value.trim(),
             year: document.getElementById('caseYear').value.trim(),
-            reminderEmails
+            reminderEmails,
+            trackedCaseId: pendingRefreshCaseId || ''
           })
         });
         showCaptchaBox(payload, 'delhiManualCaptcha');
@@ -632,7 +635,8 @@
             caseType: document.getElementById('districtCaseType').value.trim(),
             caseNumber: document.getElementById('districtCaseNumber').value.trim(),
             year: document.getElementById('districtCaseYear').value.trim(),
-            reminderEmails
+            reminderEmails,
+            trackedCaseId: pendingRefreshCaseId || ''
           })
         });
         showCaptchaBox(payload, 'districtCourtCnr');
@@ -670,6 +674,7 @@
 
       function clearLookupInputs(provider) {
         document.getElementById('caseSearch').value = '';
+        pendingRefreshCaseId = null;
         if (provider === 'districtCourtCnr') {
           document.getElementById('districtCaseType').value = '';
           document.getElementById('districtCaseNumber').value = '';
@@ -681,6 +686,28 @@
           document.getElementById('caseYear').value = '';
           document.getElementById('reminderEmails').value = DEFAULT_REMINDER_EMAIL;
         }
+      }
+
+      function prefillRefreshLookup(trackedCase) {
+        pendingRefreshCaseId = trackedCase.id;
+
+        if (trackedCase.provider === 'districtCourtCnr') {
+          switchLookupTab('districtCourt');
+          document.getElementById('districtSlug').value = trackedCase.queryMeta?.districtSlug || '';
+          populateCourtComplexes();
+          document.getElementById('courtComplexValue').value = trackedCase.queryMeta?.courtComplexValue || trackedCase.queryMeta?.courtComplex || '';
+          document.getElementById('districtCaseType').value = trackedCase.queryMeta?.caseType || '';
+          document.getElementById('districtCaseNumber').value = trackedCase.queryMeta?.caseNumber || '';
+          document.getElementById('districtCaseYear').value = trackedCase.queryMeta?.year || '';
+          document.getElementById('districtReminderEmails').value = trackedCase.reminderEmailsLabel || trackedCase.reminderEmail || DEFAULT_REMINDER_EMAIL;
+          return;
+        }
+
+        switchLookupTab('highCourt');
+        document.getElementById('caseType').value = trackedCase.queryMeta?.caseType || '';
+        document.getElementById('caseNumber').value = trackedCase.queryMeta?.caseNumber || '';
+        document.getElementById('caseYear').value = trackedCase.queryMeta?.year || '';
+        document.getElementById('reminderEmails').value = trackedCase.reminderEmailsLabel || trackedCase.reminderEmail || DEFAULT_REMINDER_EMAIL;
       }
 
       async function loadCases() {
@@ -762,12 +789,23 @@
       }
 
       function compareCasesByHearingDate(left, right) {
+        const statusOrder = getTrackedStatusOrder(left.latestStatus) - getTrackedStatusOrder(right.latestStatus);
+        if (statusOrder !== 0) return statusOrder;
+
         const leftTime = parseDate(left.latestNextHearingDate);
         const rightTime = parseDate(right.latestNextHearingDate);
         if (leftTime && rightTime) return leftTime - rightTime;
         if (leftTime) return -1;
         if (rightTime) return 1;
         return displayCaseTitle(left).localeCompare(displayCaseTitle(right));
+      }
+
+      function getTrackedStatusOrder(status) {
+        const value = String(status || '').toLowerCase();
+        if (value.includes('pending')) return 0;
+        if (value.includes('transfered') || value.includes('transferred')) return 1;
+        if (value.includes('disposed')) return 2;
+        return 1;
       }
 
       function parseDate(value) {
@@ -780,9 +818,8 @@
         const trackedCase = trackedCasesCache.find((entry) => entry.id === caseId);
         if (!trackedCase) return;
         if (trackedCase.provider === 'delhiManualCaptcha' || trackedCase.provider === 'districtCourtCnr') {
-          setStatus('Open the matching lookup above and solve the official CAPTCHA again to refresh this case.');
-          if (trackedCase.provider === 'districtCourtCnr') switchLookupTab('districtCourt');
-          else switchLookupTab('highCourt');
+          prefillRefreshLookup(trackedCase);
+          setStatus('Case details loaded above. Solve the official CAPTCHA to refresh this tracked case.');
           return;
         }
         await api(`/api/cases/${caseId}/refresh`, { method: 'POST' });
