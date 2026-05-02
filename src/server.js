@@ -43,6 +43,7 @@ const { resolveCachedDocument } = require('./documentCache');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const AUTO_SYNC_MS = Number(process.env.AUTO_SYNC_MS || 60000);
+const optionsCache = new Map();
 
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
@@ -132,6 +133,74 @@ app.get('/api/providers', (_req, res) => {
 
 app.get('/api/district-courts', (_req, res) => {
   res.json({ districts: listDelhiDistrictSites() });
+});
+
+app.get('/api/high-court-lookup-options', async (_req, res) => {
+  try {
+    const provider = getProvider('delhiManualCaptcha');
+    const payload = await getCachedLookupOptions('highCourt:lookup-options', () => provider.listLookupOptions());
+    res.json(payload);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/district-lookup-options', async (req, res) => {
+  try {
+    const districtSlug = String(req.query?.districtSlug || '').trim();
+    if (!districtSlug) {
+      return res.status(400).json({ error: 'districtSlug is required.' });
+    }
+
+    const provider = getProvider('districtCourtCnr');
+    const payload = await getCachedLookupOptions(`district:lookup-options:${districtSlug}`, () =>
+      provider.listLookupOptions({ districtSlug })
+    );
+    res.json(payload);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/district-case-types', async (req, res) => {
+  try {
+    const districtSlug = String(req.query?.districtSlug || '').trim();
+    const searchMode = String(req.query?.searchMode || 'courtComplex').trim();
+    const courtComplexValue = String(req.query?.courtComplexValue || '').trim();
+    const courtEstablishmentValue = String(req.query?.courtEstablishmentValue || '').trim();
+
+    if (!districtSlug) {
+      return res.status(400).json({ error: 'districtSlug is required.' });
+    }
+
+    if (searchMode === 'courtEstablishment' && !courtEstablishmentValue) {
+      return res.status(400).json({ error: 'courtEstablishmentValue is required for court establishment lookups.' });
+    }
+
+    if (searchMode !== 'courtEstablishment' && !courtComplexValue) {
+      return res.status(400).json({ error: 'courtComplexValue is required for court complex lookups.' });
+    }
+
+    const provider = getProvider('districtCourtCnr');
+    const cacheKey = [
+      'district:case-types',
+      districtSlug,
+      searchMode,
+      courtComplexValue || '-',
+      courtEstablishmentValue || '-'
+    ].join(':');
+    const payload = await getCachedLookupOptions(cacheKey, () =>
+      provider.listCaseTypeOptions({
+        districtSlug,
+        searchMode,
+        courtComplexValue,
+        courtEstablishmentValue
+      })
+    );
+    res.json(payload);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.get('/api/cases', (_req, res) => {
@@ -248,8 +317,11 @@ app.post('/lookup/start', async (req, res) => {
     const startArgs = provider === 'districtCourtCnr'
       ? {
           districtSlug: req.body?.districtSlug,
+          searchMode: req.body?.searchMode,
           courtComplex: req.body?.courtComplex,
           courtComplexValue: req.body?.courtComplexValue,
+          courtEstablishment: req.body?.courtEstablishment,
+          courtEstablishmentValue: req.body?.courtEstablishmentValue,
           caseType: req.body?.caseType,
           caseNumber: req.body?.caseNumber,
           year: req.body?.year
@@ -378,7 +450,10 @@ function formatDelhiLookup(input) {
 }
 
 function formatDistrictLookup(input) {
-  const prefix = [input.districtLabel, input.courtComplex].filter(Boolean).join(' | ');
+  const venueLabel = input.searchMode === 'courtEstablishment'
+    ? input.courtEstablishment
+    : input.courtComplex;
+  const prefix = [input.districtLabel, venueLabel].filter(Boolean).join(' | ');
   const suffix = [input.caseType, `${input.caseNumber}/${input.year}`].filter(Boolean).join(' ');
   return [prefix, suffix].filter(Boolean).join(' | ');
 }
@@ -388,7 +463,9 @@ function findTrackedCase(provider, input) {
     return listCases().find((trackedCase) => {
       return trackedCase.provider === 'districtCourtCnr' &&
         String(trackedCase.queryMeta?.districtSlug || '') === String(input.districtSlug || '') &&
+        String(trackedCase.queryMeta?.searchMode || 'courtComplex') === String(input.searchMode || 'courtComplex') &&
         String(trackedCase.queryMeta?.courtComplexValue || trackedCase.queryMeta?.courtComplex || '') === String(input.courtComplexValue || input.courtComplex || '') &&
+        String(trackedCase.queryMeta?.courtEstablishmentValue || trackedCase.queryMeta?.courtEstablishment || '') === String(input.courtEstablishmentValue || input.courtEstablishment || '') &&
         String(trackedCase.queryMeta?.caseType || '') === String(input.caseType || '') &&
         String(trackedCase.queryMeta?.caseNumber || '') === String(input.caseNumber || '') &&
         String(trackedCase.queryMeta?.year || '') === String(input.year || '');
@@ -450,6 +527,21 @@ function withDefaultReminderInput(input) {
     ...input,
     reminderEmails: DEFAULT_REMINDER_EMAIL
   };
+}
+
+async function getCachedLookupOptions(cacheKey, producer, ttlMs = 6 * 60 * 60 * 1000) {
+  const now = Date.now();
+  const cached = optionsCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) {
+    return cached.data;
+  }
+
+  const data = await producer();
+  optionsCache.set(cacheKey, {
+    data,
+    expiresAt: now + ttlMs
+  });
+  return data;
 }
 
 function scheduleReminderSweep() {

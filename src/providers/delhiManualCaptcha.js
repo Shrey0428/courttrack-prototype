@@ -36,6 +36,32 @@ class DelhiManualCaptchaProvider extends BaseProvider {
     throw new Error('Delhi case-status lookups require the manual CAPTCHA flow.');
   }
 
+  async listLookupOptions() {
+    const browser = await chromium.launch({ headless: process.env.PLAYWRIGHT_HEADLESS !== 'false' });
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      await page.goto(CASE_STATUS_URL, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+
+      const caseTypes = await readSelectOptions(await getCaseTypeDropdown(page));
+      const years = await readSelectOptions(await getYearDropdown(page));
+
+      return {
+        sourceUrl: CASE_STATUS_URL,
+        caseTypes,
+        years
+      };
+    } finally {
+      await context.close().catch(() => {});
+      await browser.close().catch(() => {});
+    }
+  }
+
   async startLookup({ caseType, caseNumber, year }) {
     if (!caseType || !caseNumber || !year) {
       throw new Error('Delhi case-status lookup requires case type, case number, and year.');
@@ -141,6 +167,17 @@ async function selectDelhiOption(selectLocator, value, fieldName) {
   }
 
   await selectLocator.selectOption(match.value || { label: match.text });
+}
+
+async function readSelectOptions(selectLocator) {
+  return selectLocator.locator('option').evaluateAll((nodes) =>
+    nodes
+      .map((node) => ({
+        value: node.getAttribute('value') || '',
+        label: (node.textContent || '').replace(/\s+/g, ' ').trim()
+      }))
+      .filter((option) => option.value && option.label)
+  );
 }
 
 function waitForCaptchaValidation(page) {

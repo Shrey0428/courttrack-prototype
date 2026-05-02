@@ -378,7 +378,7 @@
                 <div class="form-grid-compact">
                   <div>
                     <label for="caseType">Case type</label>
-                    <input id="caseType" placeholder="W.P.(C)" />
+                    <select id="caseType"></select>
                   </div>
                   <div>
                     <label for="caseNumber">Case number</label>
@@ -386,7 +386,7 @@
                   </div>
                   <div>
                     <label for="caseYear">Year</label>
-                    <input id="caseYear" placeholder="2026" />
+                    <select id="caseYear"></select>
                   </div>
                   <button type="submit">Load CAPTCHA</button>
                 </div>
@@ -410,7 +410,7 @@
                   </div>
                   <div>
                     <label for="districtCaseType">Case type</label>
-                    <input id="districtCaseType" placeholder="CS DJ" />
+                    <select id="districtCaseType"></select>
                   </div>
                   <div>
                     <label for="districtCaseNumber">Case number</label>
@@ -518,6 +518,8 @@
       let activeLookupProvider = 'delhiManualCaptcha';
       let trackedCasesCache = [];
       let districtSites = [];
+      let highCourtLookupOptions = { caseTypes: [], years: [] };
+      const districtLookupOptionsCache = new Map();
       let currentCourtFilter = 'all';
       let statusToastTimer = null;
       let pendingRefreshCaseId = null;
@@ -570,6 +572,50 @@
         document.getElementById('courtTabDistrict').className = high ? 'secondary' : 'active';
       }
 
+      function normalizeOptionText(value) {
+        return String(value || '')
+          .trim()
+          .toLowerCase()
+          .replace(/[\s./()_-]+/g, '');
+      }
+
+      function findMatchingOptionValue(options, preferredValue) {
+        const raw = String(preferredValue || '').trim();
+        if (!raw) return '';
+
+        const exact = options.find((entry) => String(entry.value || '') === raw || String(entry.label || '') === raw);
+        if (exact) return String(exact.value || '');
+
+        const normalized = normalizeOptionText(raw);
+        const flexible = options.find((entry) => {
+          const valueNorm = normalizeOptionText(entry.value || '');
+          const labelNorm = normalizeOptionText(entry.label || '');
+          return valueNorm === normalized || labelNorm === normalized || valueNorm.includes(normalized) || labelNorm.includes(normalized);
+        });
+        return flexible ? String(flexible.value || '') : '';
+      }
+
+      function populateSelect(selectId, options, placeholder, preferredValue = '') {
+        const select = document.getElementById(selectId);
+        const safeOptions = Array.isArray(options) ? options : [];
+        let selectedValue = findMatchingOptionValue(safeOptions, preferredValue);
+        if (!selectedValue && safeOptions.length === 1) {
+          selectedValue = String(safeOptions[0].value || '');
+        }
+        const renderedOptions = [`<option value="">${escapeHtml(placeholder)}</option>`]
+          .concat(
+            safeOptions.map((entry) => {
+              const value = String(entry.value || '');
+              const label = String(entry.label || value);
+              const selected = selectedValue && selectedValue === value ? ' selected' : '';
+              return `<option value="${escapeHtml(value)}"${selected}>${escapeHtml(label)}</option>`;
+            })
+          );
+        select.innerHTML = renderedOptions.join('');
+        select.value = selectedValue || '';
+        select.disabled = safeOptions.length === 0;
+      }
+
       function showCaptchaBox(payload, provider) {
         activeCaptchaSessionId = payload.sessionId;
         activeLookupProvider = provider;
@@ -589,16 +635,72 @@
         const payload = await api('/api/district-courts');
         districtSites = payload.districts || [];
         const districtSelect = document.getElementById('districtSlug');
-        districtSelect.innerHTML = districtSites.map((district) => `<option value="${district.slug}">${escapeHtml(district.label)}</option>`).join('');
-        populateCourtComplexes();
+        districtSelect.innerHTML = districtSites
+          .map((district) => `<option value="${district.slug}">${escapeHtml(district.label)}</option>`)
+          .join('');
+        await handleDistrictChange();
       }
 
-      function populateCourtComplexes() {
-        const districtSlug = document.getElementById('districtSlug').value;
-        const district = districtSites.find((entry) => entry.slug === districtSlug);
-        const complexSelect = document.getElementById('courtComplexValue');
-        const options = district?.courtComplexes || [];
-        complexSelect.innerHTML = options.map((complex) => `<option value="${complex.value}">${escapeHtml(complex.label)}</option>`).join('');
+      async function loadHighCourtLookupOptions(preferred = {}) {
+        if (!highCourtLookupOptions.caseTypes.length || !highCourtLookupOptions.years.length) {
+          highCourtLookupOptions = await api('/api/high-court-lookup-options');
+        }
+
+        populateSelect('caseType', highCourtLookupOptions.caseTypes, 'Select case type', preferred.caseType || '');
+        populateSelect('caseYear', highCourtLookupOptions.years, 'Select year', preferred.year || '');
+      }
+
+      async function getDistrictLookupOptions(districtSlug) {
+        const slug = String(districtSlug || '').trim();
+        if (!slug) return null;
+        if (!districtLookupOptionsCache.has(slug)) {
+          districtLookupOptionsCache.set(slug, api(`/api/district-lookup-options?districtSlug=${encodeURIComponent(slug)}`));
+        }
+        return districtLookupOptionsCache.get(slug);
+      }
+
+      async function handleDistrictChange(preferred = {}) {
+        const districtSlug = String(document.getElementById('districtSlug').value || '').trim();
+        if (!districtSlug) {
+          populateSelect('courtComplexValue', [], 'Select court complex');
+          populateSelect('districtCaseType', [], 'Select case type');
+          return;
+        }
+
+        populateSelect('courtComplexValue', [], 'Loading court complexes...');
+        populateSelect('districtCaseType', [], 'Select case type');
+
+        const payload = await getDistrictLookupOptions(districtSlug);
+        const complexes = payload?.courtComplexes || [];
+        populateSelect(
+          'courtComplexValue',
+          complexes,
+          'Select court complex',
+          preferred.courtComplexValue || preferred.courtComplex || ''
+        );
+
+        await handleDistrictCourtComplexChange({
+          caseType: preferred.caseType || '',
+          skipStatus: true
+        });
+      }
+
+      async function handleDistrictCourtComplexChange(preferred = {}) {
+        const districtSlug = String(document.getElementById('districtSlug').value || '').trim();
+        const courtComplexValue = String(document.getElementById('courtComplexValue').value || '').trim();
+
+        if (!districtSlug || !courtComplexValue) {
+          populateSelect('districtCaseType', [], 'Select case type');
+          return;
+        }
+
+        const payload = await api(
+          `/api/district-case-types?districtSlug=${encodeURIComponent(districtSlug)}&searchMode=courtComplex&courtComplexValue=${encodeURIComponent(courtComplexValue)}`
+        );
+        populateSelect('districtCaseType', payload.caseTypes || [], 'Select case type', preferred.caseType || '');
+        if (!preferred.skipStatus) {
+          setStatus('Official district case types loaded.', 'muted');
+        }
       }
 
       async function startHighCourtLookup() {
@@ -622,17 +724,19 @@
       async function startDistrictLookup() {
         setStatus('Loading Delhi District Court CAPTCHA...', 'muted');
         const district = districtSites.find((entry) => entry.slug === document.getElementById('districtSlug').value);
+        const districtPayload = await getDistrictLookupOptions(district?.slug || '');
         const courtComplexValue = document.getElementById('courtComplexValue').value;
-        const courtComplex = district?.courtComplexes?.find((entry) => entry.value === courtComplexValue);
+        const courtComplex = districtPayload?.courtComplexes?.find((entry) => entry.value === courtComplexValue);
         const reminderEmails = document.getElementById('districtReminderEmails').value.trim();
         const payload = await api('/lookup/start', {
           method: 'POST',
           body: JSON.stringify({
             provider: 'districtCourtCnr',
             districtSlug: district?.slug || '',
+            searchMode: 'courtComplex',
             courtComplex: courtComplex?.label || '',
             courtComplexValue,
-            caseType: document.getElementById('districtCaseType').value.trim(),
+            caseType: document.getElementById('districtCaseType').value,
             caseNumber: document.getElementById('districtCaseNumber').value.trim(),
             year: document.getElementById('districtCaseYear').value.trim(),
             reminderEmails,
@@ -676,7 +780,8 @@
         document.getElementById('caseSearch').value = '';
         pendingRefreshCaseId = null;
         if (provider === 'districtCourtCnr') {
-          document.getElementById('districtCaseType').value = '';
+          document.getElementById('courtComplexValue').value = '';
+          populateSelect('districtCaseType', [], 'Select case type');
           document.getElementById('districtCaseNumber').value = '';
           document.getElementById('districtCaseYear').value = '';
           document.getElementById('districtReminderEmails').value = DEFAULT_REMINDER_EMAIL;
@@ -688,15 +793,16 @@
         }
       }
 
-      function prefillRefreshLookup(trackedCase) {
+      async function prefillRefreshLookup(trackedCase) {
         pendingRefreshCaseId = trackedCase.id;
 
         if (trackedCase.provider === 'districtCourtCnr') {
           switchLookupTab('districtCourt');
           document.getElementById('districtSlug').value = trackedCase.queryMeta?.districtSlug || '';
-          populateCourtComplexes();
-          document.getElementById('courtComplexValue').value = trackedCase.queryMeta?.courtComplexValue || trackedCase.queryMeta?.courtComplex || '';
-          document.getElementById('districtCaseType').value = trackedCase.queryMeta?.caseType || '';
+          await handleDistrictChange({
+            courtComplexValue: trackedCase.queryMeta?.courtComplexValue || trackedCase.queryMeta?.courtComplex || '',
+            caseType: trackedCase.queryMeta?.caseType || ''
+          });
           document.getElementById('districtCaseNumber').value = trackedCase.queryMeta?.caseNumber || '';
           document.getElementById('districtCaseYear').value = trackedCase.queryMeta?.year || '';
           document.getElementById('districtReminderEmails').value = trackedCase.reminderEmailsLabel || trackedCase.reminderEmail || DEFAULT_REMINDER_EMAIL;
@@ -704,9 +810,11 @@
         }
 
         switchLookupTab('highCourt');
-        document.getElementById('caseType').value = trackedCase.queryMeta?.caseType || '';
+        await loadHighCourtLookupOptions({
+          caseType: trackedCase.queryMeta?.caseType || '',
+          year: trackedCase.queryMeta?.year || ''
+        });
         document.getElementById('caseNumber').value = trackedCase.queryMeta?.caseNumber || '';
-        document.getElementById('caseYear').value = trackedCase.queryMeta?.year || '';
         document.getElementById('reminderEmails').value = trackedCase.reminderEmailsLabel || trackedCase.reminderEmail || DEFAULT_REMINDER_EMAIL;
       }
 
@@ -818,7 +926,7 @@
         const trackedCase = trackedCasesCache.find((entry) => entry.id === caseId);
         if (!trackedCase) return;
         if (trackedCase.provider === 'delhiManualCaptcha' || trackedCase.provider === 'districtCourtCnr') {
-          prefillRefreshLookup(trackedCase);
+          await prefillRefreshLookup(trackedCase);
           setStatus('Case details loaded above. Solve the official CAPTCHA to refresh this tracked case.');
           return;
         }
@@ -907,7 +1015,12 @@
         trackSecondaryProvider(event).catch((error) => setStatus(error.message, 'error'));
       });
 
-      document.getElementById('districtSlug').addEventListener('change', populateCourtComplexes);
+      document.getElementById('districtSlug').addEventListener('change', () => {
+        handleDistrictChange().catch((error) => setStatus(error.message, 'error'));
+      });
+      document.getElementById('courtComplexValue').addEventListener('change', () => {
+        handleDistrictCourtComplexChange().catch((error) => setStatus(error.message, 'error'));
+      });
       document.getElementById('submitCaptchaBtn').addEventListener('click', () => {
         submitCaptcha().catch((error) => setStatus(error.message, 'error'));
       });
@@ -918,7 +1031,7 @@
       document.getElementById('reminderEmails').value = document.getElementById('reminderEmails').value.trim() || DEFAULT_REMINDER_EMAIL;
       document.getElementById('districtReminderEmails').value = document.getElementById('districtReminderEmails').value.trim() || DEFAULT_REMINDER_EMAIL;
 
-      Promise.all([loadDistrictSites(), loadCases()]).catch((error) => {
+      Promise.all([loadHighCourtLookupOptions(), loadDistrictSites(), loadCases()]).catch((error) => {
         setStatus(error.message, 'error');
       });
     </script>

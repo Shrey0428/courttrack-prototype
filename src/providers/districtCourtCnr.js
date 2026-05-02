@@ -26,6 +26,87 @@ class DistrictCourtCnrProvider extends BaseProvider {
     throw new Error('District court lookups require the manual CAPTCHA flow.');
   }
 
+  async listLookupOptions(input) {
+    const district = getDelhiDistrictSite(input?.districtSlug);
+    if (!district) {
+      throw new Error('Choose a Delhi district first.');
+    }
+
+    const browser = await chromium.launch({ headless: process.env.PLAYWRIGHT_HEADLESS !== 'false' });
+    const context = await browser.newContext({
+      userAgent: process.env.PLAYWRIGHT_USER_AGENT || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+      locale: 'en-IN',
+      timezoneId: 'Asia/Kolkata',
+      viewport: { width: 1366, height: 900 },
+      ignoreHTTPSErrors: true
+    });
+    const page = await context.newPage();
+
+    try {
+      await prepareDistrictLookupPage(page);
+      await gotoDistrictPage(page, district.url);
+
+      const courtComplexes = await readSelectOptions(page.locator('#est_code'));
+      const courtEstablishments = await readSelectOptions(page.locator('#court_establishment'));
+
+      return {
+        sourceUrl: district.url,
+        districtSlug: district.slug,
+        districtLabel: district.label,
+        courtComplexes,
+        courtEstablishments
+      };
+    } finally {
+      await context.close().catch(() => {});
+      await browser.close().catch(() => {});
+    }
+  }
+
+  async listCaseTypeOptions(input) {
+    const district = getDelhiDistrictSite(input?.districtSlug);
+    if (!district) {
+      throw new Error('Choose a Delhi district first.');
+    }
+
+    const browser = await chromium.launch({ headless: process.env.PLAYWRIGHT_HEADLESS !== 'false' });
+    const context = await browser.newContext({
+      userAgent: process.env.PLAYWRIGHT_USER_AGENT || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+      locale: 'en-IN',
+      timezoneId: 'Asia/Kolkata',
+      viewport: { width: 1366, height: 900 },
+      ignoreHTTPSErrors: true
+    });
+    const page = await context.newPage();
+
+    try {
+      await prepareDistrictLookupPage(page);
+      await gotoDistrictPage(page, district.url);
+
+      const prepared = prepareDistrictInput({
+        districtSlug: district.slug,
+        districtLabel: district.label,
+        districtUrl: district.url,
+        searchMode: input?.searchMode,
+        courtComplex: input?.courtComplex,
+        courtComplexValue: input?.courtComplexValue,
+        courtEstablishment: input?.courtEstablishment,
+        courtEstablishmentValue: input?.courtEstablishmentValue,
+        caseNumber: '1',
+        year: '2025'
+      });
+
+      await ensureDistrictCaseTypeDropdownReady(page, prepared);
+
+      return {
+        sourceUrl: district.url,
+        caseTypes: await readSelectOptions(page.locator('#case_type'))
+      };
+    } finally {
+      await context.close().catch(() => {});
+      await browser.close().catch(() => {});
+    }
+  }
+
   async startLookup(input) {
     const prepared = prepareDistrictInput(input);
     const browser = await chromium.launch({ headless: process.env.PLAYWRIGHT_HEADLESS !== 'false' });
@@ -41,7 +122,7 @@ class DistrictCourtCnrProvider extends BaseProvider {
     await prepareDistrictLookupPage(page);
     await gotoDistrictPage(page, prepared.districtUrl);
 
-    await ensureDistrictCaseTypeDropdownReady(page, prepared.courtComplexValue);
+    await ensureDistrictCaseTypeDropdownReady(page, prepared);
 
     const captchaLocator = page.locator('img[id^="siwp_captcha_image_"]').first();
     await captchaLocator.waitFor({ state: 'visible', timeout: DISTRICT_SELECTOR_TIMEOUT_MS });
@@ -73,7 +154,7 @@ class DistrictCourtCnrProvider extends BaseProvider {
     const { page, input } = session;
 
     if (input.caseType) {
-      await ensureDistrictCaseTypeDropdownReady(page, input.courtComplexValue);
+      await ensureDistrictCaseTypeDropdownReady(page, input);
       await selectCaseType(page, input.caseType);
     }
 
@@ -188,18 +269,36 @@ async function gotoDistrictPage(page, url) {
   throw new Error(`District court page could not be opened in time. ${message || url}`);
 }
 
-async function ensureDistrictCaseTypeDropdownReady(page, courtComplexValue) {
-  await page.locator('#chkYes').waitFor({ state: 'attached', timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(() => {});
-  await page.locator('#est_code').waitFor({ state: 'attached', timeout: DISTRICT_SELECTOR_TIMEOUT_MS });
-  await page.check('#chkYes').catch(() => {});
+async function ensureDistrictCaseTypeDropdownReady(page, input) {
+  const searchMode = input?.searchMode === 'courtEstablishment' ? 'courtEstablishment' : 'courtComplex';
+  const targetSelector = searchMode === 'courtEstablishment' ? '#court_establishment' : '#est_code';
+  const targetValue = searchMode === 'courtEstablishment'
+    ? String(input?.courtEstablishmentValue || '').trim()
+    : String(input?.courtComplexValue || '').trim();
+  const targetLabel = searchMode === 'courtEstablishment'
+    ? String(input?.courtEstablishment || '').trim()
+    : String(input?.courtComplex || '').trim();
+
+  if (!targetValue) {
+    throw new Error(`Choose a valid ${searchMode === 'courtEstablishment' ? 'court establishment' : 'court complex'} for the selected district.`);
+  }
+
+  await page.locator(searchMode === 'courtEstablishment' ? '#chkNo' : '#chkYes').waitFor({ state: 'attached', timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(() => {});
+  await page.locator(targetSelector).waitFor({ state: 'attached', timeout: DISTRICT_SELECTOR_TIMEOUT_MS });
+  await page.check(searchMode === 'courtEstablishment' ? '#chkNo' : '#chkYes').catch(() => {});
   await waitForDistrictScriptsReady(page);
 
-  const currentValue = await page.locator('#est_code').inputValue().catch(() => '');
+  await page.waitForFunction((selector) => {
+    const select = document.querySelector(selector);
+    return Boolean(select && select.options && select.options.length > 1);
+  }, targetSelector, { timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(() => {});
+
+  const currentValue = await page.locator(targetSelector).inputValue().catch(() => '');
   const caseTypeReady = await page.locator('#case_type').evaluate((select) => {
     return Boolean(select && !select.disabled && select.options.length > 1);
   }).catch(() => false);
 
-  if (currentValue !== courtComplexValue || !caseTypeReady) {
+  if (currentValue !== targetValue || !caseTypeReady) {
     const responsePromise = page.waitForResponse((response) => {
       const request = response.request();
       const postData = request.postData() || '';
@@ -208,7 +307,7 @@ async function ensureDistrictCaseTypeDropdownReady(page, courtComplexValue) {
         postData.includes('action=get_case_types');
     }, { timeout: DISTRICT_SELECTOR_TIMEOUT_MS }).catch(() => null);
 
-    await page.selectOption('#est_code', courtComplexValue);
+    await selectDistrictDropdownOption(page.locator(targetSelector), targetValue, targetLabel, searchMode === 'courtEstablishment' ? 'court establishment' : 'court complex');
     await responsePromise;
   }
 
@@ -220,7 +319,7 @@ async function ensureDistrictCaseTypeDropdownReady(page, courtComplexValue) {
 
 async function waitForDistrictScriptsReady(page) {
   await page.waitForFunction(() => {
-    const select = document.querySelector('#est_code');
+    const select = document.querySelector('#est_code') || document.querySelector('#court_establishment');
     const $ = window.jQuery;
     if (!select || typeof $ !== 'function' || typeof $._data !== 'function') {
       return false;
@@ -265,11 +364,13 @@ function prepareDistrictInput(input) {
     throw new Error('Choose a Delhi district first.');
   }
 
+  const searchMode = input?.searchMode === 'courtEstablishment' ? 'courtEstablishment' : 'courtComplex';
+  const districtLabel = input?.districtLabel || district.label;
+  const districtUrl = input?.districtUrl || district.url;
   const courtComplexValue = String(input?.courtComplexValue || '').trim();
-  const courtComplex = district.courtComplexes.find((entry) => entry.value === courtComplexValue || entry.label === String(input?.courtComplex || '').trim());
-  if (!courtComplex) {
-    throw new Error('Choose a valid court complex for the selected district.');
-  }
+  const courtEstablishmentValue = String(input?.courtEstablishmentValue || '').trim();
+  const courtComplex = district.courtComplexes.find((entry) => entry.value === courtComplexValue || entry.label === String(input?.courtComplex || '').trim()) || null;
+  const courtEstablishment = String(input?.courtEstablishment || '').trim();
 
   const caseNumber = String(input?.caseNumber || '').trim();
   const year = String(input?.year || '').trim();
@@ -280,10 +381,13 @@ function prepareDistrictInput(input) {
   return {
     lookupMode: 'district_case_number',
     districtSlug: district.slug,
-    districtLabel: district.label,
-    districtUrl: district.url,
-    courtComplex: courtComplex.label,
-    courtComplexValue: courtComplex.value,
+    districtLabel,
+    districtUrl,
+    searchMode,
+    courtComplex: courtComplex?.label || String(input?.courtComplex || '').trim(),
+    courtComplexValue: courtComplex?.value || courtComplexValue,
+    courtEstablishment,
+    courtEstablishmentValue,
     caseType: String(input?.caseType || '').trim(),
     caseNumber,
     year
@@ -311,6 +415,32 @@ async function selectCaseType(page, desiredValue) {
   await select.selectOption(match.value);
 }
 
+async function selectDistrictDropdownOption(selectLocator, desiredValue, desiredLabel, fieldName) {
+  const rawValue = String(desiredValue || '').trim();
+  const rawLabel = String(desiredLabel || '').trim();
+  const normalizedValue = normalizeFlexibleDistrictOption(rawValue);
+  const normalizedLabel = normalizeFlexibleDistrictOption(rawLabel);
+  const options = await selectLocator.locator('option').evaluateAll((nodes) =>
+    nodes.map((node) => ({
+      value: node.getAttribute('value') || '',
+      text: (node.textContent || '').trim()
+    }))
+  );
+
+  const match = options.find((option) => option.value === rawValue || option.text === rawLabel) ||
+    options.find((option) => normalizeFlexibleDistrictOption(option.value) === normalizedValue || normalizeFlexibleDistrictOption(option.text) === normalizedValue) ||
+    options.find((option) => normalizeFlexibleDistrictOption(option.value) === normalizedLabel || normalizeFlexibleDistrictOption(option.text) === normalizedLabel) ||
+    options.find((option) => normalizeFlexibleDistrictOption(option.value).includes(normalizedValue) || normalizeFlexibleDistrictOption(option.text).includes(normalizedValue)) ||
+    options.find((option) => normalizeFlexibleDistrictOption(option.value).includes(normalizedLabel) || normalizeFlexibleDistrictOption(option.text).includes(normalizedLabel)) ||
+    options.find((option) => normalizedLabel && (normalizedLabel.includes(normalizeFlexibleDistrictOption(option.value)) || normalizedLabel.includes(normalizeFlexibleDistrictOption(option.text))));
+
+  if (!match) {
+    throw new Error(`Could not find district ${fieldName} "${desiredLabel || desiredValue}" in the official dropdown.`);
+  }
+
+  await selectLocator.selectOption(match.value);
+}
+
 function normalizeDistrictOption(value) {
   return String(value || '')
     .toUpperCase()
@@ -322,6 +452,17 @@ function normalizeFlexibleDistrictOption(value) {
   return String(value || '')
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, '');
+}
+
+async function readSelectOptions(selectLocator) {
+  return selectLocator.locator('option').evaluateAll((nodes) =>
+    nodes
+      .map((node) => ({
+        value: node.getAttribute('value') || '',
+        label: (node.textContent || '').replace(/\s+/g, ' ').trim()
+      }))
+      .filter((option) => option.value && option.label && !/^select/i.test(option.label) && !/^--select/i.test(option.label))
+  );
 }
 
 async function parseSearchResults(page, html, input) {

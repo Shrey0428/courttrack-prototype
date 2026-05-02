@@ -299,7 +299,9 @@ function findDuplicateCase(cases, input) {
     return cases.find((candidate) =>
       candidate.provider === 'districtCourtCnr' &&
       String(candidate.queryMeta?.districtSlug || '') === String(input.queryMeta?.districtSlug || '') &&
+      String(candidate.queryMeta?.searchMode || 'courtComplex') === String(input.queryMeta?.searchMode || 'courtComplex') &&
       String(candidate.queryMeta?.courtComplexValue || candidate.queryMeta?.courtComplex || '') === String(input.queryMeta?.courtComplexValue || input.queryMeta?.courtComplex || '') &&
+      String(candidate.queryMeta?.courtEstablishmentValue || candidate.queryMeta?.courtEstablishment || '') === String(input.queryMeta?.courtEstablishmentValue || input.queryMeta?.courtEstablishment || '') &&
       String(candidate.queryMeta?.caseType || '') === String(input.queryMeta?.caseType || '') &&
       String(candidate.queryMeta?.caseNumber || '') === String(input.queryMeta?.caseNumber || '') &&
       String(candidate.queryMeta?.year || '') === String(input.queryMeta?.year || '')
