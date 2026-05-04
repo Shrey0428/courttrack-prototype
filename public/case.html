@@ -101,6 +101,11 @@
           </section>
 
           <section class="card">
+            <h2>Today's cause list</h2>
+            <div class="list" id="causeListItems"></div>
+          </section>
+
+          <section class="card">
             <div class="toggle-row">
               <h2>Case history</h2>
               <button id="historyToggleBtn" class="secondary" type="button" style="display:none;">Show more</button>
@@ -274,6 +279,18 @@
             <p>${order.url ? `<a href="${order.url}" target="_blank" rel="noopener noreferrer">Open order</a>` : 'No direct order link saved.'}</p>
           `,
           'No order rows are stored for this case yet.'
+        );
+
+        renderList(
+          document.getElementById('causeListItems'),
+          caseData.latestCauseListMatches || [],
+          (item) => `
+            <div><strong>${escapeHtml(item.title || 'Cause list')}</strong></div>
+            <p class="muted">${escapeHtml(item.listDate || '-')}</p>
+            ${item.courtNumber ? `<p>Court No: ${escapeHtml(item.courtNumber)}</p>` : ''}
+            <p><a href="${item.pdfUrl}" target="_blank" rel="noopener noreferrer">Open cause-list PDF</a></p>
+          `,
+          'This case has not been found in today\'s Delhi High Court cause list yet.'
         );
 
         renderHistory(caseData);

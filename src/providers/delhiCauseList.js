@@ -9,18 +9,39 @@ class DelhiCauseListProvider extends BaseProvider {
     super('delhiCauseList');
   }
 
+  async listCauseListEntries(options = {}) {
+    const entries = await fetchCauseListEntries();
+    const targetDate = normalizeDate(options.listDate || options.date || '');
+    return targetDate ? entries.filter((entry) => entry.listDate === targetDate) : entries;
+  }
+
+  async fetchCauseListPdfText(pdfUrl) {
+    return fetchPdfText(pdfUrl);
+  }
+
+  buildLookupCandidates(input) {
+    return buildLookupCandidates(input);
+  }
+
+  findCaseInText(text, inputs) {
+    const rawInputs = Array.isArray(inputs) ? inputs : [inputs];
+    const candidates = Array.from(new Set(rawInputs.flatMap((value) => buildLookupCandidates(String(value || '').trim()))));
+    if (!candidates.length) return null;
+    return findCaseInCauseList(text, candidates);
+  }
+
   async fetchCase({ cnrNumber, caseLookup }) {
     const target = (caseLookup || cnrNumber || '').trim();
     if (!target) throw new Error('Delhi provider requires a caseLookup or CNR value');
 
     const query = normalizeCaseKey(target);
     const candidates = buildLookupCandidates(target);
-    const causeLists = await fetchCauseListEntries();
+    const causeLists = await this.listCauseListEntries();
     const checked = [];
 
     for (const entry of causeLists) {
       try {
-        const pdfText = await fetchPdfText(entry.pdfUrl);
+        const pdfText = await this.fetchCauseListPdfText(entry.pdfUrl);
         const match = findCaseInCauseList(pdfText, candidates);
         checked.push({ title: entry.title, listDate: entry.listDate, pdfUrl: entry.pdfUrl, matched: !!match });
         if (!match) continue;
@@ -72,8 +93,41 @@ class DelhiCauseListProvider extends BaseProvider {
   }
 }
 
-async function fetchCauseListEntries() {
-  const response = await fetch(CAUSE_LIST_PAGE, {
+async function fetchCauseListEntries(options = {}) {
+  const targetDate = normalizeDate(options.listDate || options.date || '');
+
+  if (!targetDate) {
+    const firstPageEntries = await fetchCauseListPage(CAUSE_LIST_PAGE);
+    return dedupeAndSortEntries(firstPageEntries).slice(0, 30);
+  }
+
+  const entries = [];
+  let pageIndex = 0;
+  let sawTargetDate = false;
+
+  while (pageIndex < 25) {
+    const pageUrl = buildCauseListPageUrl(pageIndex);
+    const pageEntries = await fetchCauseListPage(pageUrl);
+    if (!pageEntries.length) break;
+
+    const matchingEntries = pageEntries.filter((entry) => entry.listDate === targetDate);
+    if (matchingEntries.length) {
+      sawTargetDate = true;
+      entries.push(...matchingEntries);
+    }
+
+    if (sawTargetDate && matchingEntries.length === 0) {
+      break;
+    }
+
+    pageIndex += 1;
+  }
+
+  return dedupeAndSortEntries(entries);
+}
+
+async function fetchCauseListPage(url) {
+  const response = await fetch(url, {
     headers: {
       'user-agent': 'CourtTrackPrototype/1.0 (+public cause list monitor)'
     }
@@ -93,16 +147,26 @@ async function fetchCauseListEntries() {
     entries.push({ title, listDate, pdfUrl });
   }
 
+  return entries;
+}
+
+function dedupeAndSortEntries(entries) {
   const seen = new Set();
-  const deduped = entries.filter((e) => {
-    const key = `${e.title}|${e.listDate}|${e.pdfUrl}`;
+  const deduped = entries.filter((entry) => {
+    const key = `${entry.title}|${entry.listDate}|${entry.pdfUrl}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 
   deduped.sort((a, b) => sortableDate(b.listDate) - sortableDate(a.listDate));
-  return deduped.slice(0, 30);
+  return deduped;
+}
+
+function buildCauseListPageUrl(pageIndex) {
+  const url = new URL(CAUSE_LIST_PAGE);
+  url.searchParams.set('page', String(pageIndex));
+  return url.toString();
 }
 
 async function fetchPdfText(pdfUrl) {

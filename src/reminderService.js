@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const { readDb, writeDb, id } = require('./db');
 const { formatReminderEmails } = require('./reminderEmails');
+const { refreshTodayCauseListOverview } = require('./causeListService');
 
 const REMINDER_INTERVAL_MS = Number(process.env.REMINDER_INTERVAL_MS || 60 * 60 * 1000);
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -44,7 +45,6 @@ function getReminderStatus() {
 }
 
 async function runReminderSweep(options = {}) {
-  const db = readDb();
   const status = getReminderStatus();
   const now = new Date();
   const today = startOfIndiaDay(now);
@@ -61,8 +61,93 @@ async function runReminderSweep(options = {}) {
     };
   }
 
+  const causeListOverview = await refreshTodayCauseListOverview().catch(() => ({
+    date: formatDateKey(today),
+    matches: []
+  }));
+  const db = readDb();
+  const causeListMatchesByCaseId = new Map();
+  for (const match of causeListOverview.matches || []) {
+    if (!match.trackedCaseId) continue;
+    if (!causeListMatchesByCaseId.has(match.trackedCaseId)) {
+      causeListMatchesByCaseId.set(match.trackedCaseId, []);
+    }
+    causeListMatchesByCaseId.get(match.trackedCaseId).push(match);
+  }
+
   for (const trackedCase of db.trackedCases) {
     if (targetCaseId && trackedCase.id !== targetCaseId) continue;
+
+    const causeListMatches = causeListMatchesByCaseId.get(trackedCase.id) || [];
+    if (causeListMatches.length) {
+      if (hasSentCauseListAlert(db, trackedCase.id, causeListOverview.date)) {
+        results.push({
+          caseId: trackedCase.id,
+          caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
+          sent: false,
+          skipped: true,
+          reason: 'Cause list alert already sent for today.',
+          reasonCode: 'cause_list_already_sent',
+          details: { causeListDate: causeListOverview.date, matches: causeListMatches.length }
+        });
+      } else if (!trackedCase.reminderEnabled || !trackedCase.reminderEmails?.length) {
+        results.push({
+          caseId: trackedCase.id,
+          caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
+          sent: false,
+          skipped: true,
+          reason: 'Case is in today\'s cause list, but reminders are disabled or no recipient emails are configured.',
+          reasonCode: 'cause_list_notifications_disabled',
+          details: { causeListDate: causeListOverview.date, matches: causeListMatches.length }
+        });
+      } else {
+        try {
+          await sendCauseListAlertEmail(trackedCase, causeListOverview.date, causeListMatches);
+          const recipientLabel = formatReminderEmails(trackedCase.reminderEmails);
+          db.reminderDeliveries.push({
+            id: id('reminder'),
+            trackedCaseId: trackedCase.id,
+            status: 'sent',
+            reminderDate: causeListOverview.date,
+            daysUntilHearing: null,
+            email: recipientLabel,
+            emails: trackedCase.reminderEmails,
+            kind: 'cause_list',
+            createdAt: now.toISOString()
+          });
+          results.push({
+            caseId: trackedCase.id,
+            caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
+            sent: true,
+            email: recipientLabel,
+            emails: trackedCase.reminderEmails,
+            kind: 'cause_list',
+            matches: causeListMatches.length
+          });
+        } catch (error) {
+          db.reminderDeliveries.push({
+            id: id('reminder'),
+            trackedCaseId: trackedCase.id,
+            status: 'failed',
+            reminderDate: causeListOverview.date,
+            daysUntilHearing: null,
+            email: formatReminderEmails(trackedCase.reminderEmails),
+            emails: trackedCase.reminderEmails,
+            kind: 'cause_list',
+            error: error.message,
+            createdAt: now.toISOString()
+          });
+          results.push({
+            caseId: trackedCase.id,
+            caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
+            sent: false,
+            skipped: false,
+            reason: error.message,
+            reasonCode: 'cause_list_send_failed'
+          });
+        }
+      }
+    }
 
     const eligibility = getReminderEligibility(trackedCase, today, { forceSend });
     if (!eligibility.shouldSend) {
@@ -260,8 +345,18 @@ function hasSentReminder(db, trackedCaseId, reminderDate, daysUntilHearing) {
   return db.reminderDeliveries.some((delivery) =>
     delivery.trackedCaseId === trackedCaseId &&
     delivery.status === 'sent' &&
+    delivery.kind !== 'cause_list' &&
     delivery.reminderDate === reminderDate &&
     delivery.daysUntilHearing === daysUntilHearing
+  );
+}
+
+function hasSentCauseListAlert(db, trackedCaseId, reminderDate) {
+  return db.reminderDeliveries.some((delivery) =>
+    delivery.trackedCaseId === trackedCaseId &&
+    delivery.status === 'sent' &&
+    delivery.kind === 'cause_list' &&
+    delivery.reminderDate === reminderDate
   );
 }
 
@@ -277,6 +372,41 @@ async function sendReminderEmail(trackedCase, eligibility) {
     subject,
     text: buildReminderText(trackedCase, eligibility, links, false),
     html: buildReminderHtml(trackedCase, eligibility, links, false)
+  });
+}
+
+async function sendCauseListAlertEmail(trackedCase, causeListDate, matches) {
+  const mailer = getTransporter();
+  const uniqueLinks = Array.from(new Map(matches.map((match) => [match.pdfUrl, match])).values());
+  const subject = `Cause list alert: ${trackedCase.latestCaseNumber || trackedCase.displayLabel}`;
+  const textLines = [
+    `Your tracked case is listed in today's Delhi High Court cause list (${causeListDate}).`,
+    '',
+    `Case: ${trackedCase.latestCaseNumber || trackedCase.displayLabel}`,
+    `Case title: ${trackedCase.latestCaseTitle || trackedCase.manualCaseTitle || 'Not available'}`,
+    ''
+  ];
+
+  for (const match of uniqueLinks) {
+    textLines.push(`${match.title}: ${match.pdfUrl}`);
+  }
+
+  await mailer.sendMail({
+    from: getReminderConfig().from,
+    to: trackedCase.reminderEmails.join(', '),
+    replyTo: getReminderConfig().replyTo || undefined,
+    subject,
+    text: textLines.join('\n'),
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #14213d;">
+        <h2 style="margin-bottom: 8px;">Today's Delhi High Court cause list match</h2>
+        <p><strong>${escapeHtml(trackedCase.latestCaseNumber || trackedCase.displayLabel)}</strong></p>
+        <p>Cause list date: ${escapeHtml(causeListDate)}</p>
+        <ul>
+          ${uniqueLinks.map((match) => `<li><a href="${match.pdfUrl}">${escapeHtml(match.title)}</a></li>`).join('')}
+        </ul>
+      </div>
+    `
   });
 }
 

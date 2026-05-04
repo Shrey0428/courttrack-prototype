@@ -220,6 +220,16 @@
       .tracked-card {
         background: var(--panel-strong);
       }
+      .list-shell {
+        display: grid;
+        gap: 12px;
+      }
+      .item {
+        border: 1px solid rgba(183, 123, 90, 0.18);
+        border-radius: 16px;
+        padding: 14px;
+        background: linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(249,245,240,.96) 100%);
+      }
       .tracked-tools {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
@@ -474,6 +484,27 @@
         </div>
       </div>
 
+      <div class="card">
+        <div class="section-head">
+          <div>
+            <h2>Today's Cause List</h2>
+            <p class="muted">Official Delhi High Court PDF cause lists for today, plus your tracked cases that appear in them.</p>
+          </div>
+          <button class="secondary" type="button" onclick="refreshTodayCauseList()">Refresh today's cause list</button>
+        </div>
+        <div id="causeListStatus" class="status-inline muted">Loading today's cause list...</div>
+        <div class="hero-grid" style="grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px;">
+          <div>
+            <h3>Today's PDF links</h3>
+            <div id="todayCauseListLinks" class="list-shell muted" style="margin-top:12px;">Loading...</div>
+          </div>
+          <div>
+            <h3>Tracked case matches</h3>
+            <div id="todayCauseListMatches" class="list-shell muted" style="margin-top:12px;">Loading...</div>
+          </div>
+        </div>
+      </div>
+
       <div class="card tracked-card">
         <div class="section-head">
           <div>
@@ -520,6 +551,7 @@
       let districtSites = [];
       let highCourtLookupOptions = { caseTypes: [], years: [] };
       const districtLookupOptionsCache = new Map();
+      let todayCauseListCache = { entries: [], matches: [], date: '', scannedAt: '' };
       let currentCourtFilter = 'all';
       let statusToastTimer = null;
       let pendingRefreshCaseId = null;
@@ -624,6 +656,11 @@
         document.getElementById('captchaHelp').innerHTML = `${escapeHtml(payload.instructions)} <a href="${payload.sourceUrl}" target="_blank" rel="noopener noreferrer">Open source</a>`;
         document.getElementById('captchaText').value = '';
         document.getElementById('captchaBox').style.display = 'block';
+      }
+
+      function formatShortDateTime(value) {
+        if (!value) return '';
+        return new Date(value).toLocaleString();
       }
 
       function hideCaptchaBox() {
@@ -821,6 +858,57 @@
       async function loadCases() {
         trackedCasesCache = await api('/api/cases');
         renderCaseRows();
+      }
+
+      function renderTodayCauseList() {
+        const linksEl = document.getElementById('todayCauseListLinks');
+        const matchesEl = document.getElementById('todayCauseListMatches');
+        const statusEl = document.getElementById('causeListStatus');
+        const entries = todayCauseListCache.entries || [];
+        const matches = todayCauseListCache.matches || [];
+
+        statusEl.textContent = todayCauseListCache.scannedAt
+          ? `Scanned at ${formatShortDateTime(todayCauseListCache.scannedAt)} for ${todayCauseListCache.date || 'today'}.`
+          : 'No cause-list scan has been stored yet.';
+
+        if (!entries.length) {
+          linksEl.innerHTML = '<div class="item muted">No official PDF cause-list links were found for today.</div>';
+        } else {
+          linksEl.innerHTML = entries.map((entry) => `
+            <div class="item">
+              <div><strong>${escapeHtml(entry.title || 'Cause list')}</strong></div>
+              <p class="muted">${escapeHtml(entry.listDate || todayCauseListCache.date || '-')}</p>
+              <p><a href="${entry.pdfUrl}" target="_blank" rel="noopener noreferrer">Open PDF cause list</a></p>
+            </div>
+          `).join('');
+        }
+
+        if (!matches.length) {
+          matchesEl.innerHTML = '<div class="item muted">None of your tracked High Court cases were found in today\'s cause-list PDFs.</div>';
+        } else {
+          matchesEl.innerHTML = matches.map((match) => `
+            <div class="item">
+              <div><strong>${escapeHtml(match.displayTitle || match.caseNumber || 'Tracked case')}</strong></div>
+              <p class="muted">${escapeHtml(match.caseNumber || '-')}</p>
+              ${match.courtNumber ? `<p>Court No: ${escapeHtml(match.courtNumber)}</p>` : ''}
+              <p><a href="/case.html?id=${encodeURIComponent(match.trackedCaseId)}" target="_blank" rel="noopener noreferrer">Open case</a> | <a href="${match.pdfUrl}" target="_blank" rel="noopener noreferrer">Open cause-list PDF</a></p>
+            </div>
+          `).join('');
+        }
+      }
+
+      async function loadTodayCauseList(refresh = false) {
+        const payload = refresh
+          ? await api('/api/cause-lists/today/refresh', { method: 'POST' })
+          : await api('/api/cause-lists/today');
+        todayCauseListCache = payload;
+        renderTodayCauseList();
+      }
+
+      async function refreshTodayCauseList() {
+        setStatus('Refreshing today\'s Delhi High Court cause list PDFs...', 'muted');
+        await loadTodayCauseList(true);
+        setStatus('Today\'s cause list updated.', 'success');
       }
 
       function renderCaseRows() {
@@ -1031,7 +1119,7 @@
       document.getElementById('reminderEmails').value = document.getElementById('reminderEmails').value.trim() || DEFAULT_REMINDER_EMAIL;
       document.getElementById('districtReminderEmails').value = document.getElementById('districtReminderEmails').value.trim() || DEFAULT_REMINDER_EMAIL;
 
-      Promise.all([loadHighCourtLookupOptions(), loadDistrictSites(), loadCases()]).catch((error) => {
+      Promise.all([loadHighCourtLookupOptions(), loadDistrictSites(), loadCases(), loadTodayCauseList()]).catch((error) => {
         setStatus(error.message, 'error');
       });
     </script>
