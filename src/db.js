@@ -166,6 +166,7 @@ function normalizeTrackedCase(trackedCase, latestPayload) {
 
 function normalizeCauseListToday(input) {
   return {
+    version: text(input?.version),
     date: text(input?.date),
     scannedAt: text(input?.scannedAt),
     entries: Array.isArray(input?.entries) ? input.entries.map(normalizeCauseListEntry) : [],

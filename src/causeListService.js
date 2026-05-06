@@ -3,13 +3,17 @@ const delhiCauseListProvider = require('./providers/delhiCauseList');
 
 const INDIA_OFFSET_MINUTES = 330;
 const CACHE_TTL_MS = Number(process.env.CAUSE_LIST_CACHE_TTL_MS || 30 * 60 * 1000);
+const CAUSE_LIST_CACHE_VERSION = '2';
 
 async function getTodayCauseListOverview(options = {}) {
   const db = readDb();
   const today = formatIndiaDate(new Date());
   const cached = db.causeListToday || {};
   const scannedAt = cached.scannedAt ? new Date(cached.scannedAt) : null;
-  const isFresh = cached.date === today && scannedAt && (Date.now() - scannedAt.getTime()) < CACHE_TTL_MS;
+  const isFresh = cached.date === today &&
+    cached.version === CAUSE_LIST_CACHE_VERSION &&
+    scannedAt &&
+    (Date.now() - scannedAt.getTime()) < CACHE_TTL_MS;
 
   if (!options.refresh && isFresh) {
     return buildOverview(cached, db);
@@ -85,6 +89,7 @@ async function refreshTodayCauseListOverview() {
   }
 
   db.causeListToday = {
+    version: CAUSE_LIST_CACHE_VERSION,
     date: today,
     scannedAt,
     entries,
