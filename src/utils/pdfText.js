@@ -12,7 +12,9 @@ async function pdfBufferToText(buffer) {
   await fs.promises.writeFile(pdfPath, buffer);
 
   try {
-    const { stdout } = await execFileAsync('pdftotext', ['-layout', pdfPath, '-']);
+    const { stdout } = await execFileAsync('pdftotext', ['-layout', pdfPath, '-'], {
+      maxBuffer: 64 * 1024 * 1024
+    });
     return stdout;
   } finally {
     await fs.promises.rm(tmpDir, { recursive: true, force: true });
