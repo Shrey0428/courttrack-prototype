@@ -300,6 +300,23 @@
       }
       .pill.status-pending { background: #e7f3ed; color: #25664d; }
       .pill.status-disposed { background: #f8e7e5; color: #a73a30; }
+      .pill.status-refresh-needed { background: #f8efbf; color: #8a6711; }
+      .separator-row td {
+        padding: 12px 14px;
+        background: linear-gradient(180deg, rgba(243,236,229,.92) 0%, rgba(250,247,243,.96) 100%);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        border-bottom: 1px solid rgba(135, 113, 96, 0.12);
+      }
+      tr.refresh-needed-row td {
+        background: rgba(248, 239, 191, 0.55);
+      }
+      tr.refresh-needed-row:hover td {
+        background: rgba(245, 233, 164, 0.75);
+      }
       .status-toast {
         position: fixed;
         top: 22px;
@@ -925,8 +942,21 @@
           return;
         }
 
+        let disposedSeparatorShown = false;
         for (const trackedCase of cases) {
+          if (!disposedSeparatorShown && isDisposedStatus(trackedCase.latestStatus)) {
+            disposedSeparatorShown = true;
+            const separator = document.createElement('tr');
+            separator.className = 'separator-row';
+            separator.innerHTML = `<td colspan="6">Disposed cases</td>`;
+            rows.appendChild(separator);
+          }
+
           const tr = document.createElement('tr');
+          const refreshNeeded = needsManualRefresh(trackedCase);
+          if (refreshNeeded) {
+            tr.classList.add('refresh-needed-row');
+          }
           tr.innerHTML = `
             <td>
               <div class="tracked-case-title">${escapeHtml(displayCaseTitle(trackedCase))}</div>
@@ -940,8 +970,12 @@
             <td>
               <div class="tracked-next-date">${escapeHtml(trackedCase.latestNextHearingDate || '-')}</div>
               <div class="tracked-case-subtext">${escapeHtml(dateSourceLabel(trackedCase.latestNextHearingDateSource) || '-')}</div>
+              ${refreshNeeded ? `<div class="tracked-case-subtext" style="color:#8a6711;font-weight:700;">Manual refresh needed</div>` : ''}
             </td>
-            <td><span class="pill ${statusClass(trackedCase.latestStatus)}">${escapeHtml(trackedCase.latestStatus || 'Not synced')}</span></td>
+            <td>
+              <span class="pill ${statusClass(trackedCase.latestStatus)}">${escapeHtml(trackedCase.latestStatus || 'Not synced')}</span>
+              ${refreshNeeded ? `<div style="margin-top:8px;"><span class="pill status-refresh-needed">Refresh needed</span></div>` : ''}
+            </td>
             <td>${trackedCase.lastCheckedAt ? new Date(trackedCase.lastCheckedAt).toLocaleString() : '-'}</td>
             <td>
               <div class="tracked-actions">
@@ -1004,10 +1038,56 @@
         return 1;
       }
 
+      function isPendingStatus(status) {
+        return String(status || '').toLowerCase().includes('pending');
+      }
+
+      function isDisposedStatus(status) {
+        return String(status || '').toLowerCase().includes('disposed');
+      }
+
       function parseDate(value) {
         const match = String(value || '').match(/(\d{2})-(\d{2})-(\d{4})/);
         if (!match) return 0;
         return new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1])).getTime();
+      }
+
+      function needsManualRefresh(trackedCase) {
+        if (!isPendingStatus(trackedCase.latestStatus)) return false;
+
+        const nextDate = normalizeDateString(trackedCase.latestNextHearingDate);
+        if (!nextDate) return false;
+        if (parseDate(nextDate) >= todayInIndiaTime()) return false;
+
+        if (trackedCase.provider === 'districtCourtCnr') {
+          return true;
+        }
+
+        if (trackedCase.provider === 'delhiManualCaptcha') {
+          return trackedCase.latestNextHearingDateSource !== 'latest_order_pending_official_refresh';
+        }
+
+        return false;
+      }
+
+      function normalizeDateString(value) {
+        const match = String(value || '').match(/(\d{2})-(\d{2})-(\d{4})/);
+        if (!match) return '';
+        return `${match[1]}-${match[2]}-${match[3]}`;
+      }
+
+      function todayInIndiaTime() {
+        const formatter = new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Asia/Kolkata',
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+        const parts = formatter.formatToParts(new Date());
+        const day = parts.find((part) => part.type === 'day')?.value || '01';
+        const month = parts.find((part) => part.type === 'month')?.value || '01';
+        const year = parts.find((part) => part.type === 'year')?.value || '1970';
+        return new Date(Number(year), Number(month) - 1, Number(day)).getTime();
       }
 
       async function refreshCase(caseId) {
