@@ -463,11 +463,16 @@ async function sendNextDayCauseListAlertEmail(trackedCase, causeListDate, matche
   const mailer = getTransporter();
   const uniqueMatches = Array.from(new Map(matches.map((match) => [nextDayCauseListMatchKey(match), match])).values());
   const subject = `Tomorrow's cause list alert: ${trackedCase.latestCaseNumber || trackedCase.displayLabel}`;
+  const caseLabel = trackedCase.latestCaseNumber || trackedCase.displayLabel || 'Tracked case';
+  const caseTitle = trackedCase.latestCaseTitle || trackedCase.manualCaseTitle || 'Not available';
+  const ordersUrl = trackedCase.latestOrdersUrl || '';
+  const filingsUrl = trackedCase.latestFilingsUrl || '';
+  const judgmentsUrl = trackedCase.latestJudgmentsUrl || '';
   const textLines = [
     `Your tracked case is listed in the Delhi High Court cause list for ${causeListDate}.`,
     '',
-    `Case: ${trackedCase.latestCaseNumber || trackedCase.displayLabel}`,
-    `Case title: ${trackedCase.latestCaseTitle || trackedCase.manualCaseTitle || 'Not available'}`,
+    `Matter number: ${caseLabel}`,
+    `Matter name: ${caseTitle}`,
     ''
   ];
 
@@ -476,10 +481,13 @@ async function sendNextDayCauseListAlertEmail(trackedCase, causeListDate, matche
     textLines.push(`Court No: ${match.courtNumber || 'Not available'}`);
     textLines.push(`Item No: ${match.itemNumber || 'Not available'}`);
     textLines.push(`List: ${formatCauseListType(match.listType)}`);
-    if (match.meetingLink) textLines.push(`Meeting link: ${match.meetingLink}`);
     textLines.push(`PDF: ${match.pdfUrl}`);
     textLines.push('');
   }
+
+  if (ordersUrl) textLines.push(`Orders: ${ordersUrl}`);
+  if (filingsUrl) textLines.push(`Filings: ${filingsUrl}`);
+  if (judgmentsUrl) textLines.push(`Judgments: ${judgmentsUrl}`);
 
   await mailer.sendMail({
     from: getReminderConfig().from,
@@ -490,7 +498,8 @@ async function sendNextDayCauseListAlertEmail(trackedCase, causeListDate, matche
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #14213d;">
         <h2 style="margin-bottom: 8px;">Tomorrow's Delhi High Court cause list match</h2>
-        <p><strong>${escapeHtml(trackedCase.latestCaseNumber || trackedCase.displayLabel)}</strong></p>
+        <p><strong>${escapeHtml(caseLabel)}</strong></p>
+        <p>${escapeHtml(caseTitle)}</p>
         <p>Cause list date: ${escapeHtml(causeListDate)}</p>
         <ul style="padding-left: 18px;">
           ${uniqueMatches.map((match) => `
@@ -501,12 +510,16 @@ async function sendNextDayCauseListAlertEmail(trackedCase, causeListDate, matche
               <div>List: ${escapeHtml(formatCauseListType(match.listType))}</div>
               <div>Page: ${escapeHtml(String(match.pageNumber || '-'))}</div>
               <div style="margin-top:8px;">
-                ${match.meetingLink ? renderEmailButton(match.meetingLink, 'Open meeting link') : ''}
                 ${renderEmailButton(match.pdfUrl, 'Open cause-list PDF')}
               </div>
             </li>
           `).join('')}
         </ul>
+        <div style="margin-top: 16px;">
+          ${ordersUrl ? renderEmailButton(ordersUrl, 'Open orders') : ''}
+          ${filingsUrl ? renderEmailButton(filingsUrl, 'Open filings') : ''}
+          ${judgmentsUrl ? renderEmailButton(judgmentsUrl, 'Open judgments') : ''}
+        </div>
       </div>
     `
   });
