@@ -21,6 +21,7 @@ const initialDb = {
     entries: [],
     matches: []
   },
+  causeListByDate: {},
   users: []
 };
 
@@ -57,6 +58,7 @@ function normalizeDb(db) {
   nextDb.scrapeRuns = Array.isArray(nextDb.scrapeRuns) ? nextDb.scrapeRuns : [];
   nextDb.reminderDeliveries = Array.isArray(nextDb.reminderDeliveries) ? nextDb.reminderDeliveries : [];
   nextDb.causeListToday = normalizeCauseListToday(nextDb.causeListToday);
+  nextDb.causeListByDate = normalizeCauseListByDate(nextDb.causeListByDate);
   nextDb.users = Array.isArray(nextDb.users) ? nextDb.users : [];
 
   const latestSnapshotByCaseId = new Map();
@@ -107,6 +109,7 @@ function normalizeTrackedCase(trackedCase, latestPayload) {
     latestStatusPageNextHearingDate: '',
     latestPossibleHearingDates: [],
     latestCauseListMatches: [],
+    latestCauseListMatchesByDate: {},
     latestCauseListMatchedOn: '',
     latestCauseListLastCheckedAt: '',
     latestJudgmentMatches: [],
@@ -154,6 +157,7 @@ function normalizeTrackedCase(trackedCase, latestPayload) {
   normalized.officialSourceUrl = normalized.officialSourceUrl || payload.officialSourceUrl || '';
   normalized.queryMeta = normalizeQueryMeta(normalized.provider, normalized.queryMeta || {});
   normalized.latestCauseListMatches = Array.isArray(normalized.latestCauseListMatches) ? normalized.latestCauseListMatches : [];
+  normalized.latestCauseListMatchesByDate = normalizeCauseListByDate(normalized.latestCauseListMatchesByDate);
   normalized.latestCauseListMatchedOn = text(normalized.latestCauseListMatchedOn);
   normalized.latestCauseListLastCheckedAt = text(normalized.latestCauseListLastCheckedAt);
   normalized.latestJudgmentMatches = Array.isArray(normalized.latestJudgmentMatches)
@@ -179,6 +183,22 @@ function normalizeCauseListToday(input) {
   };
 }
 
+function normalizeCauseListByDate(input) {
+  const result = {};
+  if (!input || typeof input !== 'object') return result;
+  for (const [key, value] of Object.entries(input)) {
+    if (Array.isArray(value)) {
+      result[normalizeDateString(key)] = value.map(normalizeCauseListMatch);
+      continue;
+    }
+    result[normalizeDateString(key)] = normalizeCauseListToday({
+      ...(value || {}),
+      date: normalizeDateString(value?.date || key)
+    });
+  }
+  return result;
+}
+
 function normalizeCauseListEntry(entry) {
   return {
     title: text(entry?.title),
@@ -194,6 +214,11 @@ function normalizeCauseListMatch(match) {
     caseTitle: text(match?.caseTitle),
     courtNumber: text(match?.courtNumber),
     matchedLine: text(match?.matchedLine),
+    itemNumber: text(match?.itemNumber),
+    listType: text(match?.listType),
+    judgeLabel: text(match?.judgeLabel),
+    meetingLink: decodeEntities(text(match?.meetingLink)),
+    pageNumber: Number(match?.pageNumber || 0),
     title: text(match?.title),
     listDate: normalizeDateString(match?.listDate),
     pdfUrl: decodeEntities(text(match?.pdfUrl))

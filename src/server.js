@@ -31,8 +31,10 @@ const { createSession, getSession, deleteSession } = require('./sessionStore');
 const {
   DEFAULT_REMINDER_EMAIL,
   REMINDER_INTERVAL_MS,
+  getNextCauseListAlertRunAt,
   getNextReminderRunAt,
   getReminderStatus,
+  runNextDayCauseListAlertSweep,
   runReminderSweep,
   sendTestReminderEmail
 } = require('./reminderService');
@@ -525,6 +527,7 @@ setInterval(async () => {
 }, AUTO_SYNC_MS).unref();
 
 scheduleReminderSweep();
+scheduleCauseListAlertSweep();
 
 app.listen(PORT, () => {
   console.log(`CourtTrack Prototype running on http://localhost:${PORT}`);
@@ -579,6 +582,28 @@ function scheduleReminderSweep() {
       console.error('[reminders] failed', error.message);
     } finally {
       scheduleReminderSweep();
+    }
+  }, delay);
+
+  timer.unref();
+}
+
+function scheduleCauseListAlertSweep() {
+  const nextRunAt = getNextCauseListAlertRunAt();
+  const delay = Math.max(1000, nextRunAt.getTime() - Date.now());
+
+  console.log(`[cause-list-alerts] next scheduled sweep at ${nextRunAt.toISOString()}`);
+
+  const timer = setTimeout(async () => {
+    try {
+      const result = await runNextDayCauseListAlertSweep();
+      if (!result.skipped) {
+        console.log(`[cause-list-alerts] checked ${result.results.length} case(s) at ${new Date().toISOString()}`);
+      }
+    } catch (error) {
+      console.error('[cause-list-alerts] failed', error.message);
+    } finally {
+      scheduleCauseListAlertSweep();
     }
   }, delay);
 

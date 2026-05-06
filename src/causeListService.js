@@ -3,14 +3,30 @@ const delhiCauseListProvider = require('./providers/delhiCauseList');
 
 const INDIA_OFFSET_MINUTES = 330;
 const CACHE_TTL_MS = Number(process.env.CAUSE_LIST_CACHE_TTL_MS || 30 * 60 * 1000);
-const CAUSE_LIST_CACHE_VERSION = '2';
+const CAUSE_LIST_CACHE_VERSION = '3';
 
 async function getTodayCauseListOverview(options = {}) {
+  return getCauseListOverviewForDate(formatIndiaDate(new Date()), options);
+}
+
+async function refreshTodayCauseListOverview() {
+  return refreshCauseListOverviewForDate(formatIndiaDate(new Date()));
+}
+
+async function getNextDayCauseListOverview(options = {}) {
+  return getCauseListOverviewForDate(formatIndiaDate(addIndiaDays(new Date(), 1)), options);
+}
+
+async function refreshNextDayCauseListOverview() {
+  return refreshCauseListOverviewForDate(formatIndiaDate(addIndiaDays(new Date(), 1)));
+}
+
+async function getCauseListOverviewForDate(targetDate, options = {}) {
   const db = readDb();
-  const today = formatIndiaDate(new Date());
-  const cached = db.causeListToday || {};
+  const normalizedDate = normalizeDateKey(targetDate);
+  const cached = db.causeListByDate?.[normalizedDate] || {};
   const scannedAt = cached.scannedAt ? new Date(cached.scannedAt) : null;
-  const isFresh = cached.date === today &&
+  const isFresh = cached.date === normalizedDate &&
     cached.version === CAUSE_LIST_CACHE_VERSION &&
     scannedAt &&
     (Date.now() - scannedAt.getTime()) < CACHE_TTL_MS;
@@ -19,13 +35,14 @@ async function getTodayCauseListOverview(options = {}) {
     return buildOverview(cached, db);
   }
 
-  return refreshTodayCauseListOverview();
+  return refreshCauseListOverviewForDate(normalizedDate);
 }
 
-async function refreshTodayCauseListOverview() {
+async function refreshCauseListOverviewForDate(targetDate) {
   const db = readDb();
-  const today = formatIndiaDate(new Date());
-  const entries = await delhiCauseListProvider.listCauseListEntries({ listDate: today });
+  const normalizedDate = normalizeDateKey(targetDate);
+  const todayDate = formatIndiaDate(new Date());
+  const entries = await delhiCauseListProvider.listCauseListEntries({ listDate: normalizedDate });
   const highCourtCases = db.trackedCases.filter((trackedCase) => trackedCase.provider !== 'districtCourtCnr');
   const caseMatchers = highCourtCases.map((trackedCase) => ({
     trackedCaseId: trackedCase.id,
@@ -40,69 +57,90 @@ async function refreshTodayCauseListOverview() {
     let pdfText = '';
     try {
       pdfText = await delhiCauseListProvider.fetchCauseListPdfText(entry.pdfUrl);
-    } catch (error) {
+    } catch (_error) {
       continue;
     }
 
     for (const candidate of caseMatchers) {
-      const match = delhiCauseListProvider.findCaseInText(pdfText, candidate.inputs);
-      if (!match) continue;
+      const pageMatches = delhiCauseListProvider.parseCauseListMatches(pdfText, candidate.inputs);
+      for (const match of pageMatches) {
+        const row = {
+          trackedCaseId: candidate.trackedCaseId,
+          caseNumber: match.matchedCaseNumber || candidate.trackedCase.latestCaseNumber || candidate.trackedCase.displayLabel,
+          caseTitle: match.caseTitle || candidate.trackedCase.latestCaseTitle || candidate.trackedCase.manualCaseTitle || '',
+          courtNumber: match.courtNumber || '',
+          matchedLine: match.matchedLine || '',
+          itemNumber: match.itemNumber || '',
+          listType: match.listType || 'main',
+          judgeLabel: match.judgeLabel || '',
+          meetingLink: match.meetingLink || '',
+          pageNumber: match.pageNumber || 0,
+          title: entry.title,
+          listDate: entry.listDate,
+          pdfUrl: entry.pdfUrl
+        };
 
-      const row = {
-        trackedCaseId: candidate.trackedCaseId,
-        caseNumber: match.matchedCaseNumber || candidate.trackedCase.latestCaseNumber || candidate.trackedCase.displayLabel,
-        caseTitle: match.caseTitle || candidate.trackedCase.latestCaseTitle || candidate.trackedCase.manualCaseTitle || '',
-        courtNumber: match.courtNumber || '',
-        matchedLine: match.matchedLine || '',
-        title: entry.title,
-        listDate: entry.listDate,
-        pdfUrl: entry.pdfUrl
-      };
-
-      matches.push(row);
-      if (!matchesByCaseId.has(candidate.trackedCaseId)) {
-        matchesByCaseId.set(candidate.trackedCaseId, []);
+        matches.push(row);
+        if (!matchesByCaseId.has(candidate.trackedCaseId)) {
+          matchesByCaseId.set(candidate.trackedCaseId, []);
+        }
+        matchesByCaseId.get(candidate.trackedCaseId).push(row);
       }
-      matchesByCaseId.get(candidate.trackedCaseId).push(row);
     }
   }
 
   const scannedAt = new Date().toISOString();
   for (const trackedCase of db.trackedCases) {
-    const caseMatches = matchesByCaseId.get(trackedCase.id) || [];
-    const previousUrls = new Set((trackedCase.latestCauseListMatches || []).map((item) => item.pdfUrl));
-    trackedCase.latestCauseListMatches = caseMatches;
-    trackedCase.latestCauseListMatchedOn = caseMatches.length ? today : '';
-    trackedCase.latestCauseListLastCheckedAt = scannedAt;
+    const caseMatches = dedupeMatches(matchesByCaseId.get(trackedCase.id) || []);
+    const previousMatches = trackedCase.latestCauseListMatchesByDate?.[normalizedDate] || [];
+    const previousKeys = new Set(previousMatches.map(matchIdentity));
+    trackedCase.latestCauseListMatchesByDate = {
+      ...(trackedCase.latestCauseListMatchesByDate || {}),
+      [normalizedDate]: caseMatches
+    };
+    if (normalizedDate === todayDate) {
+      trackedCase.latestCauseListMatches = caseMatches;
+      trackedCase.latestCauseListMatchedOn = caseMatches.length ? normalizedDate : trackedCase.latestCauseListMatchedOn || '';
+      trackedCase.latestCauseListLastCheckedAt = scannedAt;
+    }
     trackedCase.updatedAt = new Date().toISOString();
 
     for (const match of caseMatches) {
-      if (previousUrls.has(match.pdfUrl)) continue;
+      if (previousKeys.has(matchIdentity(match))) continue;
       db.events.push({
         id: id('event'),
         trackedCaseId: trackedCase.id,
         type: 'cause_list_match',
-        message: `Case appears in today's Delhi High Court cause list: ${match.title}`,
+        message: `Case appears in Delhi High Court cause list for ${normalizedDate}: ${match.title}`,
         createdAt: scannedAt
       });
     }
   }
 
-  db.causeListToday = {
+  const nextStore = {
     version: CAUSE_LIST_CACHE_VERSION,
-    date: today,
+    date: normalizedDate,
     scannedAt,
     entries,
-    matches
+    matches: dedupeMatches(matches)
   };
-  writeDb(db);
 
-  return buildOverview(db.causeListToday, db);
+  db.causeListByDate = {
+    ...(db.causeListByDate || {}),
+    [normalizedDate]: nextStore
+  };
+
+  if (normalizedDate === todayDate) {
+    db.causeListToday = nextStore;
+  }
+
+  writeDb(db);
+  return buildOverview(nextStore, db);
 }
 
-function buildOverview(causeListToday, db) {
+function buildOverview(causeListForDate, db) {
   const casesById = new Map(db.trackedCases.map((trackedCase) => [trackedCase.id, trackedCase]));
-  const matchedCases = (causeListToday.matches || []).map((match) => {
+  const matchedCases = (causeListForDate.matches || []).map((match) => {
     const trackedCase = casesById.get(match.trackedCaseId);
     return {
       ...match,
@@ -113,9 +151,9 @@ function buildOverview(causeListToday, db) {
   });
 
   return {
-    date: causeListToday.date || formatIndiaDate(new Date()),
-    scannedAt: causeListToday.scannedAt || '',
-    entries: causeListToday.entries || [],
+    date: causeListForDate.date || formatIndiaDate(new Date()),
+    scannedAt: causeListForDate.scannedAt || '',
+    entries: causeListForDate.entries || [],
     matches: matchedCases,
     matchedCaseIds: Array.from(new Set(matchedCases.map((match) => match.trackedCaseId).filter(Boolean)))
   };
@@ -143,6 +181,26 @@ function buildCauseListInputs(trackedCase) {
   return Array.from(inputs);
 }
 
+function matchIdentity(match) {
+  return [
+    match.trackedCaseId || '',
+    match.pdfUrl || '',
+    match.pageNumber || '',
+    match.itemNumber || '',
+    match.caseNumber || ''
+  ].join('|');
+}
+
+function dedupeMatches(matches) {
+  const seen = new Set();
+  return (matches || []).filter((match) => {
+    const key = matchIdentity(match);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function getIndiaParts(date) {
   const shifted = new Date(date.getTime() + INDIA_OFFSET_MINUTES * 60 * 1000);
   return {
@@ -157,7 +215,23 @@ function formatIndiaDate(date) {
   return `${parts.day}-${parts.month}-${parts.year}`;
 }
 
+function addIndiaDays(date, count) {
+  const shifted = new Date(date.getTime() + INDIA_OFFSET_MINUTES * 60 * 1000);
+  shifted.setUTCDate(shifted.getUTCDate() + count);
+  return new Date(shifted.getTime() - INDIA_OFFSET_MINUTES * 60 * 1000);
+}
+
+function normalizeDateKey(value) {
+  const m = String(value || '').match(/(\d{2})[-/.](\d{2})[-/.](\d{4})/);
+  if (!m) return formatIndiaDate(new Date());
+  return `${m[1]}-${m[2]}-${m[3]}`;
+}
+
 module.exports = {
   getTodayCauseListOverview,
-  refreshTodayCauseListOverview
+  refreshTodayCauseListOverview,
+  getNextDayCauseListOverview,
+  refreshNextDayCauseListOverview,
+  getCauseListOverviewForDate,
+  refreshCauseListOverviewForDate
 };

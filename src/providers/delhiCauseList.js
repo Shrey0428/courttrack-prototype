@@ -192,6 +192,13 @@ async function fetchPdfText(pdfUrl) {
   return pdfBufferToText(Buffer.from(arrayBuffer));
 }
 
+function parseCauseListMatches(text, inputs) {
+  const rawInputs = Array.isArray(inputs) ? inputs : [inputs];
+  const candidates = Array.from(new Set(rawInputs.flatMap((value) => buildLookupCandidates(String(value || '').trim()))));
+  if (!candidates.length) return [];
+  return findMatchesInCauseList(text, candidates);
+}
+
 function buildLookupCandidates(input) {
   const raw = input.trim();
   const normalized = normalizeCaseKey(raw);
@@ -210,44 +217,134 @@ function buildLookupCandidates(input) {
 }
 
 function findCaseInCauseList(text, candidates) {
-  const lines = text
-    .split(/\r?\n/)
-    .map((line) => line.replace(/\u0000/g, '').trim())
-    .filter(Boolean);
+  return findMatchesInCauseList(text, candidates)[0] || null;
+}
 
-  for (let i = 0; i < lines.length; i += 1) {
-    const rawLine = lines[i];
-    const current = normalizeCaseKey(rawLine);
-    const currentCompact = compactCaseKey(rawLine);
-    const matched = candidates.find((candidate) => {
-      const candidateCompact = compactCaseKey(candidate);
-      return current.includes(candidate) || current.replace(/\s+/g, '').includes(candidate.replace(/\s+/g, '')) || (candidateCompact && currentCompact.includes(candidateCompact));
-    });
+function findMatchesInCauseList(text, candidates) {
+  const pages = String(text || '').split('\f');
+  const matches = [];
+  let currentContext = {
+    listType: 'main',
+    courtNumber: '',
+    judgeLabel: '',
+    meetingLink: ''
+  };
 
-    if (!matched) continue;
+  for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
+    const pageText = pages[pageIndex] || '';
+    const lines = pageText
+      .split(/\r?\n/)
+      .map((line) => line.replace(/\u0000/g, '').trim())
+      .filter(Boolean);
+    if (!lines.length) continue;
 
-    const contextStart = Math.max(0, i - 30);
-    const contextEnd = Math.min(lines.length, i + 8);
-    const contextLines = lines.slice(contextStart, contextEnd);
-    const courtNumber = extractCourtNumber(contextLines);
-    const caseTitle = extractCaseTitle(lines, i);
-    const matchedCaseNumber = extractCaseNumber(rawLine) || extractCaseNumber(current) || matched;
+    currentContext = derivePageContext(lines, currentContext);
 
-    return {
-      matchedLine: rawLine,
-      matchedCaseNumber,
-      caseTitle,
-      courtNumber
-    };
+    for (let i = 0; i < lines.length; i += 1) {
+      const rawLine = lines[i];
+      const current = normalizeCaseKey(rawLine);
+      const currentCompact = compactCaseKey(rawLine);
+      const matched = candidates.find((candidate) => {
+        const candidateCompact = compactCaseKey(candidate);
+        return current.includes(candidate) ||
+          current.replace(/\s+/g, '').includes(candidate.replace(/\s+/g, '')) ||
+          (candidateCompact && currentCompact.includes(candidateCompact));
+      });
+
+      if (!matched) continue;
+
+      const contextStart = Math.max(0, i - 30);
+      const contextEnd = Math.min(lines.length, i + 8);
+      const contextLines = lines.slice(contextStart, contextEnd);
+      const courtNumber = extractCourtNumber(contextLines) || currentContext.courtNumber;
+      const caseTitle = extractCaseTitle(lines, i);
+      const matchedCaseNumber = extractCaseNumber(rawLine) || extractCaseNumber(current) || matched;
+      const itemNumber = extractItemNumber(lines, i);
+
+      matches.push({
+        matchedLine: rawLine,
+        matchedCaseNumber,
+        caseTitle,
+        courtNumber,
+        itemNumber,
+        listType: currentContext.listType,
+        judgeLabel: currentContext.judgeLabel,
+        meetingLink: currentContext.meetingLink,
+        pageNumber: pageIndex + 1
+      });
+    }
   }
 
-  return null;
+  return matches;
+}
+
+function derivePageContext(lines, previous) {
+  const next = { ...previous };
+  const topBlock = lines.slice(0, 30).join('\n');
+  if (/ADVANCE CAUSE LIST/i.test(topBlock)) {
+    next.listType = 'advance';
+  } else if (/SUPPLEMENTARY(?:\s+CAUSE)?\s+LIST/i.test(topBlock)) {
+    next.listType = 'supplementary';
+  } else if (/CAUSE LIST OF SITTING OF BENCHES/i.test(topBlock) || /COURT NO\.?/i.test(topBlock)) {
+    next.listType = 'main';
+  }
+
+  const courtNumber = extractCourtNumber(lines.slice(0, 40));
+  if (courtNumber) {
+    next.courtNumber = courtNumber;
+  }
+
+  const judgeLabel = extractJudgeLabel(lines);
+  if (judgeLabel) {
+    next.judgeLabel = judgeLabel;
+  }
+
+  const meetingLink = extractMeetingLink(lines);
+  if (meetingLink) {
+    next.meetingLink = meetingLink;
+  }
+
+  return next;
 }
 
 function extractCourtNumber(lines) {
   for (let i = lines.length - 1; i >= 0; i -= 1) {
     const match = lines[i].match(/COURT\s*NO\.?\s*[:\-]?\s*([A-Z0-9-]+)/i);
     if (match) return match[1];
+  }
+  return '';
+}
+
+function extractJudgeLabel(lines) {
+  const start = lines.findIndex((line) => /COURT\s*NO\.?/i.test(line));
+  if (start === -1) return '';
+
+  const labels = [];
+  for (let i = start + 1; i < Math.min(lines.length, start + 10); i += 1) {
+    const line = lines[i];
+    if (/^(NOTE|CLICK HERE TO JOIN VC|ITEM\b|CASES\b|FOR DIRECTIONS|MATTERS\b)/i.test(line)) break;
+    if (/^(HON.?BLE|DIVISION BENCH|SINGLE BENCH|DB-|JUSTICE)/i.test(line)) {
+      labels.push(line.replace(/\s+/g, ' ').trim());
+    }
+  }
+
+  return labels.join(' | ');
+}
+
+function extractMeetingLink(lines) {
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (/CLICK HERE TO JOIN VC/i.test(line)) {
+      for (let offset = 1; offset <= 4; offset += 1) {
+        const candidate = lines[i + offset];
+        const match = String(candidate || '').match(/https?:\/\/\S+/i);
+        if (match) return match[0];
+      }
+    }
+    const direct = line.match(/https?:\/\/\S+/i);
+    if (direct && /webex|meet/i.test(direct[0])) {
+      return direct[0];
+    }
   }
   return '';
 }
@@ -259,6 +356,15 @@ function extractCaseTitle(lines, index) {
     if (/\bversus\b|\bvs\.?\b/i.test(line) || /\bpetitioner\b|\brespondent\b/i.test(line)) {
       return line.replace(/\s+/g, ' ').trim();
     }
+  }
+  return '';
+}
+
+function extractItemNumber(lines, index) {
+  for (let i = index; i >= Math.max(0, index - 4); i -= 1) {
+    const line = String(lines[i] || '').trim();
+    const match = line.match(/^(\d{1,4})\s{2,}|\b^(\d{1,4})\s+[A-Z]/);
+    if (match) return match[1] || match[2] || '';
   }
   return '';
 }
@@ -306,3 +412,4 @@ function absolutizeUrl(url) {
 }
 
 module.exports = new DelhiCauseListProvider();
+module.exports.parseCauseListMatches = parseCauseListMatches;
