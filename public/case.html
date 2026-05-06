@@ -449,11 +449,14 @@
 
       function formatReminderSchedule(hours) {
         const values = Array.isArray(hours) ? hours : [];
-        if (!values.length) return '11:00 AM';
-        return values.map((hour) => {
+        if (!values.length) return '7:00 AM';
+        return values.map((value) => {
+          const [hourRaw, minuteRaw = '00'] = String(value).split(':');
+          const hour = Number(hourRaw);
+          const minute = String(minuteRaw).padStart(2, '0');
           const suffix = hour >= 12 ? 'PM' : 'AM';
           const hour12 = hour % 12 || 12;
-          return `${hour12}:00 ${suffix}`;
+          return `${hour12}:${minute} ${suffix}`;
         }).join(' or ');
       }
 

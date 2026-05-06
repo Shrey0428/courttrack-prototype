@@ -6,7 +6,7 @@ const { refreshTodayCauseListOverview } = require('./causeListService');
 const REMINDER_INTERVAL_MS = Number(process.env.REMINDER_INTERVAL_MS || 60 * 60 * 1000);
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_REMINDER_EMAIL = process.env.DEFAULT_REMINDER_EMAIL || 'info@amitguptaadvocate.com';
-const REMINDER_SEND_HOURS = parseReminderSendHours(process.env.REMINDER_SEND_HOURS || '11,12');
+const REMINDER_SEND_HOURS = parseReminderSendHours(process.env.REMINDER_SEND_HOURS || '07:00,07:30');
 const INDIA_OFFSET_MINUTES = 330;
 
 let transporter;
@@ -39,7 +39,7 @@ function getReminderStatus() {
     host: config.host,
     port: config.port,
     secure: config.secure,
-    sendHours: REMINDER_SEND_HOURS.slice(),
+    sendHours: REMINDER_SEND_HOURS.map((slot) => slot.label),
     nextScheduledRunAt: getNextReminderRunAt().toISOString()
   };
 }
@@ -523,19 +523,31 @@ function createIndiaDate(year, month, day, hour, minute, second) {
 }
 
 function parseReminderSendHours(value) {
-  const values = String(value || '11,12')
+  const entries = String(value || '07:00,07:30')
     .split(/[\s,;]+/g)
-    .map((entry) => Number(entry))
-    .filter((entry) => Number.isInteger(entry) && entry >= 0 && entry <= 23);
-  return values.length ? [...new Set(values)].sort((a, b) => a - b) : [11, 12];
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map(parseReminderSendSlot)
+    .filter(Boolean);
+
+  const unique = new Map();
+  for (const slot of entries) {
+    unique.set(slot.label, slot);
+  }
+
+  const slots = Array.from(unique.values()).sort((left, right) => (
+    (left.hour * 60 + left.minute) - (right.hour * 60 + right.minute)
+  ));
+
+  return slots.length ? slots : [parseReminderSendSlot('07:00'), parseReminderSendSlot('07:30')];
 }
 
 function getNextReminderRunAt(now = new Date()) {
   const parts = getIndiaDateParts(now);
 
   for (let dayOffset = 0; dayOffset < 3; dayOffset += 1) {
-    for (const hour of REMINDER_SEND_HOURS) {
-      const candidate = createIndiaDate(parts.year, parts.month, parts.day + dayOffset, hour, 0, 0);
+    for (const slot of REMINDER_SEND_HOURS) {
+      const candidate = createIndiaDate(parts.year, parts.month, parts.day + dayOffset, slot.hour, slot.minute, 0);
       if (candidate.getTime() > now.getTime() + 1000) {
         return candidate;
       }
@@ -543,6 +555,23 @@ function getNextReminderRunAt(now = new Date()) {
   }
 
   return new Date(now.getTime() + 60 * 60 * 1000);
+}
+
+function parseReminderSendSlot(value) {
+  const match = String(value || '').match(/^(\d{1,2})(?::(\d{2}))?$/);
+  if (!match) return null;
+
+  const hour = Number(match[1]);
+  const minute = match[2] != null ? Number(match[2]) : 0;
+  if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return null;
+  }
+
+  return {
+    hour,
+    minute,
+    label: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+  };
 }
 
 function formatDateKey(date) {
