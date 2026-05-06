@@ -1,5 +1,7 @@
 const { readDb, writeDb, id } = require('./db');
 const { detectEvents } = require('./changeDetection');
+const { sendCaseUpdateAlerts } = require('./caseUpdateAlertService');
+const { maybeRefreshHighCourtJudgmentMatches } = require('./highCourtJudgmentService');
 const { formatReminderEmails, parseReminderEmailsFromInput } = require('./reminderEmails');
 const mockHighCourtProvider = require('./providers/mockHighCourt');
 const delhiCauseListProvider = require('./providers/delhiCauseList');
@@ -14,6 +16,7 @@ const providers = {
 };
 
 const DEFAULT_REMINDER_EMAIL = process.env.DEFAULT_REMINDER_EMAIL || 'info@amitguptaadvocate.com';
+const HIGH_COURT_ORDER_MONITOR_INTERVAL_MS = Number(process.env.HIGH_COURT_ORDER_MONITOR_INTERVAL_MS || 15 * 60 * 1000);
 
 function getProvider(name) {
   const provider = providers[name];
@@ -149,7 +152,7 @@ async function syncCase(caseId) {
   const db = readDb();
   const trackedCase = db.trackedCases.find((candidate) => candidate.id === caseId);
   if (!trackedCase) throw new Error('Tracked case not found');
-  if (trackedCase.provider === 'delhiManualCaptcha' || trackedCase.provider === 'districtCourtCnr') {
+  if (trackedCase.provider === 'districtCourtCnr') {
     throw new Error('This case must be refreshed from the browser UI so you can solve the official CAPTCHA.');
   }
 
@@ -160,10 +163,12 @@ async function syncCase(caseId) {
     const normalized = await provider.fetchCase({
       cnrNumber: trackedCase.cnrNumber,
       caseLookup: trackedCase.caseLookup,
-      queryMeta: trackedCase.queryMeta
+      queryMeta: trackedCase.queryMeta,
+      trackedCase
     });
 
     const result = applyNormalizedResult(db, trackedCase, normalized, run);
+    await sendCaseUpdateAlerts(db, trackedCase, result.newEvents, normalized);
     writeDb(db);
     return result;
   } catch (error) {
@@ -180,6 +185,7 @@ async function syncCaseWithNormalizedResult(caseId, normalized) {
 
   const run = createRun(db, caseId);
   const result = applyNormalizedResult(db, trackedCase, normalized, run);
+  await sendCaseUpdateAlerts(db, trackedCase, result.newEvents, normalized);
   writeDb(db);
   return result;
 }
@@ -241,7 +247,9 @@ function applyNormalizedResult(db, trackedCase, normalized, run) {
   trackedCase.latestCaseHistory = normalized.caseHistory || trackedCase.latestCaseHistory;
   trackedCase.latestOrderUrl = normalized.latestOrderUrl || trackedCase.latestOrderUrl;
   trackedCase.latestOrderDate = normalized.latestOrderDate || trackedCase.latestOrderDate;
-  trackedCase.latestPossibleHearingDates = [];
+  trackedCase.latestPossibleHearingDates = Array.isArray(normalized.possibleHearingDates)
+    ? normalized.possibleHearingDates
+    : trackedCase.latestPossibleHearingDates;
   trackedCase.reminderEmail = trackedCase.reminderEmails[0] || '';
   trackedCase.reminderEmailsLabel = formatReminderEmails(trackedCase.reminderEmails);
   trackedCase.lastCheckedAt = new Date().toISOString();
@@ -263,7 +271,11 @@ async function syncAllCases() {
   const cases = listCases();
   const results = [];
   for (const trackedCase of cases) {
-    if (trackedCase.provider === 'delhiManualCaptcha' || trackedCase.provider === 'districtCourtCnr') {
+    if (trackedCase.provider === 'delhiManualCaptcha' && !shouldRunHighCourtOrderMonitor(trackedCase)) {
+      results.push({ caseId: trackedCase.id, ok: false, error: 'Skipped: High Court order monitor is not due yet' });
+      continue;
+    }
+    if (trackedCase.provider === 'districtCourtCnr') {
       results.push({ caseId: trackedCase.id, ok: false, error: 'Skipped: manual CAPTCHA required' });
       continue;
     }
@@ -274,7 +286,35 @@ async function syncAllCases() {
       results.push({ caseId: trackedCase.id, ok: false, error: error.message });
     }
   }
+
+  try {
+    const judgmentResult = await maybeRefreshHighCourtJudgmentMatches();
+    if (!judgmentResult.skipped) {
+      results.push({
+        caseId: 'high_court_judgments',
+        ok: true,
+        result: {
+          newEvents: judgmentResult.events
+        }
+      });
+    }
+  } catch (error) {
+    results.push({ caseId: 'high_court_judgments', ok: false, error: error.message });
+  }
+
   return results;
+}
+
+function shouldRunHighCourtOrderMonitor(trackedCase) {
+  if (trackedCase.provider !== 'delhiManualCaptcha') return true;
+  if (!trackedCase.latestCaseHistoryUrl) return false;
+
+  const lastCheckedAt = trackedCase.lastCheckedAt ? new Date(trackedCase.lastCheckedAt).getTime() : 0;
+  if (lastCheckedAt && (Date.now() - lastCheckedAt) < HIGH_COURT_ORDER_MONITOR_INTERVAL_MS) {
+    return false;
+  }
+
+  return true;
 }
 
 function applyDefaultReminderInput(input) {

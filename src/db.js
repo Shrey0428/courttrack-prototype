@@ -109,6 +109,9 @@ function normalizeTrackedCase(trackedCase, latestPayload) {
     latestCauseListMatches: [],
     latestCauseListMatchedOn: '',
     latestCauseListLastCheckedAt: '',
+    latestJudgmentMatches: [],
+    latestJudgmentMatchedOn: '',
+    latestJudgmentLastCheckedAt: '',
     manualCaseTitle: '',
     latestCaseTitle: '',
     latestCourtName: '',
@@ -125,7 +128,9 @@ function normalizeTrackedCase(trackedCase, latestPayload) {
     reminderDaysBefore: normalizeReminderDaysBefore(trackedCase.reminderDaysBefore),
     reminderSkipDisposed: trackedCase.reminderSkipDisposed !== false,
     latestCaseHistory,
-    latestPossibleHearingDates: []
+    latestPossibleHearingDates: Array.isArray(trackedCase.latestPossibleHearingDates)
+      ? trackedCase.latestPossibleHearingDates
+      : (Array.isArray(payload.possibleHearingDates) ? payload.possibleHearingDates : [])
   };
 
   normalized.reminderEmail = reminderEmails[0] || '';
@@ -150,6 +155,11 @@ function normalizeTrackedCase(trackedCase, latestPayload) {
   normalized.latestCauseListMatches = Array.isArray(normalized.latestCauseListMatches) ? normalized.latestCauseListMatches : [];
   normalized.latestCauseListMatchedOn = text(normalized.latestCauseListMatchedOn);
   normalized.latestCauseListLastCheckedAt = text(normalized.latestCauseListLastCheckedAt);
+  normalized.latestJudgmentMatches = Array.isArray(normalized.latestJudgmentMatches)
+    ? normalized.latestJudgmentMatches.map(normalizeJudgmentMatch)
+    : [];
+  normalized.latestJudgmentMatchedOn = text(normalized.latestJudgmentMatchedOn);
+  normalized.latestJudgmentLastCheckedAt = text(normalized.latestJudgmentLastCheckedAt);
 
   return normalized;
 }
@@ -184,6 +194,16 @@ function normalizeCauseListMatch(match) {
   };
 }
 
+function normalizeJudgmentMatch(match) {
+  return {
+    caseNumber: text(match?.caseNumber),
+    judgmentDate: normalizeDateString(match?.judgmentDate),
+    petitioner: text(match?.petitioner),
+    respondent: text(match?.respondent),
+    pdfUrl: decodeEntities(text(match?.pdfUrl))
+  };
+}
+
 function normalizeSnapshotPayload(payload) {
   const caseHistory = normalizeCaseHistory(payload.caseHistory);
   const latestOrder = pickLatestOrder(caseHistory.orders);
@@ -200,7 +220,7 @@ function normalizeSnapshotPayload(payload) {
     nextHearingDate,
     statusPageNextHearingDate,
     nextHearingDateSource: payload.nextHearingDateSource || inferDateSource(payload.provider),
-    possibleHearingDates: [],
+    possibleHearingDates: Array.isArray(payload.possibleHearingDates) ? payload.possibleHearingDates : [],
     courtNumber: payload.courtNumber || deriveDistrictCourtNumber(caseHistory),
     caseStatus: payload.caseStatus || deriveDistrictStatus(caseHistory),
     firstHearingDate: payload.firstHearingDate || deriveFirstHearingDate(caseHistory),

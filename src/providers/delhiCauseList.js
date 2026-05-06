@@ -10,9 +10,7 @@ class DelhiCauseListProvider extends BaseProvider {
   }
 
   async listCauseListEntries(options = {}) {
-    const entries = await fetchCauseListEntries();
-    const targetDate = normalizeDate(options.listDate || options.date || '');
-    return targetDate ? entries.filter((entry) => entry.listDate === targetDate) : entries;
+    return fetchCauseListEntries(options);
   }
 
   async fetchCauseListPdfText(pdfUrl) {

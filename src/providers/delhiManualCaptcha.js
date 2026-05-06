@@ -9,6 +9,7 @@ const {
   getCaptchaImage,
   getResultsTable
 } = require('./delhiCaseStatusSelectors');
+const { pdfBufferToText } = require('../utils/pdfText');
 
 const CASE_STATUS_URL = 'https://delhihighcourt.nic.in/app/get-case-type-status';
 const CASE_HISTORY_SEARCH_URL = 'https://delhihighcourt.nic.in/app/get-case-wise';
@@ -32,8 +33,88 @@ class DelhiManualCaptchaProvider extends BaseProvider {
     return true;
   }
 
-  async fetchCase() {
-    throw new Error('Delhi case-status lookups require the manual CAPTCHA flow.');
+  async fetchCase(input) {
+    const trackedCase = input?.trackedCase;
+    if (!trackedCase) {
+      throw new Error('Tracked High Court case context is required for automatic order monitoring.');
+    }
+
+    const statusPageDate = normalizeDateStringLocal(
+      trackedCase.latestStatusPageNextHearingDate || trackedCase.latestNextHearingDate || ''
+    );
+    const caseHistoryUrl = trackedCase.latestCaseHistoryUrl || trackedCase.latestListingsUrl || '';
+    if (!caseHistoryUrl) {
+      return buildTrackedCaseSnapshot(trackedCase, {
+        nextHearingDate: trackedCase.latestNextHearingDate || statusPageDate,
+        statusPageNextHearingDate: statusPageDate,
+        nextHearingDateSource: trackedCase.latestNextHearingDateSource || 'case_status_page',
+        rawMetadata: {
+          orderMonitor: {
+            skipped: true,
+            reason: 'missing_case_history_url'
+          }
+        }
+      });
+    }
+
+    const browser = await chromium.launch({ headless: process.env.PLAYWRIGHT_HEADLESS !== 'false' });
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      await page.goto(caseHistoryUrl, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      await page.locator('#printable-area').waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+
+      const parsed = await parseDelhiCaseHistoryPage(page);
+      const latestOrder = pickLatestDelhiOrder(parsed.caseHistory?.orders || []);
+      const effective = statusPageDate && isPastIndianDate(statusPageDate)
+        ? await deriveEffectiveHearingDateFromOrderMonitor(trackedCase, latestOrder, statusPageDate)
+        : {
+            nextHearingDate: trackedCase.latestNextHearingDate || statusPageDate || '',
+            source: trackedCase.latestNextHearingDateSource || 'case_status_page',
+            possibleHearingDates: Array.isArray(trackedCase.latestPossibleHearingDates) ? trackedCase.latestPossibleHearingDates : [],
+            rawMetadata: {
+              officialStatusPageDate: statusPageDate,
+              latestOrderDate: latestOrder?.date || '',
+              latestOrderUrl: latestOrder?.url || '',
+              usedLatestOrderFallback: false
+            }
+          };
+
+      return buildTrackedCaseSnapshot(trackedCase, {
+        caseNumber: parsed.summary?.caseNumber || trackedCase.latestCaseNumber,
+        cnrNumber: parsed.summary?.cnrNumber || '',
+        caseTitle: parsed.summary?.caseTitle || trackedCase.latestCaseTitle,
+        caseStatus: parsed.summary?.caseStatus || trackedCase.latestStatus,
+        firstHearingDate: parsed.summary?.firstHearingDate || '',
+        lastOrderDate: latestOrder.date || trackedCase.latestOrderDate || '',
+        nextHearingDate: effective.nextHearingDate,
+        statusPageNextHearingDate: statusPageDate,
+        nextHearingDateSource: effective.source,
+        courtNumber: parsed.summary?.courtNumber || trackedCase.latestCourtNumber,
+        officialSourceUrl: trackedCase.officialSourceUrl || CASE_STATUS_URL,
+        sourceUrl: caseHistoryUrl,
+        ordersUrl: trackedCase.latestOrdersUrl || latestOrder.url || '',
+        judgmentsUrl: trackedCase.latestJudgmentsUrl || '',
+        caseHistoryUrl,
+        filingsUrl: trackedCase.latestFilingsUrl || caseHistoryUrl,
+        listingsUrl: trackedCase.latestListingsUrl || caseHistoryUrl,
+        caseHistory: parsed.caseHistory || emptyCaseHistory(),
+        latestOrderUrl: latestOrder.url || trackedCase.latestOrderUrl || '',
+        latestOrderDate: latestOrder.date || trackedCase.latestOrderDate || '',
+        possibleHearingDates: effective.possibleHearingDates,
+        rawMetadata: {
+          orderMonitor: effective.rawMetadata
+        }
+      });
+    } finally {
+      await context.close().catch(() => {});
+      await browser.close().catch(() => {});
+    }
   }
 
   async listLookupOptions() {
@@ -710,6 +791,270 @@ function formatCaseNumber(input) {
 
 function emptyCaseHistory() {
   return { filings: [], listings: [], hearings: [], orders: [], rawTables: [] };
+}
+
+function buildTrackedCaseSnapshot(trackedCase, overrides = {}) {
+  return {
+    provider: 'delhiManualCaptcha',
+    caseFound: true,
+    courtName: trackedCase.latestCourtName || COURT_NAME,
+    caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel || '',
+    cnrNumber: '',
+    caseTitle: trackedCase.latestCaseTitle || trackedCase.manualCaseTitle || '',
+    nextHearingDate: trackedCase.latestNextHearingDate || '',
+    statusPageNextHearingDate: trackedCase.latestStatusPageNextHearingDate || trackedCase.latestNextHearingDate || '',
+    nextHearingDateSource: trackedCase.latestNextHearingDateSource || 'case_status_page',
+    possibleHearingDates: Array.isArray(trackedCase.latestPossibleHearingDates) ? trackedCase.latestPossibleHearingDates : [],
+    courtNumber: trackedCase.latestCourtNumber || '',
+    caseStatus: trackedCase.latestStatus || '',
+    firstHearingDate: '',
+    lastOrderDate: trackedCase.latestOrderDate || '',
+    officialSourceUrl: trackedCase.officialSourceUrl || CASE_STATUS_URL,
+    sourceUrl: trackedCase.latestCaseHistoryUrl || trackedCase.officialSourceUrl || CASE_STATUS_URL,
+    ordersUrl: trackedCase.latestOrdersUrl || '',
+    judgmentsUrl: trackedCase.latestJudgmentsUrl || '',
+    caseHistoryUrl: trackedCase.latestCaseHistoryUrl || '',
+    filingsUrl: trackedCase.latestFilingsUrl || '',
+    listingsUrl: trackedCase.latestListingsUrl || '',
+    caseHistory: trackedCase.latestCaseHistory || emptyCaseHistory(),
+    latestOrderUrl: trackedCase.latestOrderUrl || '',
+    latestOrderDate: trackedCase.latestOrderDate || '',
+    pageTitle: '',
+    rawTextPreview: '',
+    invalidCaptchaDetected: false,
+    rawMetadata: {},
+    ...overrides
+  };
+}
+
+function pickLatestDelhiOrder(orders) {
+  return (Array.isArray(orders) ? orders : [])
+    .slice()
+    .sort((left, right) => toSortableDateLocal(left?.date) - toSortableDateLocal(right?.date))
+    .slice(-1)[0] || { date: '', url: '', details: '' };
+}
+
+async function deriveEffectiveHearingDateFromOrderMonitor(trackedCase, latestOrder, statusPageDate) {
+  const todayKey = todayInIndia();
+  const fallback = {
+    nextHearingDate: trackedCase.latestNextHearingDate || statusPageDate || '',
+    source: trackedCase.latestNextHearingDateSource || 'case_status_page',
+    possibleHearingDates: Array.isArray(trackedCase.latestPossibleHearingDates) ? trackedCase.latestPossibleHearingDates : [],
+    rawMetadata: {
+      officialStatusPageDate: statusPageDate,
+      latestOrderDate: latestOrder?.date || '',
+      latestOrderUrl: latestOrder?.url || '',
+      usedLatestOrderFallback: false
+    }
+  };
+
+  if (!latestOrder?.url) {
+    return fallback;
+  }
+
+  if (
+    trackedCase.latestNextHearingDateSource === 'latest_order_pending_official_refresh' &&
+    trackedCase.latestOrderUrl === latestOrder.url &&
+    normalizeDateStringLocal(trackedCase.latestOrderDate) === normalizeDateStringLocal(latestOrder.date) &&
+    !isPastIndianDate(trackedCase.latestNextHearingDate)
+  ) {
+    return {
+      ...fallback,
+      nextHearingDate: trackedCase.latestNextHearingDate,
+      source: 'latest_order_pending_official_refresh',
+      rawMetadata: {
+        ...fallback.rawMetadata,
+        reusedStoredOrderDerivedDate: true,
+        usedLatestOrderFallback: true
+      }
+    };
+  }
+
+  const pdfText = await fetchDelhiOrderPdfText(latestOrder.url);
+  const extracted = extractLikelyNextHearingFromOrderText(pdfText, {
+    orderDate: latestOrder.date,
+    officialStatusPageDate: statusPageDate,
+    today: todayKey
+  });
+
+  if (extracted.nextHearingDate && compareIndianDates(extracted.nextHearingDate, todayKey) > 0) {
+    return {
+      nextHearingDate: extracted.nextHearingDate,
+      source: 'latest_order_pending_official_refresh',
+      possibleHearingDates: extracted.possibleHearingDates,
+      rawMetadata: {
+        ...fallback.rawMetadata,
+        usedLatestOrderFallback: true,
+        extractedOrderDate: extracted.orderDate,
+        matchedPhrase: extracted.matchedPhrase,
+        matchedSnippet: extracted.matchedSnippet
+      }
+    };
+  }
+
+  return {
+    ...fallback,
+    rawMetadata: {
+      ...fallback.rawMetadata,
+      usedLatestOrderFallback: false,
+      extractedOrderDate: extracted.orderDate,
+      matchedPhrase: extracted.matchedPhrase,
+      matchedSnippet: extracted.matchedSnippet
+    }
+  };
+}
+
+async function fetchDelhiOrderPdfText(pdfUrl) {
+  const response = await fetch(pdfUrl, {
+    headers: {
+      'user-agent': 'CourtTrackPrototype/1.0 (+high-court-order-monitor)'
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch latest Delhi High Court order PDF: ${response.status}`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  return pdfBufferToText(Buffer.from(arrayBuffer));
+}
+
+function extractLikelyNextHearingFromOrderText(text, context = {}) {
+  const compactText = String(text || '').replace(/\u0000/g, ' ');
+  const normalizedText = compactText.replace(/\s+/g, ' ').trim();
+  const orderDate = normalizeDateStringLocal(context.orderDate || '') || extractOrderDateFromText(normalizedText);
+  const officialStatusPageDate = normalizeDateStringLocal(context.officialStatusPageDate || '');
+  const today = normalizeDateStringLocal(context.today || '') || todayInIndia();
+  const patterns = [
+    { phrase: 'put up on', regex: /\bput\s+up\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'put up for', regex: /\bput\s+up\s+for\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'list on', regex: /\blist(?:ed)?\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'list for', regex: /\blist(?:ed)?\s+for\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'renotify on', regex: /\bre-?notify\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'renotify for', regex: /\bre-?notify\s+for\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'post on', regex: /\bpost(?:ed)?\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'post for', regex: /\bpost(?:ed)?\s+for\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'next date', regex: /\bnext\s+date(?:\s+of\s+hearing)?\s*[:\-]?\s*([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig }
+  ];
+
+  const candidates = [];
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.regex.exec(normalizedText))) {
+      const normalizedDate = normalizeDateStringLocal(match[1]);
+      if (!normalizedDate) continue;
+      candidates.push({
+        date: normalizedDate,
+        phrase: pattern.phrase,
+        snippet: normalizedText.slice(Math.max(0, match.index - 40), Math.min(normalizedText.length, match.index + match[0].length + 40)).trim()
+      });
+    }
+  }
+
+  const futureCandidates = candidates
+    .filter((candidate) => compareIndianDates(candidate.date, today) > 0)
+    .filter((candidate) => !officialStatusPageDate || compareIndianDates(candidate.date, officialStatusPageDate) >= 0)
+    .sort((left, right) => compareIndianDates(left.date, right.date));
+
+  return {
+    orderDate,
+    nextHearingDate: futureCandidates[0]?.date || '',
+    possibleHearingDates: futureCandidates.map((candidate) => candidate.date),
+    matchedPhrase: futureCandidates[0]?.phrase || '',
+    matchedSnippet: futureCandidates[0]?.snippet || ''
+  };
+}
+
+function extractOrderDateFromText(text) {
+  const orderBlock = String(text || '').match(/\bORDER\b[\s:.-]*([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/i);
+  if (orderBlock) {
+    const normalized = normalizeDateStringLocal(orderBlock[1]);
+    if (normalized) return normalized;
+  }
+
+  const dateLine = String(text || '').match(/\bAPRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER|JANUARY|FEBRUARY|MARCH\b/i);
+  if (dateLine) {
+    const normalized = normalizeDateStringLocal(dateLine[0]);
+    if (normalized) return normalized;
+  }
+  return '';
+}
+
+function normalizeDateStringLocal(value) {
+  const input = sanitizeText(value);
+  if (!input) return '';
+
+  const direct = input.match(/\b(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})\b/);
+  if (direct) {
+    return `${padLocal(direct[1])}-${padLocal(direct[2])}-${direct[3]}`;
+  }
+
+  const monthName = input.match(/\b(\d{1,2})[- ]([A-Za-z]+)[- ,](\d{4})\b/);
+  if (monthName) {
+    const month = monthNumberLocal(monthName[2]);
+    if (month) return `${padLocal(monthName[1])}-${month}-${monthName[3]}`;
+  }
+
+  const longMonth = input.match(/\b([A-Za-z]+)\s+(\d{1,2}),?\s*(\d{4})\b/);
+  if (longMonth) {
+    const month = monthNumberLocal(longMonth[1]);
+    if (month) return `${padLocal(longMonth[2])}-${month}-${longMonth[3]}`;
+  }
+
+  return '';
+}
+
+function monthNumberLocal(value) {
+  const month = String(value || '').trim().toLowerCase().slice(0, 3);
+  const lookup = {
+    jan: '01',
+    feb: '02',
+    mar: '03',
+    apr: '04',
+    may: '05',
+    jun: '06',
+    jul: '07',
+    aug: '08',
+    sep: '09',
+    oct: '10',
+    nov: '11',
+    dec: '12'
+  };
+  return lookup[month] || '';
+}
+
+function padLocal(value) {
+  return String(value).padStart(2, '0');
+}
+
+function toSortableDateLocal(value) {
+  const normalized = normalizeDateStringLocal(value);
+  if (!normalized) return 0;
+  const [day, month, year] = normalized.split('-').map(Number);
+  return new Date(year, month - 1, day).getTime();
+}
+
+function compareIndianDates(left, right) {
+  return toSortableDateLocal(left) - toSortableDateLocal(right);
+}
+
+function todayInIndia() {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  const parts = formatter.formatToParts(now);
+  const day = parts.find((part) => part.type === 'day')?.value || '01';
+  const month = parts.find((part) => part.type === 'month')?.value || '01';
+  const year = parts.find((part) => part.type === 'year')?.value || '1970';
+  return `${day}-${month}-${year}`;
+}
+
+function isPastIndianDate(value) {
+  const normalized = normalizeDateStringLocal(value);
+  if (!normalized) return false;
+  return compareIndianDates(normalized, todayInIndia()) < 0;
 }
 
 function normalizeOption(value) {

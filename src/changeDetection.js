@@ -29,7 +29,104 @@ function detectEvents(previous, current) {
     });
   }
 
+  const previousHistory = normalizeCaseHistory(previous?.caseHistory);
+  const currentHistory = normalizeCaseHistory(current?.caseHistory);
+
+  const newFilings = diffEntries(previousHistory.filings, currentHistory.filings, filingKey);
+  if (newFilings.length) {
+    events.push({
+      type: 'filing_added',
+      message: `${newFilings.length} new filing${newFilings.length === 1 ? '' : 's'} detected`,
+      details: {
+        items: newFilings
+      }
+    });
+  }
+
+  const newListings = diffEntries(previousHistory.listings, currentHistory.listings, listingKey);
+  if (newListings.length) {
+    events.push({
+      type: 'listing_added',
+      message: `${newListings.length} new listing${newListings.length === 1 ? '' : 's'} detected`,
+      details: {
+        items: newListings
+      }
+    });
+  }
+
+  const newOrders = diffEntries(previousHistory.orders, currentHistory.orders, orderKey);
+  if (newOrders.length) {
+    events.push({
+      type: 'order_added',
+      message: `${newOrders.length} new order${newOrders.length === 1 ? '' : 's'} detected`,
+      details: {
+        items: newOrders
+      }
+    });
+  } else if (previous?.latestOrderDate !== current.latestOrderDate && previous?.latestOrderDate && current.latestOrderDate) {
+    events.push({
+      type: 'latest_order_uploaded',
+      message: `A newer order was detected: ${current.latestOrderDate}`
+    });
+  }
+
   return events;
+}
+
+function normalizeCaseHistory(caseHistory) {
+  return {
+    filings: Array.isArray(caseHistory?.filings) ? caseHistory.filings : [],
+    listings: Array.isArray(caseHistory?.listings) ? caseHistory.listings : [],
+    orders: Array.isArray(caseHistory?.orders) ? caseHistory.orders : []
+  };
+}
+
+function diffEntries(previousEntries, currentEntries, keyBuilder) {
+  if (!Array.isArray(previousEntries) || !Array.isArray(currentEntries) || !previousEntries.length || !currentEntries.length) {
+    return [];
+  }
+
+  const seen = new Set(previousEntries.map((entry) => keyBuilder(entry)).filter(Boolean));
+  return currentEntries.filter((entry) => {
+    const key = keyBuilder(entry);
+    return key && !seen.has(key);
+  });
+}
+
+function filingKey(entry) {
+  return normalizeKey([
+    entry?.serialNumber,
+    entry?.date,
+    entry?.details,
+    entry?.diaryNumber,
+    entry?.status
+  ]);
+}
+
+function listingKey(entry) {
+  return normalizeKey([
+    entry?.serialNumber,
+    entry?.date,
+    entry?.details,
+    entry?.orderUrl
+  ]);
+}
+
+function orderKey(entry) {
+  return normalizeKey([
+    entry?.serialNumber,
+    entry?.date,
+    entry?.details,
+    entry?.url,
+    entry?.sourceUrl
+  ]);
+}
+
+function normalizeKey(parts) {
+  return parts
+    .map((part) => String(part || '').trim().toLowerCase())
+    .filter(Boolean)
+    .join('|');
 }
 
 module.exports = { detectEvents };
