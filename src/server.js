@@ -41,7 +41,12 @@ const {
 const { parseReminderEmailsFromInput } = require('./reminderEmails');
 const { listDelhiDistrictSites } = require('./delhiDistrictSites');
 const { resolveCachedDocument } = require('./documentCache');
-const { getTodayCauseListOverview, refreshTodayCauseListOverview } = require('./causeListService');
+const {
+  getTodayCauseListOverview,
+  refreshTodayCauseListOverview,
+  getNextDayCauseListOverview,
+  refreshNextDayCauseListOverview
+} = require('./causeListService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -222,6 +227,24 @@ app.get('/api/cause-lists/today', async (_req, res) => {
 app.post('/api/cause-lists/today/refresh', async (_req, res) => {
   try {
     const payload = await refreshTodayCauseListOverview();
+    res.json(payload);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/cause-lists/next-day', async (_req, res) => {
+  try {
+    const payload = await getNextDayCauseListOverview();
+    res.json(payload);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/cause-lists/next-day/refresh', async (_req, res) => {
+  try {
+    const payload = await refreshNextDayCauseListOverview();
     res.json(payload);
   } catch (error) {
     res.status(500).json({ error: error.message });

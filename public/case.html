@@ -112,7 +112,7 @@
           </section>
 
           <section class="card">
-            <h2>Today's cause list</h2>
+            <h2>Tomorrow's cause list</h2>
             <div class="list" id="causeListItems"></div>
           </section>
 
@@ -187,6 +187,7 @@
       let currentCase = null;
       let reminderStatus = null;
       let highCourtExpanded = false;
+      let nextDayCauseListOverview = { matches: [], date: '', scannedAt: '' };
 
       async function api(url, options = {}) {
         const response = await fetch(url, {
@@ -293,17 +294,7 @@
           'No order rows are stored for this case yet.'
         );
 
-        renderList(
-          document.getElementById('causeListItems'),
-          caseData.latestCauseListMatches || [],
-          (item) => `
-            <div><strong>${escapeHtml(item.title || 'Cause list')}</strong></div>
-            <p class="muted">${escapeHtml(item.listDate || '-')}</p>
-            ${item.courtNumber ? `<p>Court No: ${escapeHtml(item.courtNumber)}</p>` : ''}
-            <p><a href="${item.pdfUrl}" target="_blank" rel="noopener noreferrer">Open cause-list PDF</a></p>
-          `,
-          'This case has not been found in today\'s main Delhi High Court sitting-benches cause list yet.'
-        );
+        renderCauseListMatches(caseData);
 
         renderHistory(caseData);
 
@@ -338,6 +329,26 @@
         const refreshBtn = document.getElementById('refreshBtn');
         refreshBtn.disabled = caseData.provider === 'delhiManualCaptcha' || caseData.provider === 'districtCourtCnr';
         refreshBtn.textContent = refreshBtn.disabled ? 'Refresh via home page CAPTCHA' : 'Refresh case';
+      }
+
+      function renderCauseListMatches(caseData) {
+        const allMatches = Array.isArray(nextDayCauseListOverview.matches) ? nextDayCauseListOverview.matches : [];
+        const caseMatches = allMatches.filter((item) => item.trackedCaseId === caseData.id);
+        renderList(
+          document.getElementById('causeListItems'),
+          caseMatches,
+          (item) => `
+            <div><strong>${escapeHtml(item.title || 'Cause list')}</strong></div>
+            <p class="muted">${escapeHtml(item.listDate || '-')}</p>
+            ${item.courtNumber ? `<p>Court No: ${escapeHtml(item.courtNumber)}</p>` : ''}
+            ${item.itemNumber ? `<p>Item No: ${escapeHtml(item.itemNumber)}</p>` : ''}
+            ${item.listType ? `<p>List: ${escapeHtml(String(item.listType).toUpperCase())}</p>` : ''}
+            ${item.judgeLabel ? `<p>${escapeHtml(item.judgeLabel)}</p>` : ''}
+            ${item.meetingLink ? `<p><a href="${item.meetingLink}" target="_blank" rel="noopener noreferrer">Open meeting link</a></p>` : ''}
+            <p><a href="${item.pdfUrl}" target="_blank" rel="noopener noreferrer">Open cause-list PDF</a></p>
+          `,
+          'This case has not been found in tomorrow\'s main Delhi High Court sitting-benches cause list yet.'
+        );
       }
 
       function renderHistory(caseData) {
@@ -481,6 +492,13 @@
         renderCase(caseData);
       }
 
+      async function loadNextDayCauseListOverview() {
+        nextDayCauseListOverview = await api('/api/cause-lists/next-day');
+        if (currentCase) {
+          renderCauseListMatches(currentCase);
+        }
+      }
+
       async function saveCaseTitle() {
         if (!currentCase) return;
         const manualCaseTitle = document.getElementById('manualCaseTitle').value.trim();
@@ -603,7 +621,7 @@
         renderHistory(currentCase);
       });
 
-      Promise.all([loadReminderStatus(), loadCase()]).catch((error) => {
+      Promise.all([loadReminderStatus(), loadCase(), loadNextDayCauseListOverview()]).catch((error) => {
         setFeedback('reminderFeedback', error.message, 'error');
       });
     </script>

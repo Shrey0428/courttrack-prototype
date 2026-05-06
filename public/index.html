@@ -530,20 +530,20 @@
       <div class="card">
         <div class="section-head">
           <div>
-            <h2>Today's Cause List</h2>
-            <p class="muted">Official Delhi High Court main sitting-benches cause list for today, plus your tracked cases that appear in it.</p>
+            <h2>Tomorrow's Cause List</h2>
+            <p class="muted">Official Delhi High Court main sitting-benches cause list for tomorrow, plus your tracked cases that appear in it.</p>
           </div>
-          <button class="secondary" type="button" onclick="refreshTodayCauseList()">Refresh today's cause list</button>
+          <button class="secondary" type="button" onclick="refreshNextDayCauseList()">Refresh tomorrow's cause list</button>
         </div>
-        <div id="causeListStatus" class="status-inline muted">Loading today's cause list...</div>
+        <div id="causeListStatus" class="status-inline muted">Loading tomorrow's cause list...</div>
         <div class="hero-grid" style="grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px;">
           <div>
-            <h3>Today's PDF link</h3>
-            <div id="todayCauseListLinks" class="list-shell muted" style="margin-top:12px;">Loading...</div>
+            <h3>Tomorrow's PDF link</h3>
+            <div id="nextDayCauseListLinks" class="list-shell muted" style="margin-top:12px;">Loading...</div>
           </div>
           <div>
             <h3>Tracked case matches</h3>
-            <div id="todayCauseListMatches" class="list-shell muted" style="margin-top:12px;">Loading...</div>
+            <div id="nextDayCauseListMatches" class="list-shell muted" style="margin-top:12px;">Loading...</div>
           </div>
         </div>
       </div>
@@ -594,7 +594,7 @@
       let districtSites = [];
       let highCourtLookupOptions = { caseTypes: [], years: [] };
       const districtLookupOptionsCache = new Map();
-      let todayCauseListCache = { entries: [], matches: [], date: '', scannedAt: '' };
+      let nextDayCauseListCache = { entries: [], matches: [], date: '', scannedAt: '' };
       let currentCourtFilter = 'all';
       let disposedExpanded = false;
       let statusToastTimer = null;
@@ -904,31 +904,31 @@
         renderCaseRows();
       }
 
-      function renderTodayCauseList() {
-        const linksEl = document.getElementById('todayCauseListLinks');
-        const matchesEl = document.getElementById('todayCauseListMatches');
+      function renderNextDayCauseList() {
+        const linksEl = document.getElementById('nextDayCauseListLinks');
+        const matchesEl = document.getElementById('nextDayCauseListMatches');
         const statusEl = document.getElementById('causeListStatus');
-        const entries = todayCauseListCache.entries || [];
-        const matches = todayCauseListCache.matches || [];
+        const entries = nextDayCauseListCache.entries || [];
+        const matches = nextDayCauseListCache.matches || [];
 
-        statusEl.textContent = todayCauseListCache.scannedAt
-          ? `Scanned at ${formatShortDateTime(todayCauseListCache.scannedAt)} for ${todayCauseListCache.date || 'today'}.`
+        statusEl.textContent = nextDayCauseListCache.scannedAt
+          ? `Scanned at ${formatShortDateTime(nextDayCauseListCache.scannedAt)} for ${nextDayCauseListCache.date || 'tomorrow'}.`
           : 'No cause-list scan has been stored yet.';
 
         if (!entries.length) {
-          linksEl.innerHTML = '<div class="item muted">No official PDF cause-list links were found for today.</div>';
+          linksEl.innerHTML = '<div class="item muted">No official PDF cause-list links were found for tomorrow.</div>';
         } else {
           linksEl.innerHTML = entries.map((entry) => `
             <div class="item">
               <div><strong>${escapeHtml(entry.title || 'Cause list')}</strong></div>
-              <p class="muted">${escapeHtml(entry.listDate || todayCauseListCache.date || '-')}</p>
+              <p class="muted">${escapeHtml(entry.listDate || nextDayCauseListCache.date || '-')}</p>
               <p><a href="${entry.pdfUrl}" target="_blank" rel="noopener noreferrer">Open PDF cause list</a></p>
             </div>
           `).join('');
         }
 
         if (!matches.length) {
-          matchesEl.innerHTML = '<div class="item muted">None of your tracked High Court cases were found in today\'s cause-list PDFs.</div>';
+          matchesEl.innerHTML = '<div class="item muted">None of your tracked High Court cases were found in tomorrow\'s cause-list PDF.</div>';
         } else {
           matchesEl.innerHTML = matches.map((match) => `
             <div class="item">
@@ -941,18 +941,18 @@
         }
       }
 
-      async function loadTodayCauseList(refresh = false) {
+      async function loadNextDayCauseList(refresh = false) {
         const payload = refresh
-          ? await api('/api/cause-lists/today/refresh', { method: 'POST' })
-          : await api('/api/cause-lists/today');
-        todayCauseListCache = payload;
-        renderTodayCauseList();
+          ? await api('/api/cause-lists/next-day/refresh', { method: 'POST' })
+          : await api('/api/cause-lists/next-day');
+        nextDayCauseListCache = payload;
+        renderNextDayCauseList();
       }
 
-      async function refreshTodayCauseList() {
-        setStatus('Refreshing today\'s Delhi High Court cause list PDFs...', 'muted');
-        await loadTodayCauseList(true);
-        setStatus('Today\'s cause list updated.', 'success');
+      async function refreshNextDayCauseList() {
+        setStatus('Refreshing tomorrow\'s Delhi High Court cause-list PDF...', 'muted');
+        await loadNextDayCauseList(true);
+        setStatus('Tomorrow\'s cause list updated.', 'success');
       }
 
       function renderCaseRows() {
@@ -1256,7 +1256,7 @@
       document.getElementById('reminderEmails').value = document.getElementById('reminderEmails').value.trim() || DEFAULT_REMINDER_EMAIL;
       document.getElementById('districtReminderEmails').value = document.getElementById('districtReminderEmails').value.trim() || DEFAULT_REMINDER_EMAIL;
 
-      Promise.all([loadHighCourtLookupOptions(), loadDistrictSites(), loadCases(), loadTodayCauseList()]).catch((error) => {
+      Promise.all([loadHighCourtLookupOptions(), loadDistrictSites(), loadCases(), loadNextDayCauseList()]).catch((error) => {
         setStatus(error.message, 'error');
       });
     </script>
