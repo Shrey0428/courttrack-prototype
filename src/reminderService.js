@@ -403,7 +403,12 @@ async function sendCauseListAlertEmail(trackedCase, causeListDate, matches) {
         <p><strong>${escapeHtml(trackedCase.latestCaseNumber || trackedCase.displayLabel)}</strong></p>
         <p>Cause list date: ${escapeHtml(causeListDate)}</p>
         <ul>
-          ${uniqueLinks.map((match) => `<li><a href="${match.pdfUrl}">${escapeHtml(match.title)}</a></li>`).join('')}
+          ${uniqueLinks.map((match) => `
+            <li style="margin-bottom:12px;">
+              <div style="margin-bottom:6px;">${escapeHtml(match.title)}</div>
+              ${renderEmailButton(match.pdfUrl, 'Open PDF cause list')}
+            </li>
+          `).join('')}
         </ul>
       </div>
     `
@@ -462,12 +467,13 @@ function buildReminderHtml(trackedCase, eligibility, links, isTest) {
     ['Date source', escapeHtml(formatDateSource(trackedCase.latestNextHearingDateSource))],
     ['Court number', escapeHtml(trackedCase.latestCourtNumber || 'Not available')],
     ['Days until hearing', String(eligibility.daysUntil)],
-    ['Official source', trackedCase.officialSourceUrl ? `<a href="${trackedCase.officialSourceUrl}">${escapeHtml(trackedCase.officialSourceUrl)}</a>` : 'Not available']
+    ['Official source', trackedCase.officialSourceUrl ? renderEmailButton(trackedCase.officialSourceUrl, 'Open official source') : 'Not available']
   ];
 
-  const documents = [links.ordersUrl ? `<a href="${links.ordersUrl}">Orders</a>` : '', links.judgmentsUrl ? `<a href="${links.judgmentsUrl}">Judgments</a>` : '']
-    .filter(Boolean)
-    .join(' | ') || 'Not available';
+  const documents = [
+    links.ordersUrl ? renderEmailButton(links.ordersUrl, 'Open orders') : '',
+    links.judgmentsUrl ? renderEmailButton(links.judgmentsUrl, 'Open judgments') : ''
+  ].filter(Boolean).join('&nbsp;') || 'Not available';
 
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #14213d;">
@@ -486,6 +492,11 @@ function buildDocumentLinks(trackedCase) {
     ordersUrl: trackedCase.latestOrdersUrl || '',
     judgmentsUrl: trackedCase.latestJudgmentsUrl || ''
   };
+}
+
+function renderEmailButton(url, label) {
+  if (!url) return '';
+  return `<a href="${url}" style="display:inline-block;padding:10px 14px;border-radius:10px;background:#2a427f;color:#ffffff !important;text-decoration:none;font-weight:700;">${escapeHtml(label)}</a>`;
 }
 
 function parseIndianDate(value) {

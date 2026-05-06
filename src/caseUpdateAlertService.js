@@ -186,8 +186,8 @@ function buildText(trackedCase, events, snapshotPayload) {
 
 function buildHtml(trackedCase, events, snapshotPayload) {
   const listItems = events.map((event) => {
-    const detailItems = summarizeItems(event.details?.items)
-      .map((item) => `<li>${escapeHtml(item)}</li>`)
+    const detailItems = renderEventItemsHtml(event.details?.items)
+      .map((item) => `<li style="margin-bottom:10px;">${item}</li>`)
       .join('');
 
     return `
@@ -211,9 +211,9 @@ function buildHtml(trackedCase, events, snapshotPayload) {
         <tr><td style="padding:4px 12px 4px 0;"><strong>Status</strong></td><td>${escapeHtml(trackedCase.latestStatus || 'Not available')}</td></tr>
         <tr><td style="padding:4px 12px 4px 0;"><strong>Next hearing</strong></td><td>${escapeHtml(trackedCase.latestNextHearingDate || 'Not available')}</td></tr>
         <tr><td style="padding:4px 12px 4px 0;"><strong>Date source</strong></td><td>${escapeHtml(formatDateSource(trackedCase.latestNextHearingDateSource))}</td></tr>
-        <tr><td style="padding:4px 12px 4px 0;"><strong>Case history</strong></td><td>${trackedCase.latestCaseHistoryUrl ? `<a href="${trackedCase.latestCaseHistoryUrl}">${escapeHtml(trackedCase.latestCaseHistoryUrl)}</a>` : 'Not available'}</td></tr>
-        <tr><td style="padding:4px 12px 4px 0;"><strong>Orders</strong></td><td>${trackedCase.latestOrdersUrl ? `<a href="${trackedCase.latestOrdersUrl}">${escapeHtml(trackedCase.latestOrdersUrl)}</a>` : 'Not available'}</td></tr>
-        <tr><td style="padding:4px 12px 4px 0;"><strong>Judgments</strong></td><td>${trackedCase.latestJudgmentsUrl ? `<a href="${trackedCase.latestJudgmentsUrl}">${escapeHtml(trackedCase.latestJudgmentsUrl)}</a>` : 'Not available'}</td></tr>
+        <tr><td style="padding:4px 12px 4px 0;"><strong>Case history</strong></td><td>${trackedCase.latestCaseHistoryUrl ? renderEmailButton(trackedCase.latestCaseHistoryUrl, 'Open case history') : 'Not available'}</td></tr>
+        <tr><td style="padding:4px 12px 4px 0;"><strong>Orders</strong></td><td>${trackedCase.latestOrdersUrl ? renderEmailButton(trackedCase.latestOrdersUrl, 'Open orders') : 'Not available'}</td></tr>
+        <tr><td style="padding:4px 12px 4px 0;"><strong>Judgments</strong></td><td>${trackedCase.latestJudgmentsUrl ? renderEmailButton(trackedCase.latestJudgmentsUrl, 'Open judgments') : 'Not available'}</td></tr>
       </table>
       ${orderFallback}
       <h3 style="margin:18px 0 8px;">What changed</h3>
@@ -238,6 +238,29 @@ function summarizeItems(items) {
       item?.status,
       item?.orderUrl || item?.url
     ].filter(Boolean).join(' | ');
+  });
+}
+
+function renderEventItemsHtml(items) {
+  const list = Array.isArray(items) ? items.slice(0, 6) : [];
+  return list.map((item) => {
+    const summary = [
+      item?.caseNumber || item?.caseTitle,
+      item?.judgmentDate || item?.listDate || item?.date,
+      item?.details,
+      item?.diaryNumber,
+      item?.status
+    ].filter(Boolean).join(' | ');
+
+    const actionUrl = item?.pdfUrl || item?.orderUrl || item?.url || '';
+    const actionLabel = item?.pdfUrl
+      ? 'Open PDF'
+      : (item?.orderUrl || item?.url ? 'Open document' : '');
+
+    return `
+      <div>${escapeHtml(summary || 'New activity detected')}</div>
+      ${actionUrl ? `<div style="margin-top:6px;">${renderEmailButton(actionUrl, actionLabel)}</div>` : ''}
+    `;
   });
 }
 
@@ -330,6 +353,11 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function renderEmailButton(url, label) {
+  if (!url) return '';
+  return `<a href="${url}" style="display:inline-block;padding:10px 14px;border-radius:10px;background:#2a427f;color:#ffffff !important;text-decoration:none;font-weight:700;">${escapeHtml(label)}</a>`;
 }
 
 module.exports = {
