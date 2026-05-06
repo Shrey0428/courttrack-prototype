@@ -311,11 +311,37 @@
         text-transform: uppercase;
         border-bottom: 1px solid rgba(135, 113, 96, 0.12);
       }
+      .separator-row .separator-shell {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .separator-row .separator-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .separator-row .separator-count {
+        font-size: 11px;
+        color: var(--danger);
+      }
+      .separator-row button {
+        padding: 8px 12px;
+        border-radius: 999px;
+      }
       tr.refresh-needed-row td {
         background: rgba(248, 239, 191, 0.55);
       }
       tr.refresh-needed-row:hover td {
         background: rgba(245, 233, 164, 0.75);
+      }
+      tr.disposed-case-row td {
+        background: rgba(248, 231, 229, 0.62);
+      }
+      tr.disposed-case-row:hover td {
+        background: rgba(244, 213, 209, 0.82);
       }
       .status-toast {
         position: fixed;
@@ -570,6 +596,7 @@
       const districtLookupOptionsCache = new Map();
       let todayCauseListCache = { entries: [], matches: [], date: '', scannedAt: '' };
       let currentCourtFilter = 'all';
+      let disposedExpanded = false;
       let statusToastTimer = null;
       let pendingRefreshCaseId = null;
       const DEFAULT_REMINDER_EMAIL = 'info@amitguptaadvocate.com';
@@ -942,51 +969,80 @@
           return;
         }
 
-        let disposedSeparatorShown = false;
-        for (const trackedCase of cases) {
-          if (!disposedSeparatorShown && isDisposedStatus(trackedCase.latestStatus)) {
-            disposedSeparatorShown = true;
-            const separator = document.createElement('tr');
-            separator.className = 'separator-row';
-            separator.innerHTML = `<td colspan="6">Disposed cases</td>`;
-            rows.appendChild(separator);
-          }
+        const activeCases = cases.filter((trackedCase) => !isDisposedStatus(trackedCase.latestStatus));
+        const disposedCases = cases.filter((trackedCase) => isDisposedStatus(trackedCase.latestStatus));
 
-          const tr = document.createElement('tr');
-          const refreshNeeded = needsManualRefresh(trackedCase);
-          if (refreshNeeded) {
-            tr.classList.add('refresh-needed-row');
-          }
-          tr.innerHTML = `
-            <td>
-              <div class="tracked-case-title">${escapeHtml(displayCaseTitle(trackedCase))}</div>
-              <div class="tracked-case-subtext">${escapeHtml(trackedCase.latestCaseNumber || trackedCase.caseLookup || trackedCase.displayLabel)}</div>
-              <div class="tracked-case-subtext">${escapeHtml(trackedCase.provider)}</div>
-            </td>
-            <td>
-              <div>${escapeHtml(trackedCase.latestCourtNumber || trackedCase.latestCourtName || '-')}</div>
-              ${trackedCase.latestCourtNumber && trackedCase.latestCourtName ? `<div class="tracked-case-subtext">${escapeHtml(trackedCase.latestCourtName)}</div>` : ''}
-            </td>
-            <td>
-              <div class="tracked-next-date">${escapeHtml(trackedCase.latestNextHearingDate || '-')}</div>
-              <div class="tracked-case-subtext">${escapeHtml(dateSourceLabel(trackedCase.latestNextHearingDateSource) || '-')}</div>
-              ${refreshNeeded ? `<div class="tracked-case-subtext" style="color:#8a6711;font-weight:700;">Manual refresh needed</div>` : ''}
-            </td>
-            <td>
-              <span class="pill ${statusClass(trackedCase.latestStatus)}">${escapeHtml(trackedCase.latestStatus || 'Not synced')}</span>
-              ${refreshNeeded ? `<div style="margin-top:8px;"><span class="pill status-refresh-needed">Refresh needed</span></div>` : ''}
-            </td>
-            <td>${trackedCase.lastCheckedAt ? new Date(trackedCase.lastCheckedAt).toLocaleString() : '-'}</td>
-            <td>
-              <div class="tracked-actions">
-                <button type="button" onclick="window.location.href='/case.html?id=${trackedCase.id}'">Open</button>
-                <button class="secondary" type="button" onclick="refreshCase('${trackedCase.id}')">${trackedCase.provider === 'delhiManualCaptcha' || trackedCase.provider === 'districtCourtCnr' ? 'Refresh via CAPTCHA' : 'Refresh'}</button>
-                <button class="danger" type="button" onclick="removeCase('${trackedCase.id}')">Delete</button>
+        for (const trackedCase of activeCases) {
+          rows.appendChild(buildCaseRow(trackedCase));
+        }
+
+        if (disposedCases.length) {
+          const separator = document.createElement('tr');
+          separator.className = 'separator-row';
+          separator.innerHTML = `
+            <td colspan="6">
+              <div class="separator-shell">
+                <div class="separator-label">
+                  <span>Disposed cases</span>
+                  <span class="separator-count">${disposedCases.length}</span>
+                </div>
+                <button class="secondary" type="button" onclick="toggleDisposedCases()">${disposedExpanded ? 'Show less' : 'Show more'}</button>
               </div>
             </td>
           `;
-          rows.appendChild(tr);
+          rows.appendChild(separator);
         }
+
+        if (disposedExpanded) {
+          for (const trackedCase of disposedCases) {
+            rows.appendChild(buildCaseRow(trackedCase, { disposed: true }));
+          }
+        }
+      }
+
+      function buildCaseRow(trackedCase, options = {}) {
+        const tr = document.createElement('tr');
+        const refreshNeeded = needsManualRefresh(trackedCase);
+        if (refreshNeeded) {
+          tr.classList.add('refresh-needed-row');
+        }
+        if (options.disposed) {
+          tr.classList.add('disposed-case-row');
+        }
+        tr.innerHTML = `
+          <td>
+            <div class="tracked-case-title">${escapeHtml(displayCaseTitle(trackedCase))}</div>
+            <div class="tracked-case-subtext">${escapeHtml(trackedCase.latestCaseNumber || trackedCase.caseLookup || trackedCase.displayLabel)}</div>
+            <div class="tracked-case-subtext">${escapeHtml(trackedCase.provider)}</div>
+          </td>
+          <td>
+            <div>${escapeHtml(trackedCase.latestCourtNumber || trackedCase.latestCourtName || '-')}</div>
+            ${trackedCase.latestCourtNumber && trackedCase.latestCourtName ? `<div class="tracked-case-subtext">${escapeHtml(trackedCase.latestCourtName)}</div>` : ''}
+          </td>
+          <td>
+            <div class="tracked-next-date">${escapeHtml(trackedCase.latestNextHearingDate || '-')}</div>
+            <div class="tracked-case-subtext">${escapeHtml(dateSourceLabel(trackedCase.latestNextHearingDateSource) || '-')}</div>
+            ${refreshNeeded ? `<div class="tracked-case-subtext" style="color:#8a6711;font-weight:700;">Manual refresh needed</div>` : ''}
+          </td>
+          <td>
+            <span class="pill ${statusClass(trackedCase.latestStatus)}">${escapeHtml(trackedCase.latestStatus || 'Not synced')}</span>
+            ${refreshNeeded ? `<div style="margin-top:8px;"><span class="pill status-refresh-needed">Refresh needed</span></div>` : ''}
+          </td>
+          <td>${trackedCase.lastCheckedAt ? new Date(trackedCase.lastCheckedAt).toLocaleString() : '-'}</td>
+          <td>
+            <div class="tracked-actions">
+              <button type="button" onclick="window.location.href='/case.html?id=${trackedCase.id}'">Open</button>
+              <button class="secondary" type="button" onclick="refreshCase('${trackedCase.id}')">${trackedCase.provider === 'delhiManualCaptcha' || trackedCase.provider === 'districtCourtCnr' ? 'Refresh via CAPTCHA' : 'Refresh'}</button>
+              <button class="danger" type="button" onclick="removeCase('${trackedCase.id}')">Delete</button>
+            </div>
+          </td>
+        `;
+        return tr;
+      }
+
+      function toggleDisposedCases() {
+        disposedExpanded = !disposedExpanded;
+        renderCaseRows();
       }
 
       function matchesCourtFilter(trackedCase) {
