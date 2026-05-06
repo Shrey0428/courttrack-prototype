@@ -96,7 +96,9 @@ async function fetchCauseListEntries(options = {}) {
 
   if (!targetDate) {
     const firstPageEntries = await fetchCauseListPage(CAUSE_LIST_PAGE);
-    return dedupeAndSortEntries(firstPageEntries).slice(0, 30);
+    return dedupeAndSortEntries(firstPageEntries)
+      .filter((entry) => isMainSittingBenchesCauseList(entry))
+      .slice(0, 30);
   }
 
   const entries = [];
@@ -108,7 +110,10 @@ async function fetchCauseListEntries(options = {}) {
     const pageEntries = await fetchCauseListPage(pageUrl);
     if (!pageEntries.length) break;
 
-    const matchingEntries = pageEntries.filter((entry) => entry.listDate === targetDate);
+    const matchingEntries = pageEntries.filter((entry) => (
+      entry.listDate === targetDate &&
+      isMainSittingBenchesCauseList(entry, targetDate)
+    ));
     if (matchingEntries.length) {
       sawTargetDate = true;
       entries.push(...matchingEntries);
@@ -159,6 +164,15 @@ function dedupeAndSortEntries(entries) {
 
   deduped.sort((a, b) => sortableDate(b.listDate) - sortableDate(a.listDate));
   return deduped;
+}
+
+function isMainSittingBenchesCauseList(entry, targetDate = '') {
+  const title = String(entry?.title || '').replace(/\s+/g, ' ').trim();
+  if (!title) return false;
+
+  const expectedDate = targetDate ? targetDate.replace(/-/g, '.') : '\\d{2}\\.\\d{2}\\.\\d{4}';
+  const pattern = new RegExp(`^Cause List of Sitting of Benches for ${expectedDate}$`, 'i');
+  return pattern.test(title);
 }
 
 function buildCauseListPageUrl(pageIndex) {
