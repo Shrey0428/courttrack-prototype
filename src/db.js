@@ -112,6 +112,7 @@ function normalizeTrackedCase(trackedCase, latestPayload) {
     latestJudgmentMatches: [],
     latestJudgmentMatchedOn: '',
     latestJudgmentLastCheckedAt: '',
+    activityAlertBaselineDate: '',
     manualCaseTitle: '',
     latestCaseTitle: '',
     latestCourtName: '',
@@ -160,6 +161,10 @@ function normalizeTrackedCase(trackedCase, latestPayload) {
     : [];
   normalized.latestJudgmentMatchedOn = text(normalized.latestJudgmentMatchedOn);
   normalized.latestJudgmentLastCheckedAt = text(normalized.latestJudgmentLastCheckedAt);
+  normalized.activityAlertBaselineDate = normalizeDateString(
+    normalized.activityAlertBaselineDate ||
+    todayInIndiaDate()
+  );
 
   return normalized;
 }
@@ -540,6 +545,20 @@ function inferDateSource(provider) {
   if (provider === 'districtCourtCnr') return 'district_case_number';
   if (provider === 'delhiManualCaptcha') return 'case_status_page';
   return '';
+}
+
+function todayInIndiaDate() {
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  const parts = formatter.formatToParts(new Date());
+  const day = parts.find((part) => part.type === 'day')?.value || '01';
+  const month = parts.find((part) => part.type === 'month')?.value || '01';
+  const year = parts.find((part) => part.type === 'year')?.value || '1970';
+  return `${day}-${month}-${year}`;
 }
 
 function monthNumber(name) {

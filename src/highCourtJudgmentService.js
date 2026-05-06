@@ -39,7 +39,10 @@ async function refreshHighCourtJudgmentMatches() {
     trackedCase.latestJudgmentLastCheckedAt = scannedAt;
     trackedCase.updatedAt = scannedAt;
 
-    const newMatches = matches.filter((entry) => entry.pdfUrl && !previousUrls.has(entry.pdfUrl));
+    const baselineDate = normalizeDate(trackedCase.activityAlertBaselineDate || '');
+    const newMatches = matches
+      .filter((entry) => entry.pdfUrl && !previousUrls.has(entry.pdfUrl))
+      .filter((entry) => !baselineDate || compareDates(entry.judgmentDate, baselineDate) > 0);
     if (!newMatches.length) continue;
 
     const event = {
@@ -190,6 +193,17 @@ function monthNumber(name) {
 
 function pad(value) {
   return String(value || '').padStart(2, '0');
+}
+
+function compareDates(left, right) {
+  return toSortableDate(left) - toSortableDate(right);
+}
+
+function toSortableDate(value) {
+  const normalized = normalizeDate(value);
+  if (!normalized) return 0;
+  const [day, month, year] = normalized.split('-').map(Number);
+  return new Date(year, month - 1, day).getTime();
 }
 
 function absolutizeUrl(url) {

@@ -49,8 +49,10 @@ async function sendCaseUpdateAlerts(db, trackedCase, events, snapshotPayload) {
     return { sent: false, skipped: true, reason: 'Alerts disabled or SMTP not configured.' };
   }
 
+  const baselineDate = getBaselineDate(trackedCase);
   const pendingEvents = (Array.isArray(events) ? events : [])
     .filter((event) => ALERTABLE_EVENT_TYPES.has(event.type))
+    .filter((event) => isEventAfterBaseline(event, baselineDate, snapshotPayload))
     .filter((event) => !hasSentEventAlert(db, trackedCase.id, buildEventFingerprint(event)));
 
   if (!pendingEvents.length) {
@@ -106,6 +108,27 @@ async function sendCaseUpdateAlerts(db, trackedCase, events, snapshotPayload) {
 
     return { sent: false, skipped: false, reason: error.message };
   }
+}
+
+function isEventAfterBaseline(event, baselineDate, snapshotPayload) {
+  if (!baselineDate) return true;
+
+  if (event.type === 'filing_added' || event.type === 'listing_added' || event.type === 'order_added' || event.type === 'judgment_published') {
+    return (event.details?.items || []).some((item) => {
+      const value = item?.date || item?.judgmentDate || item?.listDate || '';
+      return compareDates(value, baselineDate) > 0;
+    });
+  }
+
+  if (event.type === 'latest_order_uploaded') {
+    return compareDates(snapshotPayload?.latestOrderDate || '', baselineDate) > 0;
+  }
+
+  if (event.type === 'hearing_date_changed') {
+    return compareDates(snapshotPayload?.latestOrderDate || '', baselineDate) > 0;
+  }
+
+  return true;
 }
 
 function hasSentEventAlert(db, trackedCaseId, fingerprint) {
@@ -216,6 +239,57 @@ function summarizeItems(items) {
       item?.orderUrl || item?.url
     ].filter(Boolean).join(' | ');
   });
+}
+
+function getBaselineDate(trackedCase) {
+  return normalizeDate(trackedCase?.activityAlertBaselineDate || '');
+}
+
+function compareDates(left, right) {
+  return toSortableDate(left) - toSortableDate(right);
+}
+
+function toSortableDate(value) {
+  const normalized = normalizeDate(value);
+  if (!normalized) return 0;
+  const [day, month, year] = normalized.split('-').map(Number);
+  return new Date(year, month - 1, day).getTime();
+}
+
+function normalizeDate(value) {
+  const input = String(value || '').trim();
+  const direct = input.match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/);
+  if (direct) {
+    return `${String(direct[1]).padStart(2, '0')}-${String(direct[2]).padStart(2, '0')}-${direct[3]}`;
+  }
+
+  const named = input.match(/\b(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})\b/);
+  if (named) {
+    const month = monthNumber(named[2]);
+    if (month) {
+      return `${String(named[1]).padStart(2, '0')}-${month}-${named[3]}`;
+    }
+  }
+
+  return '';
+}
+
+function monthNumber(name) {
+  const lookup = {
+    jan: '01',
+    feb: '02',
+    mar: '03',
+    apr: '04',
+    may: '05',
+    jun: '06',
+    jul: '07',
+    aug: '08',
+    sep: '09',
+    oct: '10',
+    nov: '11',
+    dec: '12'
+  };
+  return lookup[String(name || '').trim().toLowerCase().slice(0, 3)] || '';
 }
 
 function humanizeType(type) {

@@ -84,6 +84,7 @@ function addCase(input) {
     latestOrderUrl: '',
     latestOrderDate: '',
     latestPossibleHearingDates: [],
+    activityAlertBaselineDate: todayInIndia(),
     officialSourceUrl: '',
     manualCaseTitle: '',
     reminderEmails: parsedReminderEmails.emails,
@@ -324,6 +325,20 @@ function applyDefaultReminderInput(input) {
     : (typeof input?.reminderEmails === 'string' ? input.reminderEmails.trim() : '');
   const hasReminderInput = Boolean(reminderEmail || (Array.isArray(reminderEmails) ? reminderEmails.length : reminderEmails));
   return hasReminderInput ? input : { ...input, reminderEmails: DEFAULT_REMINDER_EMAIL };
+}
+
+function todayInIndia() {
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  const parts = formatter.formatToParts(new Date());
+  const day = parts.find((part) => part.type === 'day')?.value || '01';
+  const month = parts.find((part) => part.type === 'month')?.value || '01';
+  const year = parts.find((part) => part.type === 'year')?.value || '1970';
+  return `${day}-${month}-${year}`;
 }
 
 function normalizeReminderDays(days) {
