@@ -1,12 +1,17 @@
 const nodemailer = require('nodemailer');
 const { readDb, writeDb, id } = require('./db');
 const { formatReminderEmails } = require('./reminderEmails');
-const { refreshNextDayCauseListOverview } = require('./causeListService');
+const {
+  getTodayCauseListOverview,
+  refreshTodayCauseListOverview,
+  refreshNextDayCauseListOverview
+} = require('./causeListService');
 
 const REMINDER_INTERVAL_MS = Number(process.env.REMINDER_INTERVAL_MS || 60 * 60 * 1000);
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_REMINDER_EMAIL = process.env.DEFAULT_REMINDER_EMAIL || 'info@amitguptaadvocate.com';
 const REMINDER_SEND_HOURS = parseReminderSendHours(process.env.REMINDER_SEND_HOURS || '07:00,07:30');
+const TODAY_CAUSE_LIST_ALERT_SEND_HOURS = parseReminderSendHours(process.env.TODAY_CAUSE_LIST_ALERT_SEND_HOURS || '06:00');
 const CAUSE_LIST_ALERT_SEND_HOURS = parseReminderSendHours(process.env.CAUSE_LIST_ALERT_SEND_HOURS || '19:00,20:00');
 const INDIA_OFFSET_MINUTES = 330;
 
@@ -42,6 +47,8 @@ function getReminderStatus() {
     secure: config.secure,
     sendHours: REMINDER_SEND_HOURS.map((slot) => slot.label),
     nextScheduledRunAt: getNextReminderRunAt().toISOString(),
+    todayCauseListAlertHours: TODAY_CAUSE_LIST_ALERT_SEND_HOURS.map((slot) => slot.label),
+    nextTodayCauseListAlertRunAt: getNextTodayCauseListAlertRunAt().toISOString(),
     causeListAlertHours: CAUSE_LIST_ALERT_SEND_HOURS.map((slot) => slot.label),
     nextCauseListAlertRunAt: getNextCauseListAlertRunAt().toISOString()
   };
@@ -267,6 +274,121 @@ async function runNextDayCauseListAlertSweep(options = {}) {
   };
 }
 
+async function runTodayCauseListAlertSweep(options = {}) {
+  const status = getReminderStatus();
+  const now = new Date();
+  const results = [];
+  const targetCaseId = options.caseId ? String(options.caseId) : '';
+
+  if (!status.configured) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'SMTP is not configured.',
+      results
+    };
+  }
+
+  const causeListOverview = await refreshTodayCauseListOverview().catch(() => ({
+    date: formatDateKey(startOfIndiaDay(now)),
+    matches: []
+  }));
+  const db = readDb();
+  const causeListMatchesByCaseId = new Map();
+  for (const match of causeListOverview.matches || []) {
+    if (!match.trackedCaseId) continue;
+    if (!causeListMatchesByCaseId.has(match.trackedCaseId)) {
+      causeListMatchesByCaseId.set(match.trackedCaseId, []);
+    }
+    causeListMatchesByCaseId.get(match.trackedCaseId).push(match);
+  }
+
+  for (const trackedCase of db.trackedCases) {
+    if (targetCaseId && trackedCase.id !== targetCaseId) continue;
+    const causeListMatches = causeListMatchesByCaseId.get(trackedCase.id) || [];
+    if (!causeListMatches.length) continue;
+
+    if (hasSentReminderOfKind(db, trackedCase.id, causeListOverview.date, 'cause_list_today')) {
+      results.push({
+        caseId: trackedCase.id,
+        caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
+        sent: false,
+        skipped: true,
+        reason: 'Day-of cause list alert already sent.',
+        reasonCode: 'cause_list_today_already_sent',
+        details: { causeListDate: causeListOverview.date, matches: causeListMatches.length }
+      });
+      continue;
+    }
+
+    if (!trackedCase.reminderEnabled || !trackedCase.reminderEmails?.length) {
+      results.push({
+        caseId: trackedCase.id,
+        caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
+        sent: false,
+        skipped: true,
+        reason: 'Case is in today\'s cause list, but reminders are disabled or no recipient emails are configured.',
+        reasonCode: 'cause_list_today_notifications_disabled',
+        details: { causeListDate: causeListOverview.date, matches: causeListMatches.length }
+      });
+      continue;
+    }
+
+    try {
+      await sendDetailedCauseListAlertEmail(trackedCase, causeListOverview.date, causeListMatches, { mode: 'today' });
+      const recipientLabel = formatReminderEmails(trackedCase.reminderEmails);
+      db.reminderDeliveries.push({
+        id: id('reminder'),
+        trackedCaseId: trackedCase.id,
+        status: 'sent',
+        reminderDate: causeListOverview.date,
+        daysUntilHearing: 0,
+        email: recipientLabel,
+        emails: trackedCase.reminderEmails,
+        kind: 'cause_list_today',
+        createdAt: now.toISOString()
+      });
+      results.push({
+        caseId: trackedCase.id,
+        caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
+        sent: true,
+        email: recipientLabel,
+        emails: trackedCase.reminderEmails,
+        kind: 'cause_list_today',
+        matches: causeListMatches.length
+      });
+    } catch (error) {
+      db.reminderDeliveries.push({
+        id: id('reminder'),
+        trackedCaseId: trackedCase.id,
+        status: 'failed',
+        reminderDate: causeListOverview.date,
+        daysUntilHearing: 0,
+        email: formatReminderEmails(trackedCase.reminderEmails),
+        emails: trackedCase.reminderEmails,
+        kind: 'cause_list_today',
+        error: error.message,
+        createdAt: now.toISOString()
+      });
+      results.push({
+        caseId: trackedCase.id,
+        caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
+        sent: false,
+        skipped: false,
+        reason: error.message,
+        reasonCode: 'cause_list_today_send_failed'
+      });
+    }
+  }
+
+  writeDb(db);
+  return {
+    ok: true,
+    skipped: false,
+    results
+  };
+}
+
 async function sendTestReminderEmail(trackedCase) {
   if (!trackedCase) {
     throw new Error('Tracked case not found.');
@@ -304,6 +426,57 @@ async function sendTestReminderEmail(trackedCase) {
     email: formatReminderEmails(trackedCase.reminderEmails),
     emails: trackedCase.reminderEmails,
     kind: 'test',
+    createdAt: new Date().toISOString()
+  });
+  writeDb(db);
+
+  return {
+    ok: true,
+    email: formatReminderEmails(trackedCase.reminderEmails),
+    emails: trackedCase.reminderEmails
+  };
+}
+
+async function sendTestCauseListAlertEmail(trackedCase) {
+  if (!trackedCase) {
+    throw new Error('Tracked case not found.');
+  }
+  if (!trackedCase.reminderEmails?.length) {
+    throw new Error('No reminder emails configured for this case.');
+  }
+
+  const overviewCandidates = await Promise.all([
+    getTodayCauseListOverview({ refresh: false }).catch(() => ({ matches: [], date: '' })),
+    refreshNextDayCauseListOverview().catch(() => ({ matches: [], date: '' }))
+  ]);
+
+  const selected = overviewCandidates
+    .map((overview, index) => ({
+      overview,
+      mode: index === 0 ? 'today' : 'tomorrow',
+      matches: (overview.matches || []).filter((match) => match.trackedCaseId === trackedCase.id)
+    }))
+    .find((entry) => entry.matches.length);
+
+  if (!selected) {
+    throw new Error('This case is not currently present in today\'s or tomorrow\'s cause list, so a cause-list test email cannot be generated.');
+  }
+
+  await sendDetailedCauseListAlertEmail(trackedCase, selected.overview.date, selected.matches, {
+    mode: selected.mode,
+    test: true
+  });
+
+  const db = readDb();
+  db.reminderDeliveries.push({
+    id: id('reminder'),
+    trackedCaseId: trackedCase.id,
+    status: 'sent',
+    reminderDate: selected.overview.date,
+    daysUntilHearing: selected.mode === 'today' ? 0 : 1,
+    email: formatReminderEmails(trackedCase.reminderEmails),
+    emails: trackedCase.reminderEmails,
+    kind: 'cause_list_test',
     createdAt: new Date().toISOString()
   });
   writeDb(db);
@@ -460,16 +633,25 @@ async function sendCauseListAlertEmail(trackedCase, causeListDate, matches) {
 }
 
 async function sendNextDayCauseListAlertEmail(trackedCase, causeListDate, matches) {
+  return sendDetailedCauseListAlertEmail(trackedCase, causeListDate, matches, { mode: 'tomorrow' });
+}
+
+async function sendDetailedCauseListAlertEmail(trackedCase, causeListDate, matches, options = {}) {
   const mailer = getTransporter();
   const uniqueMatches = Array.from(new Map(matches.map((match) => [nextDayCauseListMatchKey(match), match])).values());
-  const subject = `Tomorrow's cause list alert: ${trackedCase.latestCaseNumber || trackedCase.displayLabel}`;
+  const mode = options.mode === 'today' ? 'today' : 'tomorrow';
+  const isTest = options.test === true;
+  const subjectPrefix = mode === 'today' ? 'Today\'s cause list alert' : 'Tomorrow\'s cause list alert';
+  const subject = `${isTest ? 'Test: ' : ''}${subjectPrefix}: ${trackedCase.latestCaseNumber || trackedCase.displayLabel}`;
   const caseLabel = trackedCase.latestCaseNumber || trackedCase.displayLabel || 'Tracked case';
   const caseTitle = trackedCase.latestCaseTitle || trackedCase.manualCaseTitle || 'Not available';
   const ordersUrl = trackedCase.latestOrdersUrl || '';
   const filingsUrl = trackedCase.latestFilingsUrl || '';
   const judgmentsUrl = trackedCase.latestJudgmentsUrl || '';
   const textLines = [
-    `Your tracked case is listed in the Delhi High Court cause list for ${causeListDate}.`,
+    isTest
+      ? `Test cause-list email for the Delhi High Court cause list dated ${causeListDate}.`
+      : `Your tracked case is listed in the Delhi High Court cause list for ${causeListDate}.`,
     '',
     `Matter number: ${caseLabel}`,
     `Matter name: ${caseTitle}`,
@@ -497,7 +679,7 @@ async function sendNextDayCauseListAlertEmail(trackedCase, causeListDate, matche
     text: textLines.join('\n'),
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #14213d;">
-        <h2 style="margin-bottom: 8px;">Tomorrow's Delhi High Court cause list match</h2>
+        <h2 style="margin-bottom: 8px;">${escapeHtml(isTest ? `Test: ${subjectPrefix}` : subjectPrefix)}</h2>
         <p><strong>${escapeHtml(caseLabel)}</strong></p>
         <p>${escapeHtml(caseTitle)}</p>
         <p>Cause list date: ${escapeHtml(causeListDate)}</p>
@@ -707,6 +889,21 @@ function getNextCauseListAlertRunAt(now = new Date()) {
   return new Date(now.getTime() + 60 * 60 * 1000);
 }
 
+function getNextTodayCauseListAlertRunAt(now = new Date()) {
+  const parts = getIndiaDateParts(now);
+
+  for (let dayOffset = 0; dayOffset < 3; dayOffset += 1) {
+    for (const slot of TODAY_CAUSE_LIST_ALERT_SEND_HOURS) {
+      const candidate = createIndiaDate(parts.year, parts.month, parts.day + dayOffset, slot.hour, slot.minute, 0);
+      if (candidate.getTime() > now.getTime() + 1000) {
+        return candidate;
+      }
+    }
+  }
+
+  return new Date(now.getTime() + 60 * 60 * 1000);
+}
+
 function parseReminderSendSlot(value) {
   const match = String(value || '').match(/^(\d{1,2})(?::(\d{2}))?$/);
   if (!match) return null;
@@ -782,11 +979,15 @@ module.exports = {
   DEFAULT_REMINDER_EMAIL,
   REMINDER_INTERVAL_MS,
   REMINDER_SEND_HOURS,
+  TODAY_CAUSE_LIST_ALERT_SEND_HOURS,
   CAUSE_LIST_ALERT_SEND_HOURS,
   getReminderStatus,
   getNextCauseListAlertRunAt,
+  getNextTodayCauseListAlertRunAt,
   getNextReminderRunAt,
+  runTodayCauseListAlertSweep,
   runNextDayCauseListAlertSweep,
   runReminderSweep,
+  sendTestCauseListAlertEmail,
   sendTestReminderEmail
 };

@@ -32,10 +32,13 @@ const {
   DEFAULT_REMINDER_EMAIL,
   REMINDER_INTERVAL_MS,
   getNextCauseListAlertRunAt,
+  getNextTodayCauseListAlertRunAt,
   getNextReminderRunAt,
   getReminderStatus,
+  runTodayCauseListAlertSweep,
   runNextDayCauseListAlertSweep,
   runReminderSweep,
+  sendTestCauseListAlertEmail,
   sendTestReminderEmail
 } = require('./reminderService');
 const { parseReminderEmailsFromInput } = require('./reminderEmails');
@@ -332,6 +335,19 @@ app.post('/api/cases/:id/reminders/test', async (req, res) => {
   }
 });
 
+app.post('/api/cases/:id/reminders/test-cause-list', async (req, res) => {
+  try {
+    const trackedCase = getCase(req.params.id);
+    if (!trackedCase) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+    const result = await sendTestCauseListAlertEmail(trackedCase);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 app.get('/api/documents/:caseId/:fileName', (req, res) => {
   const absolutePath = resolveCachedDocument(req.params.caseId, req.params.fileName);
   if (!absolutePath) {
@@ -550,6 +566,7 @@ setInterval(async () => {
 }, AUTO_SYNC_MS).unref();
 
 scheduleReminderSweep();
+scheduleTodayCauseListAlertSweep();
 scheduleCauseListAlertSweep();
 
 app.listen(PORT, () => {
@@ -627,6 +644,28 @@ function scheduleCauseListAlertSweep() {
       console.error('[cause-list-alerts] failed', error.message);
     } finally {
       scheduleCauseListAlertSweep();
+    }
+  }, delay);
+
+  timer.unref();
+}
+
+function scheduleTodayCauseListAlertSweep() {
+  const nextRunAt = getNextTodayCauseListAlertRunAt();
+  const delay = Math.max(1000, nextRunAt.getTime() - Date.now());
+
+  console.log(`[cause-list-day0-alerts] next scheduled sweep at ${nextRunAt.toISOString()}`);
+
+  const timer = setTimeout(async () => {
+    try {
+      const result = await runTodayCauseListAlertSweep();
+      if (!result.skipped) {
+        console.log(`[cause-list-day0-alerts] checked ${result.results.length} case(s) at ${new Date().toISOString()}`);
+      }
+    } catch (error) {
+      console.error('[cause-list-day0-alerts] failed', error.message);
+    } finally {
+      scheduleTodayCauseListAlertSweep();
     }
   }, delay);
 

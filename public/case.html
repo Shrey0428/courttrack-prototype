@@ -166,6 +166,7 @@
               <div class="row-actions">
                 <button id="saveReminderBtn" type="button">Save reminder settings</button>
                 <button id="testReminderBtn" class="secondary" type="button">Send test email</button>
+                <button id="testCauseListBtn" class="secondary" type="button">Send cause-list test email</button>
                 <button id="runReminderBtn" class="secondary" type="button">Run reminder check now</button>
                 <button id="forceReminderBtn" class="secondary" type="button">Force-send now</button>
               </div>
@@ -464,7 +465,7 @@
       async function loadReminderStatus() {
         reminderStatus = await api('/api/reminders/status');
         const text = reminderStatus.configured
-          ? `SMTP is configured via ${reminderStatus.host}:${reminderStatus.port}. Automatic reminders go out at ${formatReminderSchedule(reminderStatus.sendHours || [])} IST.`
+          ? `SMTP is configured via ${reminderStatus.host}:${reminderStatus.port}. Hearing reminders go out at ${formatReminderSchedule(reminderStatus.sendHours || [])} IST. Cause-list alerts go out at ${formatReminderSchedule(reminderStatus.todayCauseListAlertHours || [])} IST on day 0 and ${formatReminderSchedule(reminderStatus.causeListAlertHours || [])} IST for the next day.`
           : 'SMTP is not configured yet. You can still save reminder preferences now.';
         document.getElementById('reminderStatusText').textContent = text;
       }
@@ -560,6 +561,13 @@
         await loadCase();
       }
 
+      async function sendCauseListTestEmail() {
+        if (!currentCase) return;
+        const result = await api(`/api/cases/${currentCase.id}/reminders/test-cause-list`, { method: 'POST' });
+        setFeedback('reminderFeedback', `Cause-list test email sent to ${result.email}.`, 'success');
+        await loadCase();
+      }
+
       async function refreshCase() {
         if (!currentCase) return;
         if (currentCase.provider === 'delhiManualCaptcha' || currentCase.provider === 'districtCourtCnr') {
@@ -602,6 +610,9 @@
       });
       document.getElementById('testReminderBtn').addEventListener('click', () => {
         sendTestEmail().catch((error) => setFeedback('reminderFeedback', error.message, 'error'));
+      });
+      document.getElementById('testCauseListBtn').addEventListener('click', () => {
+        sendCauseListTestEmail().catch((error) => setFeedback('reminderFeedback', error.message, 'error'));
       });
       document.getElementById('refreshBtn').addEventListener('click', () => {
         refreshCase().catch((error) => setFeedback('reminderFeedback', error.message, 'error'));
