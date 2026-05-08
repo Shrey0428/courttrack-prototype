@@ -45,8 +45,10 @@ const { parseReminderEmailsFromInput } = require('./reminderEmails');
 const { listDelhiDistrictSites } = require('./delhiDistrictSites');
 const { resolveCachedDocument } = require('./documentCache');
 const {
+  getActiveCauseListOverview,
   getTodayCauseListOverview,
   refreshTodayCauseListOverview,
+  refreshActiveCauseListOverview,
   getNextDayCauseListOverview,
   refreshNextDayCauseListOverview
 } = require('./causeListService');
@@ -230,6 +232,24 @@ app.get('/api/cause-lists/today', async (_req, res) => {
 app.post('/api/cause-lists/today/refresh', async (_req, res) => {
   try {
     const payload = await refreshTodayCauseListOverview();
+    res.json(payload);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/cause-lists/active', async (_req, res) => {
+  try {
+    const payload = await getActiveCauseListOverview();
+    res.json(payload);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/cause-lists/active/refresh', async (_req, res) => {
+  try {
+    const payload = await refreshActiveCauseListOverview();
     res.json(payload);
   } catch (error) {
     res.status(500).json({ error: error.message });

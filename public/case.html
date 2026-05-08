@@ -112,7 +112,7 @@
           </section>
 
           <section class="card">
-            <h2>Tomorrow's cause list</h2>
+            <h2 id="causeListSectionHeading">Active cause list</h2>
             <div class="list" id="causeListItems"></div>
           </section>
 
@@ -188,7 +188,7 @@
       let currentCase = null;
       let reminderStatus = null;
       let highCourtExpanded = false;
-      let nextDayCauseListOverview = { matches: [], date: '', scannedAt: '' };
+      let activeCauseListOverview = { matches: [], date: '', scannedAt: '', windowKind: 'today', windowLabel: 'Today' };
 
       async function api(url, options = {}) {
         const response = await fetch(url, {
@@ -332,9 +332,15 @@
         refreshBtn.textContent = refreshBtn.disabled ? 'Refresh via home page CAPTCHA' : 'Refresh case';
       }
 
+      function causeListWindowLabel() {
+        return activeCauseListOverview.windowLabel || (activeCauseListOverview.windowKind === 'next-day' ? 'Tomorrow' : 'Today');
+      }
+
       function renderCauseListMatches(caseData) {
-        const allMatches = Array.isArray(nextDayCauseListOverview.matches) ? nextDayCauseListOverview.matches : [];
+        document.getElementById('causeListSectionHeading').textContent = `${causeListWindowLabel()}'s cause list`;
+        const allMatches = Array.isArray(activeCauseListOverview.matches) ? activeCauseListOverview.matches : [];
         const caseMatches = allMatches.filter((item) => item.trackedCaseId === caseData.id);
+        const labelLower = causeListWindowLabel().toLowerCase();
         renderList(
           document.getElementById('causeListItems'),
           caseMatches,
@@ -348,7 +354,7 @@
             ${item.meetingLink ? `<p><a href="${item.meetingLink}" target="_blank" rel="noopener noreferrer">Open meeting link</a></p>` : ''}
             <p><a href="${item.pdfUrl}" target="_blank" rel="noopener noreferrer">Open cause-list PDF</a></p>
           `,
-          'This case has not been found in tomorrow\'s main Delhi High Court sitting-benches cause list yet.'
+          `This case has not been found in ${labelLower}'s main Delhi High Court sitting-benches cause list yet.`
         );
       }
 
@@ -493,8 +499,8 @@
         renderCase(caseData);
       }
 
-      async function loadNextDayCauseListOverview() {
-        nextDayCauseListOverview = await api('/api/cause-lists/next-day');
+      async function loadActiveCauseListOverview() {
+        activeCauseListOverview = await api('/api/cause-lists/active');
         if (currentCase) {
           renderCauseListMatches(currentCase);
         }
@@ -632,7 +638,7 @@
         renderHistory(currentCase);
       });
 
-      Promise.all([loadReminderStatus(), loadCase(), loadNextDayCauseListOverview()]).catch((error) => {
+      Promise.all([loadReminderStatus(), loadCase(), loadActiveCauseListOverview()]).catch((error) => {
         setFeedback('reminderFeedback', error.message, 'error');
       });
     </script>

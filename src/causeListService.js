@@ -21,6 +21,26 @@ async function refreshNextDayCauseListOverview() {
   return refreshCauseListOverviewForDate(formatIndiaDate(addIndiaDays(new Date(), 1)));
 }
 
+async function getActiveCauseListOverview(options = {}) {
+  const target = getActiveCauseListTarget();
+  const overview = await getCauseListOverviewForDate(target.date, options);
+  return {
+    ...overview,
+    windowKind: target.kind,
+    windowLabel: target.kind === 'next-day' ? 'Tomorrow' : 'Today'
+  };
+}
+
+async function refreshActiveCauseListOverview() {
+  const target = getActiveCauseListTarget();
+  const overview = await refreshCauseListOverviewForDate(target.date);
+  return {
+    ...overview,
+    windowKind: target.kind,
+    windowLabel: target.kind === 'next-day' ? 'Tomorrow' : 'Today'
+  };
+}
+
 async function getCauseListOverviewForDate(targetDate, options = {}) {
   const db = readDb();
   const normalizedDate = normalizeDateKey(targetDate);
@@ -260,6 +280,23 @@ function addIndiaDays(date, count) {
   return new Date(shifted.getTime() - INDIA_OFFSET_MINUTES * 60 * 1000);
 }
 
+function getIndiaTimeParts(date) {
+  const shifted = new Date(date.getTime() + INDIA_OFFSET_MINUTES * 60 * 1000);
+  return {
+    hours: shifted.getUTCHours(),
+    minutes: shifted.getUTCMinutes()
+  };
+}
+
+function getActiveCauseListTarget(now = new Date()) {
+  const { hours, minutes } = getIndiaTimeParts(now);
+  const afterCutoff = hours > 19 || (hours === 19 && minutes >= 0);
+  return {
+    kind: afterCutoff ? 'next-day' : 'today',
+    date: afterCutoff ? formatIndiaDate(addIndiaDays(now, 1)) : formatIndiaDate(now)
+  };
+}
+
 function normalizeDateKey(value) {
   const m = String(value || '').match(/(\d{2})[-/.](\d{2})[-/.](\d{4})/);
   if (!m) return formatIndiaDate(new Date());
@@ -267,8 +304,10 @@ function normalizeDateKey(value) {
 }
 
 module.exports = {
+  getActiveCauseListOverview,
   getTodayCauseListOverview,
   refreshTodayCauseListOverview,
+  refreshActiveCauseListOverview,
   getNextDayCauseListOverview,
   refreshNextDayCauseListOverview,
   getCauseListOverviewForDate,

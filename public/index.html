@@ -530,20 +530,20 @@
       <div class="card">
         <div class="section-head">
           <div>
-            <h2>Tomorrow's Cause List</h2>
-            <p class="muted">Official Delhi High Court main sitting-benches cause list for tomorrow, plus your tracked cases that appear in it.</p>
+            <h2 id="causeListHeading">Active Cause List</h2>
+            <p class="muted" id="causeListDescription">Official Delhi High Court main sitting-benches cause list for the active cause-list window, plus your tracked cases that appear in it.</p>
           </div>
-          <button class="secondary" type="button" onclick="refreshNextDayCauseList()">Refresh tomorrow's cause list</button>
+          <button class="secondary" id="refreshCauseListBtn" type="button" onclick="refreshActiveCauseList()">Refresh active cause list</button>
         </div>
-        <div id="causeListStatus" class="status-inline muted">Loading tomorrow's cause list...</div>
+        <div id="causeListStatus" class="status-inline muted">Loading active cause list...</div>
         <div class="hero-grid" style="grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px;">
           <div>
-            <h3>Tomorrow's PDF link</h3>
-            <div id="nextDayCauseListLinks" class="list-shell muted" style="margin-top:12px;">Loading...</div>
+            <h3 id="causeListLinksHeading">Cause-list PDF link</h3>
+            <div id="activeCauseListLinks" class="list-shell muted" style="margin-top:12px;">Loading...</div>
           </div>
           <div>
             <h3>Tracked case matches</h3>
-            <div id="nextDayCauseListMatches" class="list-shell muted" style="margin-top:12px;">Loading...</div>
+            <div id="activeCauseListMatches" class="list-shell muted" style="margin-top:12px;">Loading...</div>
           </div>
         </div>
       </div>
@@ -594,7 +594,7 @@
       let districtSites = [];
       let highCourtLookupOptions = { caseTypes: [], years: [] };
       const districtLookupOptionsCache = new Map();
-      let nextDayCauseListCache = { entries: [], matches: [], date: '', scannedAt: '' };
+      let activeCauseListCache = { entries: [], matches: [], date: '', scannedAt: '', windowKind: 'today', windowLabel: 'Today' };
       let currentCourtFilter = 'all';
       let disposedExpanded = false;
       let statusToastTimer = null;
@@ -904,19 +904,34 @@
         renderCaseRows();
       }
 
-      function renderNextDayCauseList() {
-        const linksEl = document.getElementById('nextDayCauseListLinks');
-        const matchesEl = document.getElementById('nextDayCauseListMatches');
-        const statusEl = document.getElementById('causeListStatus');
-        const entries = nextDayCauseListCache.entries || [];
-        const matches = nextDayCauseListCache.matches || [];
+      function causeListWindowLabel() {
+        return activeCauseListCache.windowLabel || (activeCauseListCache.windowKind === 'next-day' ? 'Tomorrow' : 'Today');
+      }
 
-        statusEl.textContent = nextDayCauseListCache.scannedAt
-          ? `Scanned at ${formatShortDateTime(nextDayCauseListCache.scannedAt)} for ${nextDayCauseListCache.date || 'tomorrow'}.`
+      function renderActiveCauseList() {
+        const linksEl = document.getElementById('activeCauseListLinks');
+        const matchesEl = document.getElementById('activeCauseListMatches');
+        const statusEl = document.getElementById('causeListStatus');
+        const headingEl = document.getElementById('causeListHeading');
+        const descriptionEl = document.getElementById('causeListDescription');
+        const refreshBtn = document.getElementById('refreshCauseListBtn');
+        const linksHeadingEl = document.getElementById('causeListLinksHeading');
+        const label = causeListWindowLabel();
+        const labelLower = label.toLowerCase();
+        const entries = activeCauseListCache.entries || [];
+        const matches = activeCauseListCache.matches || [];
+
+        headingEl.textContent = `${label}'s Cause List`;
+        descriptionEl.textContent = `Official Delhi High Court main sitting-benches cause list for ${labelLower}, plus your tracked cases that appear in it.`;
+        refreshBtn.textContent = `Refresh ${labelLower}'s cause list`;
+        linksHeadingEl.textContent = `${label}'s PDF link`;
+
+        statusEl.textContent = activeCauseListCache.scannedAt
+          ? `Scanned at ${formatShortDateTime(activeCauseListCache.scannedAt)} for ${activeCauseListCache.date || labelLower}.`
           : 'No cause-list scan has been stored yet.';
 
         if (!entries.length) {
-          linksEl.innerHTML = '<div class="item muted">No official PDF cause-list links were found for tomorrow.</div>';
+          linksEl.innerHTML = `<div class="item muted">No official PDF cause-list links were found for ${escapeHtml(labelLower)}.</div>`;
         } else {
           linksEl.innerHTML = entries.map((entry) => `
             <div class="item">
@@ -928,7 +943,7 @@
         }
 
         if (!matches.length) {
-          matchesEl.innerHTML = '<div class="item muted">None of your tracked High Court cases were found in tomorrow\'s cause-list PDF.</div>';
+          matchesEl.innerHTML = `<div class="item muted">None of your tracked High Court cases were found in ${escapeHtml(labelLower)}'s cause-list PDF.</div>`;
         } else {
           matchesEl.innerHTML = matches.map((match) => `
             <div class="item">
@@ -941,18 +956,18 @@
         }
       }
 
-      async function loadNextDayCauseList(refresh = false) {
+      async function loadActiveCauseList(refresh = false) {
         const payload = refresh
-          ? await api('/api/cause-lists/next-day/refresh', { method: 'POST' })
-          : await api('/api/cause-lists/next-day');
-        nextDayCauseListCache = payload;
-        renderNextDayCauseList();
+          ? await api('/api/cause-lists/active/refresh', { method: 'POST' })
+          : await api('/api/cause-lists/active');
+        activeCauseListCache = payload;
+        renderActiveCauseList();
       }
 
-      async function refreshNextDayCauseList() {
-        setStatus('Refreshing tomorrow\'s Delhi High Court cause-list PDF...', 'muted');
-        await loadNextDayCauseList(true);
-        setStatus('Tomorrow\'s cause list updated.', 'success');
+      async function refreshActiveCauseList() {
+        setStatus(`Refreshing ${causeListWindowLabel().toLowerCase()}'s Delhi High Court cause-list PDF...`, 'muted');
+        await loadActiveCauseList(true);
+        setStatus(`${causeListWindowLabel()}'s cause list updated.`, 'success');
       }
 
       function renderCaseRows() {
@@ -1256,7 +1271,7 @@
       document.getElementById('reminderEmails').value = document.getElementById('reminderEmails').value.trim() || DEFAULT_REMINDER_EMAIL;
       document.getElementById('districtReminderEmails').value = document.getElementById('districtReminderEmails').value.trim() || DEFAULT_REMINDER_EMAIL;
 
-      Promise.all([loadHighCourtLookupOptions(), loadDistrictSites(), loadCases(), loadNextDayCauseList()]).catch((error) => {
+      Promise.all([loadHighCourtLookupOptions(), loadDistrictSites(), loadCases(), loadActiveCauseList()]).catch((error) => {
         setStatus(error.message, 'error');
       });
     </script>
