@@ -306,7 +306,7 @@ app.post('/api/cases/:id/refresh', async (req, res) => {
 });
 
 app.post('/api/sync-all', async (_req, res) => {
-  const results = await syncAllCases();
+  const results = await syncAllCases({ forceHighCourtMonitor: true });
   res.json(results);
 });
 

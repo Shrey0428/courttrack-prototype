@@ -16,7 +16,7 @@ const providers = {
 };
 
 const DEFAULT_REMINDER_EMAIL = process.env.DEFAULT_REMINDER_EMAIL || 'info@amitguptaadvocate.com';
-const HIGH_COURT_ORDER_MONITOR_INTERVAL_MS = Number(process.env.HIGH_COURT_ORDER_MONITOR_INTERVAL_MS || 15 * 60 * 1000);
+const HIGH_COURT_ORDER_MONITOR_INTERVAL_MS = Number(process.env.HIGH_COURT_ORDER_MONITOR_INTERVAL_MS || 4 * 60 * 60 * 1000);
 
 function getProvider(name) {
   const provider = providers[name];
@@ -268,11 +268,12 @@ function applyNormalizedResult(db, trackedCase, normalized, run) {
   };
 }
 
-async function syncAllCases() {
+async function syncAllCases(options = {}) {
   const cases = listCases();
   const results = [];
+  const forceHighCourtMonitor = options.forceHighCourtMonitor === true;
   for (const trackedCase of cases) {
-    if (trackedCase.provider === 'delhiManualCaptcha' && !shouldRunHighCourtOrderMonitor(trackedCase)) {
+    if (trackedCase.provider === 'delhiManualCaptcha' && !forceHighCourtMonitor && !shouldRunHighCourtOrderMonitor(trackedCase)) {
       results.push({ caseId: trackedCase.id, ok: false, error: 'Skipped: High Court order monitor is not due yet' });
       continue;
     }
