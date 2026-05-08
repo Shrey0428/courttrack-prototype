@@ -531,18 +531,17 @@
         <div class="section-head">
           <div>
             <h2 id="causeListHeading">Active Cause List</h2>
-            <p class="muted" id="causeListDescription">Official Delhi High Court main sitting-benches cause list for the active cause-list window, plus your tracked cases that appear in it.</p>
+            <p class="muted" id="causeListDescription">Official Delhi High Court main sitting-benches cause list for the active cause-list window. Open this section to view only your matched matters.</p>
           </div>
-          <button class="secondary" id="refreshCauseListBtn" type="button" onclick="refreshActiveCauseList()">Refresh active cause list</button>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="secondary" id="toggleCauseListBtn" type="button" onclick="toggleCauseListSection()">View cause list</button>
+            <button class="secondary" id="refreshCauseListBtn" type="button" onclick="refreshActiveCauseList()">Refresh active cause list</button>
+          </div>
         </div>
         <div id="causeListStatus" class="status-inline muted">Loading active cause list...</div>
-        <div class="hero-grid" style="grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px;">
+        <div id="causeListPanel" style="display:none; margin-top:14px;">
           <div>
-            <h3 id="causeListLinksHeading">Cause-list PDF link</h3>
-            <div id="activeCauseListLinks" class="list-shell muted" style="margin-top:12px;">Loading...</div>
-          </div>
-          <div>
-            <h3>Tracked case matches</h3>
+            <h3 id="causeListMatchesHeading">Tracked case matches</h3>
             <div id="activeCauseListMatches" class="list-shell muted" style="margin-top:12px;">Loading...</div>
           </div>
         </div>
@@ -595,6 +594,7 @@
       let highCourtLookupOptions = { caseTypes: [], years: [] };
       const districtLookupOptionsCache = new Map();
       let activeCauseListCache = { entries: [], matches: [], date: '', scannedAt: '', windowKind: 'today', windowLabel: 'Today' };
+      let causeListExpanded = false;
       let currentCourtFilter = 'all';
       let disposedExpanded = false;
       let statusToastTimer = null;
@@ -919,39 +919,34 @@
         return activeCauseListCache.windowLabel || (activeCauseListCache.windowKind === 'next-day' ? 'Tomorrow' : 'Today');
       }
 
+      function toggleCauseListSection() {
+        causeListExpanded = !causeListExpanded;
+        renderActiveCauseList();
+      }
+
       function renderActiveCauseList() {
-        const linksEl = document.getElementById('activeCauseListLinks');
         const matchesEl = document.getElementById('activeCauseListMatches');
         const statusEl = document.getElementById('causeListStatus');
         const headingEl = document.getElementById('causeListHeading');
         const descriptionEl = document.getElementById('causeListDescription');
         const refreshBtn = document.getElementById('refreshCauseListBtn');
-        const linksHeadingEl = document.getElementById('causeListLinksHeading');
+        const toggleBtn = document.getElementById('toggleCauseListBtn');
+        const panelEl = document.getElementById('causeListPanel');
+        const matchesHeadingEl = document.getElementById('causeListMatchesHeading');
         const label = causeListWindowLabel();
         const labelLower = label.toLowerCase();
-        const entries = activeCauseListCache.entries || [];
         const matches = activeCauseListCache.matches || [];
 
         headingEl.textContent = `${label}'s Cause List`;
-        descriptionEl.textContent = `Official Delhi High Court main sitting-benches cause list for ${labelLower}, plus your tracked cases that appear in it.`;
+        descriptionEl.textContent = `Official Delhi High Court main sitting-benches cause list for ${labelLower}. Open this section to view only your matched matters.`;
         refreshBtn.textContent = `Refresh ${labelLower}'s cause list`;
-        linksHeadingEl.textContent = `${label}'s PDF link`;
+        toggleBtn.textContent = causeListExpanded ? 'Hide cause list' : 'View cause list';
+        panelEl.style.display = causeListExpanded ? 'block' : 'none';
+        matchesHeadingEl.textContent = `${label}'s matched matters`;
 
         statusEl.textContent = activeCauseListCache.scannedAt
           ? `Scanned at ${formatShortDateTime(activeCauseListCache.scannedAt)} for ${activeCauseListCache.date || labelLower}.`
           : 'No cause-list scan has been stored yet.';
-
-        if (!entries.length) {
-          linksEl.innerHTML = `<div class="item muted">No official PDF cause-list links were found for ${escapeHtml(labelLower)}.</div>`;
-        } else {
-          linksEl.innerHTML = entries.map((entry) => `
-            <div class="item">
-              <div><strong>${escapeHtml(entry.title || 'Cause list')}</strong></div>
-              <p class="muted">${escapeHtml(entry.listDate || activeCauseListCache.date || '-')}</p>
-              <p>${safeUrl(entry.pdfUrl) ? `<a href="${safeUrl(entry.pdfUrl)}" target="_blank" rel="noopener noreferrer">Open PDF cause list</a>` : 'PDF link unavailable.'}</p>
-            </div>
-          `).join('');
-        }
 
         if (!matches.length) {
           matchesEl.innerHTML = `<div class="item muted">None of your tracked High Court cases were found in ${escapeHtml(labelLower)}'s cause-list PDF.</div>`;
