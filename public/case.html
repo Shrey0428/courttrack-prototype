@@ -218,6 +218,17 @@
         return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
       }
 
+      function safeUrl(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        try {
+          const parsed = new URL(raw, window.location.origin);
+          return parsed.href;
+        } catch (_error) {
+          return '';
+        }
+      }
+
       function statusClass(status) {
         const value = String(status || '').toLowerCase();
         if (value.includes('disposed')) return 'status-disposed';
@@ -351,8 +362,8 @@
             ${item.itemNumber ? `<p>Item No: ${escapeHtml(item.itemNumber)}</p>` : ''}
             ${item.listType ? `<p>List: ${escapeHtml(String(item.listType).toUpperCase())}</p>` : ''}
             ${item.judgeLabel ? `<p>${escapeHtml(item.judgeLabel)}</p>` : ''}
-            ${item.meetingLink ? `<p><a href="${item.meetingLink}" target="_blank" rel="noopener noreferrer">Open meeting link</a></p>` : ''}
-            <p><a href="${item.pdfUrl}" target="_blank" rel="noopener noreferrer">Open cause-list PDF</a></p>
+            ${safeUrl(item.meetingLink) ? `<p><a href="${safeUrl(item.meetingLink)}" target="_blank" rel="noopener noreferrer">Open meeting link</a></p>` : ''}
+            <p>${safeUrl(item.pdfUrl) ? `<a href="${safeUrl(item.pdfUrl)}" target="_blank" rel="noopener noreferrer">Open cause-list PDF</a>` : 'PDF link unavailable.'}</p>
           `,
           `This case has not been found in ${labelLower}'s main Delhi High Court sitting-benches cause list yet.`
         );

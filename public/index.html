@@ -640,6 +640,17 @@
         return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
       }
 
+      function safeUrl(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        try {
+          const parsed = new URL(raw, window.location.origin);
+          return parsed.href;
+        } catch (_error) {
+          return '';
+        }
+      }
+
       function switchLookupTab(mode) {
         const high = mode === 'highCourt';
         document.getElementById('panelHighCourt').classList.toggle('active', high);
@@ -936,8 +947,8 @@
           linksEl.innerHTML = entries.map((entry) => `
             <div class="item">
               <div><strong>${escapeHtml(entry.title || 'Cause list')}</strong></div>
-              <p class="muted">${escapeHtml(entry.listDate || nextDayCauseListCache.date || '-')}</p>
-              <p><a href="${entry.pdfUrl}" target="_blank" rel="noopener noreferrer">Open PDF cause list</a></p>
+              <p class="muted">${escapeHtml(entry.listDate || activeCauseListCache.date || '-')}</p>
+              <p>${safeUrl(entry.pdfUrl) ? `<a href="${safeUrl(entry.pdfUrl)}" target="_blank" rel="noopener noreferrer">Open PDF cause list</a>` : 'PDF link unavailable.'}</p>
             </div>
           `).join('');
         }
@@ -950,7 +961,7 @@
               <div><strong>${escapeHtml(match.displayTitle || match.caseNumber || 'Tracked case')}</strong></div>
               <p class="muted">${escapeHtml(match.caseNumber || '-')}</p>
               ${match.courtNumber ? `<p>Court No: ${escapeHtml(match.courtNumber)}</p>` : ''}
-              <p><a href="/case.html?id=${encodeURIComponent(match.trackedCaseId)}" target="_blank" rel="noopener noreferrer">Open case</a> | <a href="${match.pdfUrl}" target="_blank" rel="noopener noreferrer">Open cause-list PDF</a></p>
+              <p><a href="/case.html?id=${encodeURIComponent(match.trackedCaseId)}" target="_blank" rel="noopener noreferrer">Open case</a>${safeUrl(match.pdfUrl) ? ` | <a href="${safeUrl(match.pdfUrl)}" target="_blank" rel="noopener noreferrer">Open cause-list PDF</a>` : ''}</p>
             </div>
           `).join('');
         }
