@@ -354,20 +354,49 @@ function findDuplicateCase(cases, input) {
   if (input.provider === 'districtCourtCnr') {
     return cases.find((candidate) =>
       candidate.provider === 'districtCourtCnr' &&
-      String(candidate.queryMeta?.districtSlug || '') === String(input.queryMeta?.districtSlug || '') &&
-      String(candidate.queryMeta?.searchMode || 'courtComplex') === String(input.queryMeta?.searchMode || 'courtComplex') &&
-      String(candidate.queryMeta?.courtComplexValue || candidate.queryMeta?.courtComplex || '') === String(input.queryMeta?.courtComplexValue || input.queryMeta?.courtComplex || '') &&
-      String(candidate.queryMeta?.courtEstablishmentValue || candidate.queryMeta?.courtEstablishment || '') === String(input.queryMeta?.courtEstablishmentValue || input.queryMeta?.courtEstablishment || '') &&
-      String(candidate.queryMeta?.caseType || '') === String(input.queryMeta?.caseType || '') &&
-      String(candidate.queryMeta?.caseNumber || '') === String(input.queryMeta?.caseNumber || '') &&
-      String(candidate.queryMeta?.year || '') === String(input.queryMeta?.year || '')
+      districtCaseIdentity(candidate.queryMeta || {}) === districtCaseIdentity(input.queryMeta || {})
     ) || null;
   }
 
   return cases.find((candidate) =>
     candidate.provider === input.provider &&
-    ((input.cnrNumber && candidate.cnrNumber === input.cnrNumber) || (input.caseLookup && candidate.caseLookup === input.caseLookup))
+    highCourtCaseIdentity(candidate, candidate.queryMeta || {}) === highCourtCaseIdentity(input, input.queryMeta || {})
   ) || null;
+}
+
+function districtCaseIdentity(queryMeta) {
+  return [
+    normalizeLookupToken(queryMeta?.districtSlug || ''),
+    normalizeLookupToken(queryMeta?.searchMode || 'courtComplex'),
+    normalizeLookupToken(queryMeta?.courtComplexValue || queryMeta?.courtComplex || ''),
+    normalizeLookupToken(queryMeta?.courtEstablishmentValue || queryMeta?.courtEstablishment || ''),
+    normalizeLookupToken(queryMeta?.caseType || ''),
+    normalizeLookupToken(queryMeta?.caseNumber || ''),
+    normalizeLookupToken(queryMeta?.year || '')
+  ].join('|');
+}
+
+function highCourtCaseIdentity(source, queryMeta) {
+  const queryKey = [
+    normalizeLookupToken(queryMeta?.caseType || ''),
+    normalizeLookupToken(queryMeta?.caseNumber || ''),
+    normalizeLookupToken(queryMeta?.year || '')
+  ].join('|');
+
+  return [
+    queryKey,
+    normalizeLookupToken(source?.cnrNumber || ''),
+    normalizeLookupToken(source?.caseLookup || ''),
+    normalizeLookupToken(source?.displayLabel || ''),
+    normalizeLookupToken(source?.latestCaseNumber || '')
+  ].join('|');
+}
+
+function normalizeLookupToken(value) {
+  return String(value || '')
+    .toUpperCase()
+    .replace(/&AMP;/g, '&')
+    .replace(/[^A-Z0-9]/g, '');
 }
 
 module.exports = {

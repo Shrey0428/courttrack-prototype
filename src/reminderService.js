@@ -673,6 +673,7 @@ async function sendDetailedCauseListAlertEmail(trackedCase, causeListDate, match
     textLines.push(`Court No: ${match.courtNumber || 'Not available'}`);
     textLines.push(`Item No: ${match.itemNumber || 'Not available'}`);
     textLines.push(`List: ${formatCauseListType(match.listType)}`);
+    if (match.meetingLink) textLines.push(`Meeting link: ${match.meetingLink}`);
     textLines.push(`PDF: ${match.pdfUrl}`);
     textLines.push('');
   }
@@ -710,6 +711,7 @@ async function sendDetailedCauseListAlertEmail(trackedCase, causeListDate, match
               <div>List: ${escapeHtml(formatCauseListType(match.listType))}</div>
               <div>Page: ${escapeHtml(String(match.pageNumber || '-'))}</div>
               <div style="margin-top:8px;">
+                ${match.meetingLink ? renderEmailButton(match.meetingLink, 'Open meeting link') : ''}
                 ${renderEmailButton(match.pdfUrl, 'Open cause-list PDF')}
               </div>
             </li>

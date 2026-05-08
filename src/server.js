@@ -542,29 +542,54 @@ function findTrackedCase(provider, input) {
   if (provider === 'districtCourtCnr') {
     return listCases().find((trackedCase) => {
       return trackedCase.provider === 'districtCourtCnr' &&
-        String(trackedCase.queryMeta?.districtSlug || '') === String(input.districtSlug || '') &&
-        String(trackedCase.queryMeta?.searchMode || 'courtComplex') === String(input.searchMode || 'courtComplex') &&
-        String(trackedCase.queryMeta?.courtComplexValue || trackedCase.queryMeta?.courtComplex || '') === String(input.courtComplexValue || input.courtComplex || '') &&
-        String(trackedCase.queryMeta?.courtEstablishmentValue || trackedCase.queryMeta?.courtEstablishment || '') === String(input.courtEstablishmentValue || input.courtEstablishment || '') &&
-        String(trackedCase.queryMeta?.caseType || '') === String(input.caseType || '') &&
-        String(trackedCase.queryMeta?.caseNumber || '') === String(input.caseNumber || '') &&
-        String(trackedCase.queryMeta?.year || '') === String(input.year || '');
+        districtCaseIdentity(trackedCase.queryMeta || {}) === districtCaseIdentity(input);
     }) || null;
   }
 
-  const formattedLookup = formatDelhiLookup(input);
+  const targetIdentity = highCourtCaseIdentity({
+    provider,
+    caseLookup: formatDelhiLookup(input),
+    displayLabel: formatDelhiLookup(input)
+  }, input);
   return listCases().find((trackedCase) => {
     return trackedCase.provider === provider &&
-      (
-        (
-          String(trackedCase.queryMeta?.caseType || '') === String(input.caseType || '') &&
-          String(trackedCase.queryMeta?.caseNumber || '') === String(input.caseNumber || '') &&
-          String(trackedCase.queryMeta?.year || '') === String(input.year || '')
-        ) ||
-        trackedCase.caseLookup === formattedLookup ||
-        trackedCase.displayLabel === formattedLookup
-      );
+      highCourtCaseIdentity(trackedCase, trackedCase.queryMeta || {}) === targetIdentity;
   }) || null;
+}
+
+function districtCaseIdentity(queryMeta) {
+  return [
+    normalizeLookupToken(queryMeta?.districtSlug || ''),
+    normalizeLookupToken(queryMeta?.searchMode || 'courtComplex'),
+    normalizeLookupToken(queryMeta?.courtComplexValue || queryMeta?.courtComplex || ''),
+    normalizeLookupToken(queryMeta?.courtEstablishmentValue || queryMeta?.courtEstablishment || ''),
+    normalizeLookupToken(queryMeta?.caseType || ''),
+    normalizeLookupToken(queryMeta?.caseNumber || ''),
+    normalizeLookupToken(queryMeta?.year || '')
+  ].join('|');
+}
+
+function highCourtCaseIdentity(source, queryMeta) {
+  const queryKey = [
+    normalizeLookupToken(queryMeta?.caseType || ''),
+    normalizeLookupToken(queryMeta?.caseNumber || ''),
+    normalizeLookupToken(queryMeta?.year || '')
+  ].join('|');
+
+  return [
+    queryKey,
+    normalizeLookupToken(source?.cnrNumber || ''),
+    normalizeLookupToken(source?.caseLookup || ''),
+    normalizeLookupToken(source?.displayLabel || ''),
+    normalizeLookupToken(source?.latestCaseNumber || '')
+  ].join('|');
+}
+
+function normalizeLookupToken(value) {
+  return String(value || '')
+    .toUpperCase()
+    .replace(/&AMP;/g, '&')
+    .replace(/[^A-Z0-9]/g, '');
 }
 
 function formatLookupError(error) {
