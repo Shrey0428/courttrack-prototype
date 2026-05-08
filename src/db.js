@@ -174,12 +174,13 @@ function normalizeTrackedCase(trackedCase, latestPayload) {
 }
 
 function normalizeCauseListToday(input) {
+  const matches = Array.isArray(input?.matches) ? input.matches.map(normalizeCauseListMatch) : [];
   return {
     version: text(input?.version),
     date: text(input?.date),
     scannedAt: text(input?.scannedAt),
     entries: Array.isArray(input?.entries) ? input.entries.map(normalizeCauseListEntry) : [],
-    matches: Array.isArray(input?.matches) ? input.matches.map(normalizeCauseListMatch) : []
+    matches: dedupeStoredCauseListMatches(matches)
   };
 }
 
@@ -188,7 +189,7 @@ function normalizeCauseListByDate(input) {
   if (!input || typeof input !== 'object') return result;
   for (const [key, value] of Object.entries(input)) {
     if (Array.isArray(value)) {
-      result[normalizeDateString(key)] = value.map(normalizeCauseListMatch);
+      result[normalizeDateString(key)] = dedupeStoredCauseListMatches(value.map(normalizeCauseListMatch));
       continue;
     }
     result[normalizeDateString(key)] = normalizeCauseListToday({
@@ -228,6 +229,39 @@ function normalizeCauseListMatch(match) {
     pdfUrl: decodeEntities(text(match?.pdfUrl)),
     sourceKind: text(match?.sourceKind)
   };
+}
+
+function dedupeStoredCauseListMatches(matches) {
+  const groups = new Map();
+  for (const match of matches || []) {
+    const key = [
+      text(match?.trackedCaseId),
+      text(match?.title),
+      text(match?.judgeLabel),
+      text(match?.courtNumber),
+      Number(match?.pageNumber || 0)
+    ].join('|');
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(match);
+  }
+
+  return Array.from(groups.values()).map((bucket) => {
+    return bucket
+      .slice()
+      .sort((a, b) => scoreStoredCauseListMatch(b) - scoreStoredCauseListMatch(a))[0];
+  });
+}
+
+function scoreStoredCauseListMatch(match) {
+  const rawCaseNumber = text(match?.caseNumber);
+  let score = 0;
+  if (rawCaseNumber) score += 20;
+  if (/^\s*WITH\b/i.test(rawCaseNumber)) score -= 50;
+  if (text(match?.itemNumber)) score += 10;
+  if (text(match?.partyNames)) score += 5;
+  if (text(match?.advocateNames)) score += 5;
+  if (text(match?.meetingLink)) score += 3;
+  return score;
 }
 
 function normalizeJudgmentMatch(match) {
