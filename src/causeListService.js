@@ -3,7 +3,7 @@ const delhiCauseListProvider = require('./providers/delhiCauseList');
 
 const INDIA_OFFSET_MINUTES = 330;
 const CACHE_TTL_MS = Number(process.env.CAUSE_LIST_CACHE_TTL_MS || 30 * 60 * 1000);
-const CAUSE_LIST_CACHE_VERSION = '3';
+const CAUSE_LIST_CACHE_VERSION = '4';
 
 async function getTodayCauseListOverview(options = {}) {
   return getCauseListOverviewForDate(formatIndiaDate(new Date()), options);
@@ -124,8 +124,8 @@ async function refreshCauseListOverviewForDate(targetDate) {
 
   const scannedAt = new Date().toISOString();
   for (const trackedCase of db.trackedCases) {
-    const primaryMatches = dedupeMatches(primaryMatchesByCaseId.get(trackedCase.id) || []);
-    const fallbackMatches = dedupeMatches(fallbackMatchesByCaseId.get(trackedCase.id) || []);
+    const primaryMatches = selectPreferredMatchesForCase(trackedCase, primaryMatchesByCaseId.get(trackedCase.id) || []);
+    const fallbackMatches = selectPreferredMatchesForCase(trackedCase, fallbackMatchesByCaseId.get(trackedCase.id) || []);
     const caseMatches = primaryMatches.length ? primaryMatches : fallbackMatches;
     matches.push(...caseMatches);
     const previousMatches = trackedCase.latestCauseListMatchesByDate?.[normalizedDate] || [];
@@ -258,6 +258,62 @@ function dedupeMatches(matches) {
     seen.add(key);
     return true;
   });
+}
+
+function selectPreferredMatchesForCase(trackedCase, matches) {
+  const deduped = dedupeMatches(matches || []);
+  if (!deduped.length) return [];
+
+  const groups = new Map();
+  for (const match of deduped) {
+    const key = [
+      trackedCase.id || '',
+      match.title || '',
+      match.judgeLabel || '',
+      match.courtNumber || '',
+      match.pageNumber || ''
+    ].join('|');
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(match);
+  }
+
+  return Array.from(groups.values()).map((bucket) => {
+    return bucket
+      .slice()
+      .sort((a, b) => scoreCauseListMatch(trackedCase, b) - scoreCauseListMatch(trackedCase, a))[0];
+  });
+}
+
+function scoreCauseListMatch(trackedCase, match) {
+  const trackedCaseNumbers = new Set(
+    [
+      trackedCase.latestCaseNumber,
+      trackedCase.caseLookup,
+      trackedCase.displayLabel,
+      `${trackedCase.queryMeta?.caseType || ''} ${trackedCase.queryMeta?.caseNumber || ''}/${trackedCase.queryMeta?.year || ''}`
+    ].map(normalizeCaseToken).filter(Boolean)
+  );
+
+  const rawCaseNumber = String(match.caseNumber || '').trim();
+  const normalizedCaseNumber = normalizeCaseToken(rawCaseNumber);
+  let score = 0;
+
+  if (trackedCaseNumbers.has(normalizedCaseNumber)) score += 100;
+  if (/^\s*WITH\b/i.test(rawCaseNumber)) score -= 50;
+  if (match.itemNumber) score += 10;
+  if (match.partyNames) score += 5;
+  if (match.advocateNames) score += 5;
+  if (match.meetingLink) score += 3;
+  if (match.pageNumber) score += 1;
+
+  return score;
+}
+
+function normalizeCaseToken(value) {
+  return String(value || '')
+    .toUpperCase()
+    .replace(/&AMP;/g, '&')
+    .replace(/[^A-Z0-9]/g, '');
 }
 
 function getIndiaParts(date) {
