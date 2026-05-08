@@ -93,11 +93,12 @@ class DelhiCauseListProvider extends BaseProvider {
 
 async function fetchCauseListEntries(options = {}) {
   const targetDate = normalizeDate(options.listDate || options.date || '');
+  const mode = String(options.mode || 'main').trim().toLowerCase();
 
   if (!targetDate) {
     const firstPageEntries = await fetchCauseListPage(CAUSE_LIST_PAGE);
     return dedupeAndSortEntries(firstPageEntries)
-      .filter((entry) => isMainSittingBenchesCauseList(entry))
+      .filter((entry) => shouldIncludeCauseListEntry(entry, '', mode))
       .slice(0, 30);
   }
 
@@ -110,16 +111,14 @@ async function fetchCauseListEntries(options = {}) {
     const pageEntries = await fetchCauseListPage(pageUrl);
     if (!pageEntries.length) break;
 
-    const matchingEntries = pageEntries.filter((entry) => (
-      entry.listDate === targetDate &&
-      isMainSittingBenchesCauseList(entry, targetDate)
-    ));
+    const sameDateEntries = pageEntries.filter((entry) => entry.listDate === targetDate);
+    const matchingEntries = sameDateEntries.filter((entry) => shouldIncludeCauseListEntry(entry, targetDate, mode));
     if (matchingEntries.length) {
       sawTargetDate = true;
       entries.push(...matchingEntries);
     }
 
-    if (sawTargetDate && matchingEntries.length === 0) {
+    if (sawTargetDate && sameDateEntries.length === 0) {
       break;
     }
 
@@ -173,6 +172,16 @@ function isMainSittingBenchesCauseList(entry, targetDate = '') {
   const expectedDate = targetDate ? targetDate.replace(/-/g, '.') : '\\d{2}\\.\\d{2}\\.\\d{4}';
   const pattern = new RegExp(`^Cause List of Sitting of Benches for ${expectedDate}$`, 'i');
   return pattern.test(title);
+}
+
+function shouldIncludeCauseListEntry(entry, targetDate = '', mode = 'main') {
+  if (mode === 'all') {
+    return true;
+  }
+  if (mode === 'fallback') {
+    return !isMainSittingBenchesCauseList(entry, targetDate);
+  }
+  return isMainSittingBenchesCauseList(entry, targetDate);
 }
 
 function buildCauseListPageUrl(pageIndex) {
@@ -260,14 +269,22 @@ function findMatchesInCauseList(text, candidates) {
       const caseTitle = extractCaseTitle(lines, i);
       const matchedCaseNumber = extractCaseNumber(rawLine) || extractCaseNumber(current) || matched;
       const itemNumber = extractItemNumber(lines, i);
+      const partyNames = extractPartyNames(lines, i);
+      const advocateNames = extractAdvocateNames(lines, i);
+      const benchType = extractBenchType(currentContext.judgeLabel);
+      const judgeNames = extractJudgeNames(currentContext.judgeLabel);
 
       matches.push({
         matchedLine: rawLine,
         matchedCaseNumber,
         caseTitle,
+        partyNames,
+        advocateNames,
         courtNumber,
         itemNumber,
         listType: currentContext.listType,
+        benchType,
+        judgeNames,
         judgeLabel: currentContext.judgeLabel,
         meetingLink: currentContext.meetingLink,
         pageNumber: pageIndex + 1
@@ -358,6 +375,67 @@ function extractCaseTitle(lines, index) {
     }
   }
   return '';
+}
+
+function extractPartyNames(lines, index) {
+  const parties = [];
+  const firstLineRaw = String(lines[index] || '');
+  const firstLineSegments = firstLineRaw.split(/\s{3,}/).map((part) => part.trim()).filter(Boolean);
+  const firstParty = String(firstLineSegments[1] || firstLineSegments[0] || '')
+    .replace(/^\d+\s+/, '')
+    .replace(/[A-Z.()\-/]+\d+\/\d{4}\s*/i, '')
+    .trim();
+  if (firstParty) {
+    parties.push(firstParty);
+  }
+
+  const end = Math.min(lines.length, index + 6);
+  for (let i = index + 1; i < end; i += 1) {
+    const line = String(lines[i] || '').replace(/\s+/g, ' ').trim();
+    if (!line) continue;
+    if (/OTHER DETAILS OF ADVOCATES/i.test(line)) break;
+    if (/^WITH\b/i.test(line) || /^CM APPL/i.test(line) || /^CRL\.M/i.test(line)) continue;
+    if (/\bV\/S\b|\bVS\.?\b|\bVERSUS\b/i.test(line) || /^AND\b/i.test(line)) {
+      parties.push(line);
+    }
+  }
+  return parties.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+function extractAdvocateNames(lines, index) {
+  const start = lines.findIndex((line, lineIndex) => lineIndex >= index && /OTHER DETAILS OF ADVOCATES/i.test(String(line || '')));
+  if (start === -1) return '';
+
+  const names = [];
+  for (let i = start + 1; i < Math.min(lines.length, start + 8); i += 1) {
+    const line = String(lines[i] || '').replace(/\s+/g, ' ').trim();
+    if (!line) break;
+    if (/^\d+\s+[A-Z]/.test(line) || /^COURT\s*NO/i.test(line) || /ADVANCE CAUSE LIST/i.test(line) || /LISTING REMARKS/i.test(line)) break;
+    const cleaned = line
+      .replace(/\([^)]*\)/g, '')
+      .replace(/\b(PETITIONER|RESPONDENT)\b/gi, '')
+      .replace(/\bOTHER DETAILS OF ADVOCATES:?/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (cleaned) names.push(cleaned);
+  }
+
+  return names.join(' | ');
+}
+
+function extractBenchType(judgeLabel) {
+  const first = String(judgeLabel || '').split('|')[0]?.trim() || '';
+  if (/DIVISION BENCH/i.test(first)) return first;
+  if (/SINGLE BENCH/i.test(first)) return first;
+  return first || '';
+}
+
+function extractJudgeNames(judgeLabel) {
+  return String(judgeLabel || '')
+    .split('|')
+    .map((part) => part.trim())
+    .filter((part) => /^HON.?BLE|^JUSTICE/i.test(part))
+    .join(' | ');
 }
 
 function extractItemNumber(lines, index) {

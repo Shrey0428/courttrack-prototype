@@ -212,16 +212,21 @@ function normalizeCauseListMatch(match) {
     trackedCaseId: text(match?.trackedCaseId),
     caseNumber: text(match?.caseNumber),
     caseTitle: text(match?.caseTitle),
+    partyNames: text(match?.partyNames),
+    advocateNames: text(match?.advocateNames),
     courtNumber: text(match?.courtNumber),
     matchedLine: text(match?.matchedLine),
     itemNumber: text(match?.itemNumber),
     listType: text(match?.listType),
+    benchType: text(match?.benchType),
+    judgeNames: text(match?.judgeNames),
     judgeLabel: text(match?.judgeLabel),
     meetingLink: decodeEntities(text(match?.meetingLink)),
     pageNumber: Number(match?.pageNumber || 0),
     title: text(match?.title),
     listDate: normalizeDateString(match?.listDate),
-    pdfUrl: decodeEntities(text(match?.pdfUrl))
+    pdfUrl: decodeEntities(text(match?.pdfUrl)),
+    sourceKind: text(match?.sourceKind)
   };
 }
 

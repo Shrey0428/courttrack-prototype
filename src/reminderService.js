@@ -659,6 +659,16 @@ async function sendDetailedCauseListAlertEmail(trackedCase, causeListDate, match
   ];
 
   for (const match of uniqueMatches) {
+    textLines.push(`Document: ${match.title || 'Cause list'}`);
+    if (match.sourceKind && match.sourceKind !== 'sitting_benches') {
+      textLines.push('Source priority: fallback cause-list document');
+    }
+    if (match.caseNumber) textLines.push(`Case number: ${match.caseNumber}`);
+    if (match.caseTitle) textLines.push(`Party name: ${match.caseTitle}`);
+    if (match.partyNames) textLines.push(`Parties: ${match.partyNames}`);
+    if (match.advocateNames) textLines.push(`Advocates: ${match.advocateNames}`);
+    if (match.benchType) textLines.push(`Bench: ${match.benchType}`);
+    if (match.judgeNames) textLines.push(`Judges: ${match.judgeNames}`);
     textLines.push(`Judge/Bench: ${match.judgeLabel || 'Not available'}`);
     textLines.push(`Court No: ${match.courtNumber || 'Not available'}`);
     textLines.push(`Item No: ${match.itemNumber || 'Not available'}`);
@@ -686,6 +696,14 @@ async function sendDetailedCauseListAlertEmail(trackedCase, causeListDate, match
         <ul style="padding-left: 18px;">
           ${uniqueMatches.map((match) => `
             <li style="margin-bottom:16px;">
+              <div><strong>${escapeHtml(match.title || 'Cause list')}</strong></div>
+              ${match.sourceKind && match.sourceKind !== 'sitting_benches' ? `<div>Fallback cause-list document</div>` : ''}
+              ${match.caseNumber ? `<div>Case No: ${escapeHtml(match.caseNumber)}</div>` : ''}
+              ${match.caseTitle ? `<div>Case title: ${escapeHtml(match.caseTitle)}</div>` : ''}
+              ${match.partyNames ? `<div>Parties: ${escapeHtml(match.partyNames)}</div>` : ''}
+              ${match.advocateNames ? `<div>Advocates: ${escapeHtml(match.advocateNames)}</div>` : ''}
+              ${match.benchType ? `<div>Bench: ${escapeHtml(match.benchType)}</div>` : ''}
+              ${match.judgeNames ? `<div>Judges: ${escapeHtml(match.judgeNames)}</div>` : ''}
               <div><strong>${escapeHtml(match.judgeLabel || 'Judge not available')}</strong></div>
               <div>Court No: ${escapeHtml(match.courtNumber || 'Not available')}</div>
               <div>Item No: ${escapeHtml(match.itemNumber || 'Not available')}</div>
@@ -963,7 +981,7 @@ function formatDateSource(source) {
 function formatCauseListType(value) {
   if (value === 'advance') return 'Advance list';
   if (value === 'supplementary') return 'Supplementary list';
-  return 'Main list';
+  return 'General list';
 }
 
 function escapeHtml(value) {
