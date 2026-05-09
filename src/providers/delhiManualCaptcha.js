@@ -828,10 +828,19 @@ function buildTrackedCaseSnapshot(trackedCase, overrides = {}) {
 }
 
 function pickLatestDelhiOrder(orders) {
-  return (Array.isArray(orders) ? orders : [])
+  const sorted = (Array.isArray(orders) ? orders : [])
     .slice()
-    .sort((left, right) => toSortableDateLocal(left?.date) - toSortableDateLocal(right?.date))
-    .slice(-1)[0] || { date: '', url: '', details: '' };
+    .sort((left, right) => toSortableDateLocal(left?.date) - toSortableDateLocal(right?.date));
+
+  const substantive = sorted.filter((entry) => !isSyntheticDelhiListingEntry(entry));
+  const bucket = substantive.length ? substantive : sorted;
+  return bucket.slice(-1)[0] || { date: '', url: '', details: '' };
+}
+
+function isSyntheticDelhiListingEntry(entry) {
+  const details = String(entry?.details || '').trim();
+  if (!details) return false;
+  return /\bLISTED IN COURT\b/i.test(details) || /\bTO BE LISTED\b/i.test(details);
 }
 
 async function deriveEffectiveHearingDateFromOrderMonitor(trackedCase, latestOrder, statusPageDate) {
@@ -914,7 +923,15 @@ async function fetchDelhiOrderPdfText(pdfUrl) {
     throw new Error(`Failed to fetch latest Delhi High Court order PDF: ${response.status}`);
   }
   const arrayBuffer = await response.arrayBuffer();
-  return pdfBufferToText(Buffer.from(arrayBuffer));
+  const buffer = Buffer.from(arrayBuffer);
+  const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+  const preview = buffer.toString('utf8', 0, 200).trim();
+
+  if (contentType.includes('text/html') || /^file does not exist\.?$/i.test(preview)) {
+    return '';
+  }
+
+  return pdfBufferToText(buffer);
 }
 
 function extractLikelyNextHearingFromOrderText(text, context = {}) {
