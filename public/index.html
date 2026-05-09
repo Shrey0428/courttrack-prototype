@@ -1181,19 +1181,18 @@
       }
 
       async function verifyDeletePassword() {
-        const password = window.prompt('Enter your account password to delete this case:');
-        if (password === null) return false;
-        await api('/auth/verify-password', {
-          method: 'POST',
-          body: JSON.stringify({ password })
-        });
-        return true;
+        const password = window.prompt('Enter the delete password to delete this case:');
+        if (password === null) return null;
+        return String(password || '').trim();
       }
 
       async function removeCase(caseId) {
-        const allowed = await verifyDeletePassword();
-        if (!allowed) return;
-        await api(`/api/cases/${caseId}`, { method: 'DELETE' });
+        const deletePassword = await verifyDeletePassword();
+        if (deletePassword === null) return;
+        await api(`/api/cases/${caseId}`, {
+          method: 'DELETE',
+          body: JSON.stringify({ deletePassword })
+        });
         await loadCases();
         setStatus('Case deleted.', 'success');
       }

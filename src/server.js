@@ -312,6 +312,10 @@ app.patch('/api/cases/:id/reminders', (req, res) => {
 });
 
 app.delete('/api/cases/:id', (req, res) => {
+  const deletePassword = String(req.body?.deletePassword || '').trim();
+  if (deletePassword !== '5858') {
+    return res.status(403).json({ error: 'Incorrect delete password.' });
+  }
   deleteCase(req.params.id);
   res.json({ ok: true });
 });
