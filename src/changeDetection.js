@@ -68,6 +68,17 @@ function detectEvents(previous, current) {
       type: 'latest_order_uploaded',
       message: `A newer order was detected: ${current.latestOrderDate}`
     });
+
+    if (
+      current?.rawMetadata?.orderMonitor &&
+      current.rawMetadata.orderMonitor.usedLatestOrderFallback === false &&
+      current.rawMetadata.orderMonitor.latestOrderUrl
+    ) {
+      events.push({
+        type: 'latest_order_checked_no_future_date',
+        message: `Latest order dated ${current.latestOrderDate} was checked, but no future hearing date could be extracted`
+      });
+    }
   }
 
   return events;

@@ -926,13 +926,28 @@ function extractLikelyNextHearingFromOrderText(text, context = {}) {
   const patterns = [
     { phrase: 'put up on', regex: /\bput\s+up\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
     { phrase: 'put up for', regex: /\bput\s+up\s+for\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'be put up on', regex: /\bbe\s+put\s+up\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'be put up for', regex: /\bbe\s+put\s+up\s+for\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
     { phrase: 'list on', regex: /\blist(?:ed)?\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
     { phrase: 'list for', regex: /\blist(?:ed)?\s+for\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'be listed on', regex: /\bbe\s+list(?:ed)?\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'be listed for', regex: /\bbe\s+list(?:ed)?\s+for\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'relist on', regex: /\bre-?list(?:ed)?\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'relist for', regex: /\bre-?list(?:ed)?\s+for\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
     { phrase: 'renotify on', regex: /\bre-?notify\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
     { phrase: 'renotify for', regex: /\bre-?notify\s+for\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'be renotified on', regex: /\bbe\s+re-?notify(?:ied)?\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'be renotified for', regex: /\bbe\s+re-?notify(?:ied)?\s+for\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
     { phrase: 'post on', regex: /\bpost(?:ed)?\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
     { phrase: 'post for', regex: /\bpost(?:ed)?\s+for\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
-    { phrase: 'next date', regex: /\bnext\s+date(?:\s+of\s+hearing)?\s*[:\-]?\s*([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig }
+    { phrase: 'be posted on', regex: /\bbe\s+post(?:ed)?\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'be posted for', regex: /\bbe\s+post(?:ed)?\s+for\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'adjourned to', regex: /\badjourn(?:ed)?\s+to\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'next date', regex: /\bnext\s+date(?:\s+of\s+hearing)?\s*[:\-]?\s*([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'next hearing', regex: /\bnext\s+hearing(?:\s+date)?\s*[:\-]?\s*([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'returnable on', regex: /\breturnable\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'for further hearing on', regex: /\bfor\s+further\s+hearing\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig },
+    { phrase: 'for directions on', regex: /\bfor\s+directions\s+on\s+([0-9./-]{8,10}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/ig }
   ];
 
   const candidates = [];
