@@ -861,6 +861,27 @@ async function deriveEffectiveHearingDateFromOrderMonitor(trackedCase, latestOrd
     return fallback;
   }
 
+  const latestOrderDate = normalizeDateStringLocal(latestOrder.date || '');
+  if (
+    latestOrderDate &&
+    isSyntheticDelhiListingEntry(latestOrder) &&
+    compareIndianDates(latestOrderDate, todayKey) > 0 &&
+    (!statusPageDate || compareIndianDates(latestOrderDate, statusPageDate) >= 0)
+  ) {
+    return {
+      nextHearingDate: latestOrderDate,
+      source: 'latest_listing_pending_official_refresh',
+      possibleHearingDates: [latestOrderDate],
+      rawMetadata: {
+        ...fallback.rawMetadata,
+        usedLatestOrderFallback: true,
+        reusedListingRowDate: true,
+        matchedPhrase: 'listing row date',
+        matchedSnippet: String(latestOrder.details || '').trim()
+      }
+    };
+  }
+
   if (
     trackedCase.latestNextHearingDateSource === 'latest_order_pending_official_refresh' &&
     trackedCase.latestOrderUrl === latestOrder.url &&

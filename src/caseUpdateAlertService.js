@@ -330,6 +330,7 @@ function humanizeType(type) {
 function formatDateSource(source) {
   if (source === 'latest_order') return 'Latest order';
   if (source === 'latest_order_pending_official_refresh') return 'Latest order (pending official refresh)';
+  if (source === 'latest_listing_pending_official_refresh') return 'Latest listing row (pending official refresh)';
   if (source === 'case_status_page') return 'Delhi High Court case-status page';
   return 'Not available';
 }
