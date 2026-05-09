@@ -117,6 +117,7 @@ function normalizeTrackedCase(trackedCase, latestPayload) {
     latestJudgmentLastCheckedAt: '',
     activityAlertBaselineDate: '',
     manualCaseTitle: '',
+    manualNextHearingDate: '',
     latestCaseTitle: '',
     latestCourtName: '',
     latestCaseNumber: '',
@@ -169,6 +170,12 @@ function normalizeTrackedCase(trackedCase, latestPayload) {
     normalized.activityAlertBaselineDate ||
     todayInIndiaDate()
   );
+  normalized.manualNextHearingDate = normalizeDateString(normalized.manualNextHearingDate);
+  if (normalized.manualNextHearingDate) {
+    normalized.latestNextHearingDate = normalized.manualNextHearingDate;
+    normalized.latestNextHearingDateSource = 'manual_override';
+    normalized.latestPossibleHearingDates = [normalized.manualNextHearingDate];
+  }
 
   return normalized;
 }
@@ -664,5 +671,7 @@ module.exports = {
   readDb,
   writeDb,
   id,
-  DB_PATH
+  DB_PATH,
+  normalizeSnapshotPayload,
+  normalizeDateString
 };

@@ -147,6 +147,14 @@
               <button id="saveCaseTitleBtn" type="button">Save case title</button>
             </div>
             <div class="status" id="caseTitleFeedback"></div>
+            <div class="form-row" style="margin-top: 18px;">
+              <div>
+                <label for="manualNextHearingDate">Manual next hearing date</label>
+                <input id="manualNextHearingDate" placeholder="DD-MM-YYYY" />
+              </div>
+              <button id="saveManualDateBtn" type="button">Save next hearing date</button>
+            </div>
+            <div class="status" id="caseDateFeedback"></div>
           </section>
 
           <section class="card">
@@ -241,6 +249,7 @@
         if (source === 'case_status_page') return 'Status page';
         if (source === 'latest_order_pending_official_refresh') return 'Latest order (pending official refresh)';
         if (source === 'latest_listing_pending_official_refresh') return 'Latest listing row (pending official refresh)';
+        if (source === 'manual_override') return 'Manual override';
         return source || '';
       }
 
@@ -279,6 +288,7 @@
         document.getElementById('caseNumber').textContent = caseData.latestCaseNumber || caseData.caseLookup || '-';
         document.getElementById('documentLinks').innerHTML = renderDocumentLinks(caseData);
         document.getElementById('manualCaseTitle').value = caseData.manualCaseTitle || '';
+        document.getElementById('manualNextHearingDate').value = caseData.manualNextHearingDate || '';
 
         document.getElementById('reminderEmails').value = caseData.reminderEmailsLabel || caseData.reminderEmail || 'info@amitguptaadvocate.com';
         document.getElementById('reminderEnabled').checked = caseData.reminderEnabled !== false;
@@ -529,6 +539,17 @@
         await loadCase();
       }
 
+      async function saveManualNextHearingDate() {
+        if (!currentCase) return;
+        const manualNextHearingDate = document.getElementById('manualNextHearingDate').value.trim();
+        await api(`/api/cases/${currentCase.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ manualNextHearingDate })
+        });
+        setFeedback('caseDateFeedback', manualNextHearingDate ? 'Manual next hearing date saved.' : 'Manual next hearing date cleared.', 'success');
+        await loadCase();
+      }
+
       async function saveReminderSettings() {
         if (!currentCase) return;
         const reminderEmails = document.getElementById('reminderEmails').value.trim();
@@ -616,6 +637,9 @@
 
       document.getElementById('saveCaseTitleBtn').addEventListener('click', () => {
         saveCaseTitle().catch((error) => setFeedback('caseTitleFeedback', error.message, 'error'));
+      });
+      document.getElementById('saveManualDateBtn').addEventListener('click', () => {
+        saveManualNextHearingDate().catch((error) => setFeedback('caseDateFeedback', error.message, 'error'));
       });
       document.getElementById('saveReminderBtn').addEventListener('click', () => {
         saveReminderSettings().catch((error) => setFeedback('reminderFeedback', error.message, 'error'));

@@ -76,6 +76,72 @@ async function runReminderSweep(options = {}) {
   for (const trackedCase of db.trackedCases) {
     if (targetCaseId && trackedCase.id !== targetCaseId) continue;
 
+    const manualRefreshEligibility = getManualRefreshEligibility(trackedCase, today, { forceSend });
+    if (manualRefreshEligibility.shouldSend) {
+      if (!forceSend && hasSentReminderOfKind(db, trackedCase.id, manualRefreshEligibility.hearingDateKey, 'manual_refresh_required')) {
+        results.push({
+          caseId: trackedCase.id,
+          caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
+          sent: false,
+          skipped: true,
+          reason: 'Manual refresh reminder already sent for this hearing date.',
+          reasonCode: 'manual_refresh_already_sent',
+          details: {
+            hearingDate: trackedCase.latestNextHearingDate,
+            daysPastHearing: manualRefreshEligibility.daysPast
+          }
+        });
+        continue;
+      }
+
+      try {
+        await sendManualRefreshRequiredEmail(trackedCase, manualRefreshEligibility);
+        const recipientLabel = formatReminderEmails(trackedCase.reminderEmails);
+        db.reminderDeliveries.push({
+          id: id('reminder'),
+          trackedCaseId: trackedCase.id,
+          status: 'sent',
+          reminderDate: manualRefreshEligibility.hearingDateKey,
+          daysUntilHearing: -manualRefreshEligibility.daysPast,
+          email: recipientLabel,
+          emails: trackedCase.reminderEmails,
+          kind: 'manual_refresh_required',
+          createdAt: now.toISOString()
+        });
+        results.push({
+          caseId: trackedCase.id,
+          caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
+          sent: true,
+          email: recipientLabel,
+          emails: trackedCase.reminderEmails,
+          kind: 'manual_refresh_required',
+          daysPastHearing: manualRefreshEligibility.daysPast
+        });
+      } catch (error) {
+        db.reminderDeliveries.push({
+          id: id('reminder'),
+          trackedCaseId: trackedCase.id,
+          status: 'failed',
+          reminderDate: manualRefreshEligibility.hearingDateKey,
+          daysUntilHearing: -manualRefreshEligibility.daysPast,
+          email: formatReminderEmails(trackedCase.reminderEmails),
+          emails: trackedCase.reminderEmails,
+          kind: 'manual_refresh_required',
+          error: error.message,
+          createdAt: now.toISOString()
+        });
+        results.push({
+          caseId: trackedCase.id,
+          caseNumber: trackedCase.latestCaseNumber || trackedCase.displayLabel,
+          sent: false,
+          skipped: false,
+          reason: error.message,
+          reasonCode: 'manual_refresh_send_failed'
+        });
+      }
+      continue;
+    }
+
     const eligibility = getReminderEligibility(trackedCase, today, { forceSend });
     if (!eligibility.shouldSend) {
       results.push({
@@ -592,6 +658,93 @@ async function sendReminderEmail(trackedCase, eligibility) {
   });
 }
 
+function getManualRefreshEligibility(trackedCase, today, options = {}) {
+  const forceSend = Boolean(options.forceSend);
+
+  if (!trackedCase.reminderEnabled && !forceSend) {
+    return { shouldSend: false, reason: 'Reminders are disabled for this case.', reasonCode: 'disabled' };
+  }
+
+  if (!trackedCase.reminderEmails?.length) {
+    return { shouldSend: false, reason: 'No reminder emails configured.', reasonCode: 'missing_recipients' };
+  }
+
+  if (/disposed/i.test(String(trackedCase.latestStatus || ''))) {
+    return { shouldSend: false, reason: 'Disposed cases do not require manual refresh.', reasonCode: 'disposed_case' };
+  }
+
+  const hearingDate = parseIndianDate(trackedCase.latestNextHearingDate);
+  if (!hearingDate) {
+    return { shouldSend: false, reason: 'No valid next hearing date available.', reasonCode: 'missing_hearing_date' };
+  }
+
+  const daysUntil = Math.round((hearingDate.getTime() - today.getTime()) / DAY_MS);
+  if (!forceSend && daysUntil > -7) {
+    return {
+      shouldSend: false,
+      reason: 'Manual refresh reminder starts after 7 days past the hearing date.',
+      reasonCode: 'manual_refresh_not_due',
+      details: {
+        hearingDate: trackedCase.latestNextHearingDate,
+        daysUntilHearing: daysUntil
+      }
+    };
+  }
+
+  return {
+    shouldSend: true,
+    hearingDate,
+    hearingDateKey: trackedCase.latestNextHearingDate,
+    daysPast: Math.abs(daysUntil)
+  };
+}
+
+async function sendManualRefreshRequiredEmail(trackedCase, eligibility) {
+  const mailer = getTransporter();
+  const subject = `Manual refresh required: ${trackedCase.latestCaseNumber || trackedCase.displayLabel}`;
+  const links = buildDocumentLinks(trackedCase);
+  const source = formatDateSource(trackedCase.latestNextHearingDateSource);
+
+  await mailer.sendMail({
+    from: getReminderConfig().from,
+    to: trackedCase.reminderEmails.join(', '),
+    replyTo: getReminderConfig().replyTo || undefined,
+    subject,
+    text: [
+      `Manual refresh is required for ${trackedCase.latestCaseNumber || trackedCase.displayLabel}.`,
+      '',
+      `Case title: ${trackedCase.latestCaseTitle || trackedCase.manualCaseTitle || 'Not available'}`,
+      `Court: ${trackedCase.latestCourtName || 'Not available'}`,
+      `Saved hearing date: ${trackedCase.latestNextHearingDate || 'Not available'}`,
+      `Date source: ${source}`,
+      `Days past hearing date: ${eligibility.daysPast}`,
+      `Status: ${trackedCase.latestStatus || 'Not available'}`,
+      `Official source: ${trackedCase.officialSourceUrl || 'Not available'}`,
+      links.ordersUrl ? `Orders: ${links.ordersUrl}` : '',
+      links.judgmentsUrl ? `Judgments: ${links.judgmentsUrl}` : ''
+    ].filter(Boolean).join('\n'),
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #14213d;">
+        <h2 style="margin-bottom: 8px;">Manual refresh required</h2>
+        <p><strong>${escapeHtml(trackedCase.latestCaseNumber || trackedCase.displayLabel)}</strong></p>
+        <p>${escapeHtml(trackedCase.latestCaseTitle || trackedCase.manualCaseTitle || 'Not available')}</p>
+        <table style="border-collapse: collapse;">
+          <tr><td style="padding: 4px 12px 4px 0;"><strong>Court</strong></td><td style="padding: 4px 0;">${escapeHtml(trackedCase.latestCourtName || 'Not available')}</td></tr>
+          <tr><td style="padding: 4px 12px 4px 0;"><strong>Saved hearing date</strong></td><td style="padding: 4px 0;">${escapeHtml(trackedCase.latestNextHearingDate || 'Not available')}</td></tr>
+          <tr><td style="padding: 4px 12px 4px 0;"><strong>Date source</strong></td><td style="padding: 4px 0;">${escapeHtml(source)}</td></tr>
+          <tr><td style="padding: 4px 12px 4px 0;"><strong>Days past hearing</strong></td><td style="padding: 4px 0;">${String(eligibility.daysPast)}</td></tr>
+          <tr><td style="padding: 4px 12px 4px 0;"><strong>Status</strong></td><td style="padding: 4px 0;">${escapeHtml(trackedCase.latestStatus || 'Not available')}</td></tr>
+        </table>
+        <div style="margin-top: 16px;">
+          ${trackedCase.officialSourceUrl ? renderEmailButton(trackedCase.officialSourceUrl, 'Open official source') : ''}
+          ${links.ordersUrl ? renderEmailButton(links.ordersUrl, 'Open orders') : ''}
+          ${links.judgmentsUrl ? renderEmailButton(links.judgmentsUrl, 'Open judgments') : ''}
+        </div>
+      </div>
+    `
+  });
+}
+
 async function sendCauseListAlertEmail(trackedCase, causeListDate, matches) {
   const mailer = getTransporter();
   const uniqueLinks = Array.from(new Map(matches.map((match) => [match.pdfUrl, match])).values());
@@ -974,6 +1127,9 @@ function formatReminderDays(days) {
 
 function formatDateSource(source) {
   if (source === 'latest_order') return 'Latest order';
+  if (source === 'latest_order_pending_official_refresh') return 'Latest order (pending official refresh)';
+  if (source === 'latest_listing_pending_official_refresh') return 'Latest listing row (pending official refresh)';
+  if (source === 'manual_override') return 'Manual override';
   if (source === 'case_status_page') return 'Delhi case-status page';
   if (source === 'ecourts_cnr') return 'eCourts CNR history';
   if (source === 'district_case_number') return 'District case-number page';

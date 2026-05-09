@@ -1,4 +1,4 @@
-const { readDb, writeDb, id } = require('./db');
+const { readDb, writeDb, id, normalizeSnapshotPayload, normalizeDateString } = require('./db');
 const { detectEvents } = require('./changeDetection');
 const { sendCaseUpdateAlerts } = require('./caseUpdateAlertService');
 const { maybeRefreshHighCourtJudgmentMatches } = require('./highCourtJudgmentService');
@@ -84,6 +84,7 @@ function addCase(input) {
     latestOrderUrl: '',
     latestOrderDate: '',
     latestPossibleHearingDates: [],
+    manualNextHearingDate: '',
     activityAlertBaselineDate: todayInIndia(),
     officialSourceUrl: '',
     manualCaseTitle: '',
@@ -142,6 +143,20 @@ function updateCaseDetails(caseId, input) {
 
   if (Object.prototype.hasOwnProperty.call(input, 'manualCaseTitle')) {
     trackedCase.manualCaseTitle = String(input.manualCaseTitle || '').trim();
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'manualNextHearingDate')) {
+    const rawValue = String(input.manualNextHearingDate || '').trim();
+    const normalizedDate = normalizeDateString(rawValue);
+    if (rawValue && !normalizedDate) {
+      throw new Error('Manual next hearing date must be in DD-MM-YYYY format.');
+    }
+    trackedCase.manualNextHearingDate = normalizedDate || '';
+    if (normalizedDate) {
+      trackedCase.latestNextHearingDate = normalizedDate;
+      trackedCase.latestNextHearingDateSource = 'manual_override';
+      trackedCase.latestPossibleHearingDates = [normalizedDate];
+    }
   }
 
   trackedCase.updatedAt = new Date().toISOString();
@@ -211,6 +226,7 @@ function failRun(db, run, message) {
 }
 
 function applyNormalizedResult(db, trackedCase, normalized, run) {
+  const effectiveNormalized = normalizeSnapshotPayload(normalized);
   const latestSnapshot = db.snapshots
     .filter((snapshot) => snapshot.trackedCaseId === trackedCase.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
@@ -218,12 +234,12 @@ function applyNormalizedResult(db, trackedCase, normalized, run) {
   const snapshot = {
     id: id('snapshot'),
     trackedCaseId: trackedCase.id,
-    payload: normalized,
+    payload: effectiveNormalized,
     createdAt: new Date().toISOString()
   };
   db.snapshots.push(snapshot);
 
-  const events = detectEvents(latestSnapshot?.payload, normalized).map((event) => ({
+  const events = detectEvents(latestSnapshot?.payload, effectiveNormalized).map((event) => ({
     id: id('event'),
     trackedCaseId: trackedCase.id,
     ...event,
@@ -231,26 +247,29 @@ function applyNormalizedResult(db, trackedCase, normalized, run) {
   }));
   db.events.push(...events);
 
-  trackedCase.latestCaseTitle = normalized.caseTitle || trackedCase.latestCaseTitle;
-  trackedCase.latestCourtName = normalized.courtName || trackedCase.latestCourtName;
-  trackedCase.latestCaseNumber = normalized.caseNumber || trackedCase.latestCaseNumber;
-  trackedCase.latestNextHearingDate = normalized.nextHearingDate || trackedCase.latestNextHearingDate;
-  trackedCase.latestStatusPageNextHearingDate = normalized.statusPageNextHearingDate || trackedCase.latestStatusPageNextHearingDate;
-  trackedCase.latestNextHearingDateSource = normalized.nextHearingDateSource || trackedCase.latestNextHearingDateSource;
-  trackedCase.latestCourtNumber = normalized.courtNumber || trackedCase.latestCourtNumber;
-  trackedCase.latestStatus = normalized.caseStatus || trackedCase.latestStatus;
-  trackedCase.officialSourceUrl = normalized.officialSourceUrl || trackedCase.officialSourceUrl;
-  trackedCase.latestOrdersUrl = normalized.ordersUrl || trackedCase.latestOrdersUrl;
-  trackedCase.latestJudgmentsUrl = normalized.judgmentsUrl || trackedCase.latestJudgmentsUrl;
-  trackedCase.latestCaseHistoryUrl = normalized.caseHistoryUrl || trackedCase.latestCaseHistoryUrl;
-  trackedCase.latestFilingsUrl = normalized.filingsUrl || trackedCase.latestFilingsUrl;
-  trackedCase.latestListingsUrl = normalized.listingsUrl || trackedCase.latestListingsUrl;
-  trackedCase.latestCaseHistory = normalized.caseHistory || trackedCase.latestCaseHistory;
-  trackedCase.latestOrderUrl = normalized.latestOrderUrl || trackedCase.latestOrderUrl;
-  trackedCase.latestOrderDate = normalized.latestOrderDate || trackedCase.latestOrderDate;
-  trackedCase.latestPossibleHearingDates = Array.isArray(normalized.possibleHearingDates)
-    ? normalized.possibleHearingDates
+  trackedCase.latestCaseTitle = effectiveNormalized.caseTitle || trackedCase.latestCaseTitle;
+  trackedCase.latestCourtName = effectiveNormalized.courtName || trackedCase.latestCourtName;
+  trackedCase.latestCaseNumber = effectiveNormalized.caseNumber || trackedCase.latestCaseNumber;
+  trackedCase.latestNextHearingDate = effectiveNormalized.nextHearingDate || trackedCase.latestNextHearingDate;
+  trackedCase.latestStatusPageNextHearingDate = effectiveNormalized.statusPageNextHearingDate || trackedCase.latestStatusPageNextHearingDate;
+  trackedCase.latestNextHearingDateSource = effectiveNormalized.nextHearingDateSource || trackedCase.latestNextHearingDateSource;
+  trackedCase.latestCourtNumber = effectiveNormalized.courtNumber || trackedCase.latestCourtNumber;
+  trackedCase.latestStatus = effectiveNormalized.caseStatus || trackedCase.latestStatus;
+  trackedCase.officialSourceUrl = effectiveNormalized.officialSourceUrl || trackedCase.officialSourceUrl;
+  trackedCase.latestOrdersUrl = effectiveNormalized.ordersUrl || trackedCase.latestOrdersUrl;
+  trackedCase.latestJudgmentsUrl = effectiveNormalized.judgmentsUrl || trackedCase.latestJudgmentsUrl;
+  trackedCase.latestCaseHistoryUrl = effectiveNormalized.caseHistoryUrl || trackedCase.latestCaseHistoryUrl;
+  trackedCase.latestFilingsUrl = effectiveNormalized.filingsUrl || trackedCase.latestFilingsUrl;
+  trackedCase.latestListingsUrl = effectiveNormalized.listingsUrl || trackedCase.latestListingsUrl;
+  trackedCase.latestCaseHistory = effectiveNormalized.caseHistory || trackedCase.latestCaseHistory;
+  trackedCase.latestOrderUrl = effectiveNormalized.latestOrderUrl || trackedCase.latestOrderUrl;
+  trackedCase.latestOrderDate = effectiveNormalized.latestOrderDate || trackedCase.latestOrderDate;
+  trackedCase.latestPossibleHearingDates = Array.isArray(effectiveNormalized.possibleHearingDates)
+    ? effectiveNormalized.possibleHearingDates
     : trackedCase.latestPossibleHearingDates;
+  if (trackedCase.manualNextHearingDate && effectiveNormalized.nextHearingDate && effectiveNormalized.nextHearingDateSource !== 'manual_override') {
+    trackedCase.manualNextHearingDate = '';
+  }
   trackedCase.reminderEmail = trackedCase.reminderEmails[0] || '';
   trackedCase.reminderEmailsLabel = formatReminderEmails(trackedCase.reminderEmails);
   trackedCase.lastCheckedAt = new Date().toISOString();
