@@ -347,12 +347,13 @@
         const orderItems = document.getElementById('orderItems');
         const orderToggleBtn = document.getElementById('orderToggleBtn');
         const isHighCourt = caseData.provider === 'delhiManualCaptcha';
+        const sortedOrders = isHighCourt ? orders : sortOrdersNewestFirst(orders);
 
         if (!isHighCourt) {
           orderToggleBtn.style.display = 'none';
           renderList(
             orderItems,
-            orders,
+            sortedOrders,
             (order) => `
               <div><strong>${escapeHtml(order.details || `Order ${order.serialNumber || ''}`)}</strong></div>
               <p class="muted">${escapeHtml(order.date || '-')}</p>
@@ -363,7 +364,7 @@
           return;
         }
 
-        const hasOrders = orders.length > 0;
+        const hasOrders = sortedOrders.length > 0;
         orderToggleBtn.style.display = hasOrders ? 'inline-flex' : 'none';
         orderToggleBtn.textContent = orderExpanded ? 'Show less' : 'Show more';
 
@@ -374,7 +375,7 @@
 
         renderList(
           orderItems,
-          orders,
+          sortedOrders,
           (order) => `
             <div><strong>${escapeHtml(order.details || `Order ${order.serialNumber || ''}`)}</strong></div>
             <p class="muted">${escapeHtml(order.date || '-')}</p>
@@ -465,7 +466,7 @@
 
       function renderRawTable(table) {
         const columns = table.columns || [];
-        const rows = table.rows || [];
+        const rows = sortTableRowsForDisplay(table);
         return `
           <div>
             <h3>${escapeHtml(table.title || 'Details')}</h3>
@@ -488,6 +489,61 @@
             </div>
           </div>
         `;
+      }
+
+      function sortOrdersNewestFirst(orders) {
+        return (Array.isArray(orders) ? orders.slice() : []).sort((left, right) => {
+          return dateDisplaySortValue(right?.date) - dateDisplaySortValue(left?.date);
+        });
+      }
+
+      function sortTableRowsForDisplay(table) {
+        const rows = Array.isArray(table?.rows) ? table.rows.slice() : [];
+        const columns = Array.isArray(table?.columns) ? table.columns : [];
+        const orderDateColumn = columns.find((column) => /order date/i.test(String(column || '')));
+        if (!orderDateColumn) return rows;
+
+        return rows.sort((left, right) => {
+          return tableRowDateSortValue(right, orderDateColumn) - tableRowDateSortValue(left, orderDateColumn);
+        });
+      }
+
+      function tableRowDateSortValue(row, label) {
+        const cell = (row?.cells || []).find((entry) => String(entry?.label || '') === String(label || ''));
+        return dateDisplaySortValue(cell?.text || '');
+      }
+
+      function dateDisplaySortValue(value) {
+        const text = String(value || '').trim();
+        if (!text) return 0;
+
+        const numeric = text.match(/\b(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})\b/);
+        if (numeric) {
+          return new Date(Number(numeric[3]), Number(numeric[2]) - 1, Number(numeric[1])).getTime();
+        }
+
+        const monthName = text.match(/\b(\d{1,2})[- ]([A-Za-z]+)[- ,](\d{4})\b/);
+        if (monthName) {
+          const month = {
+            january: 0,
+            february: 1,
+            march: 2,
+            april: 3,
+            may: 4,
+            june: 5,
+            july: 6,
+            august: 7,
+            september: 8,
+            october: 9,
+            november: 10,
+            december: 11
+          }[String(monthName[2] || '').toLowerCase()];
+          if (Number.isInteger(month)) {
+            return new Date(Number(monthName[3]), month, Number(monthName[1])).getTime();
+          }
+        }
+
+        return 0;
       }
 
       function renderSweepResults(results) {

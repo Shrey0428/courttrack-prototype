@@ -196,14 +196,6 @@
         margin-top: 14px;
         color: var(--muted);
       }
-      .note-box {
-        border: 1px solid rgba(183, 123, 90, 0.16);
-        border-radius: 18px;
-        background: linear-gradient(135deg, rgba(255,255,255,.9) 0%, rgba(244, 233, 224, .95) 100%);
-        padding: 16px;
-        color: var(--muted);
-      }
-      .note-box strong { color: var(--ink); }
       .captcha-box {
         display: none;
         margin-top: 20px;
@@ -510,25 +502,6 @@
                   <p class="muted small" style="margin-top:12px;">The image is captured from the live official page. If the court rejects it, load a fresh CAPTCHA and try again.</p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div class="note-box">
-            <strong>Built for matter review.</strong>
-            <p style="margin-top:10px;">Track hearing dates, move into full case details fast, and keep the home screen focused on the matters that are moving next.</p>
-            <div style="margin-top:18px;">
-              <label for="provider">Secondary providers</label>
-              <form id="quickForm">
-                <div class="toolbar" style="align-items:stretch;">
-                  <select id="provider" style="flex:1 1 220px;">
-                    <option value="delhiCauseList">delhiCauseList (secondary cause-list scan)</option>
-                    <option value="mockHighCourt">mockHighCourt (demo)</option>
-                  </select>
-                  <input id="quickLookup" style="flex:1 1 260px;" placeholder="W.P.(C) 171/2026" />
-                  <button type="submit">Track</button>
-                </div>
-              </form>
-              <p class="muted small" style="margin-top:10px;">Keep these for demo or secondary scanning only.</p>
             </div>
           </div>
         </div>
@@ -1212,23 +1185,6 @@
         setStatus(`Refresh finished for ${result.length} case(s).`, 'success');
       }
 
-      async function trackSecondaryProvider(event) {
-        event.preventDefault();
-        const provider = document.getElementById('provider').value;
-        const lookup = document.getElementById('quickLookup').value.trim();
-        await api('/api/cases', {
-          method: 'POST',
-          body: JSON.stringify({
-            provider,
-            caseLookup: lookup,
-            displayLabel: lookup
-          })
-        });
-        document.getElementById('quickLookup').value = '';
-        setStatus('Secondary provider case added.', 'success');
-        await loadCases();
-      }
-
       function dateSourceLabel(source) {
         if (source === 'district_case_number') return 'District details';
         if (source === 'case_status_page') return 'Status page';
@@ -1265,10 +1221,6 @@
       document.getElementById('districtForm').addEventListener('submit', (event) => {
         event.preventDefault();
         startDistrictLookup().catch((error) => setStatus(error.message, 'error'));
-      });
-
-      document.getElementById('quickForm').addEventListener('submit', (event) => {
-        trackSecondaryProvider(event).catch((error) => setStatus(error.message, 'error'));
       });
 
       document.getElementById('districtSlug').addEventListener('change', () => {
