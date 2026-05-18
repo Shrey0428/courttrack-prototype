@@ -123,6 +123,11 @@ class DistrictCourtCnrProvider extends BaseProvider {
     await gotoDistrictPage(page, prepared.districtUrl);
 
     await ensureDistrictCaseTypeDropdownReady(page, prepared);
+    if (prepared.caseType) {
+      await selectCaseType(page, prepared.caseType);
+    }
+    await page.fill('#reg_no', prepared.caseNumber);
+    await page.fill('#reg_year', prepared.year);
 
     const captchaLocator = page.locator('img[id^="siwp_captcha_image_"]').first();
     await captchaLocator.waitFor({ state: 'visible', timeout: DISTRICT_SELECTOR_TIMEOUT_MS });
@@ -154,12 +159,22 @@ class DistrictCourtCnrProvider extends BaseProvider {
     const { page, input } = session;
 
     if (input.caseType) {
-      await ensureDistrictCaseTypeDropdownReady(page, input);
-      await selectCaseType(page, input.caseType);
+      const currentCaseTypeValue = await page.locator('#case_type').inputValue().catch(() => '');
+      if (normalizeFlexibleDistrictOption(currentCaseTypeValue) !== normalizeFlexibleDistrictOption(input.caseType)) {
+        await ensureDistrictCaseTypeDropdownReady(page, input);
+        await selectCaseType(page, input.caseType);
+      }
     }
 
-    await page.fill('#reg_no', input.caseNumber);
-    await page.fill('#reg_year', input.year);
+    const currentCaseNumber = await page.locator('#reg_no').inputValue().catch(() => '');
+    if (String(currentCaseNumber || '').trim() !== input.caseNumber) {
+      await page.fill('#reg_no', input.caseNumber);
+    }
+
+    const currentYear = await page.locator('#reg_year').inputValue().catch(() => '');
+    if (String(currentYear || '').trim() !== input.year) {
+      await page.fill('#reg_year', input.year);
+    }
     await page.fill('#siwp_captcha_value_0', cleanedCaptcha);
 
     const responsePromise = page.waitForResponse((response) => {
