@@ -592,7 +592,7 @@ function normalizeReminderDaysBefore(days) {
 function normalizeDateString(value) {
   const input = text(value);
   if (!input) return '';
-  const direct = input.match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/);
+  const direct = input.match(/\b(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})\b/);
   if (direct) {
     return `${pad(direct[1])}-${pad(direct[2])}-${direct[3]}`;
   }

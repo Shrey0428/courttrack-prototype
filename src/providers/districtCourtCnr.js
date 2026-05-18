@@ -675,7 +675,7 @@ async function parseDistrictDetails(page, html, context) {
     function normalizeDate(value) {
       const text = clean(value);
       if (!text) return '';
-      const numeric = text.match(/(\\d{1,2})[-/](\\d{1,2})[-/](\\d{4})/);
+      const numeric = text.match(/(\\d{1,2})[-/.](\\d{1,2})[-/.](\\d{4})/);
       if (numeric) return `${pad(numeric[1])}-${pad(numeric[2])}-${numeric[3]}`;
       const monthName = text.match(/(\\d{1,2})[- ]([A-Za-z]+)[- ,](\\d{4})/);
       if (monthName) {
