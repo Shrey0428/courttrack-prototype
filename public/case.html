@@ -200,7 +200,7 @@
       let reminderStatus = null;
       let highCourtExpanded = false;
       let orderExpanded = false;
-      let activeCauseListOverview = { matches: [], date: '', scannedAt: '', windowKind: 'today', windowLabel: 'Today' };
+      let todayCauseListOverview = { matches: [], date: '', scannedAt: '' };
 
       async function api(url, options = {}) {
         const response = await fetch(url, {
@@ -384,15 +384,10 @@
         );
       }
 
-      function causeListWindowLabel() {
-        return activeCauseListOverview.windowLabel || (activeCauseListOverview.windowKind === 'next-day' ? 'Tomorrow' : 'Today');
-      }
-
       function renderCauseListMatches(caseData) {
-        document.getElementById('causeListSectionHeading').textContent = `${causeListWindowLabel()}'s cause list`;
-        const allMatches = Array.isArray(activeCauseListOverview.matches) ? activeCauseListOverview.matches : [];
+        document.getElementById('causeListSectionHeading').textContent = `Today's cause list`;
+        const allMatches = Array.isArray(todayCauseListOverview.matches) ? todayCauseListOverview.matches : [];
         const caseMatches = allMatches.filter((item) => item.trackedCaseId === caseData.id);
-        const labelLower = causeListWindowLabel().toLowerCase();
         renderList(
           document.getElementById('causeListItems'),
           caseMatches,
@@ -406,7 +401,7 @@
             ${safeUrl(item.meetingLink) ? `<p><a href="${safeUrl(item.meetingLink)}" target="_blank" rel="noopener noreferrer">Open meeting link</a></p>` : ''}
             <p>${safeUrl(item.pdfUrl) ? `<a href="${safeUrl(item.pdfUrl)}" target="_blank" rel="noopener noreferrer">Open cause-list PDF</a>` : 'PDF link unavailable.'}</p>
           `,
-          `This case has not been found in ${labelLower}'s main Delhi High Court sitting-benches cause list yet.`
+          `This case has not been found in today's main Delhi High Court sitting-benches cause list yet.`
         );
       }
 
@@ -523,7 +518,7 @@
       async function loadReminderStatus() {
         reminderStatus = await api('/api/reminders/status');
         const text = reminderStatus.configured
-          ? `SMTP is configured via ${reminderStatus.host}:${reminderStatus.port}. Hearing reminders go out at ${formatReminderSchedule(reminderStatus.sendHours || [])} IST. Cause-list alerts go out at ${formatReminderSchedule(reminderStatus.todayCauseListAlertHours || [])} IST on day 0 and ${formatReminderSchedule(reminderStatus.causeListAlertHours || [])} IST for the next day.`
+          ? `SMTP is configured via ${reminderStatus.host}:${reminderStatus.port}. Hearing reminders go out at ${formatReminderSchedule(reminderStatus.sendHours || [])} IST. The next day's Delhi High Court sitting-benches cause list is scanned at ${formatReminderSchedule(reminderStatus.causeListAlertHours || [])} IST.`
           : 'SMTP is not configured yet. You can still save reminder preferences now.';
         document.getElementById('reminderStatusText').textContent = text;
       }
@@ -551,8 +546,8 @@
         renderCase(caseData);
       }
 
-      async function loadActiveCauseListOverview() {
-        activeCauseListOverview = await api('/api/cause-lists/active');
+      async function loadTodayCauseListOverview() {
+        todayCauseListOverview = await api('/api/cause-lists/today');
         if (currentCase) {
           renderCauseListMatches(currentCase);
         }
@@ -707,7 +702,7 @@
         renderOrders(currentCase, currentCase?.latestCaseHistory?.orders || []);
       });
 
-      Promise.all([loadReminderStatus(), loadCase(), loadActiveCauseListOverview()]).catch((error) => {
+      Promise.all([loadReminderStatus(), loadCase(), loadTodayCauseListOverview()]).catch((error) => {
         setFeedback('reminderFeedback', error.message, 'error');
       });
     </script>

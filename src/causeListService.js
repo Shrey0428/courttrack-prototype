@@ -55,6 +55,16 @@ async function getCauseListOverviewForDate(targetDate, options = {}) {
     return buildOverview(cached, db);
   }
 
+  if (options.cachedOnly) {
+    return buildOverview({
+      version: cached.version || CAUSE_LIST_CACHE_VERSION,
+      date: cached.date || normalizedDate,
+      scannedAt: cached.scannedAt || '',
+      entries: cached.entries || [],
+      matches: cached.matches || []
+    }, db);
+  }
+
   return refreshCauseListOverviewForDate(normalizedDate);
 }
 

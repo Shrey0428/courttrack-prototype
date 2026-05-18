@@ -45,10 +45,8 @@ const { parseReminderEmailsFromInput } = require('./reminderEmails');
 const { listDelhiDistrictSites } = require('./delhiDistrictSites');
 const { resolveCachedDocument } = require('./documentCache');
 const {
-  getActiveCauseListOverview,
   getTodayCauseListOverview,
   refreshTodayCauseListOverview,
-  refreshActiveCauseListOverview,
   getNextDayCauseListOverview,
   refreshNextDayCauseListOverview
 } = require('./causeListService');
@@ -222,7 +220,7 @@ app.get('/api/cases', (_req, res) => {
 
 app.get('/api/cause-lists/today', async (_req, res) => {
   try {
-    const payload = await getTodayCauseListOverview();
+    const payload = await getTodayCauseListOverview({ cachedOnly: true });
     res.json(payload);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -238,27 +236,9 @@ app.post('/api/cause-lists/today/refresh', async (_req, res) => {
   }
 });
 
-app.get('/api/cause-lists/active', async (_req, res) => {
-  try {
-    const payload = await getActiveCauseListOverview();
-    res.json(payload);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/cause-lists/active/refresh', async (_req, res) => {
-  try {
-    const payload = await refreshActiveCauseListOverview();
-    res.json(payload);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 app.get('/api/cause-lists/next-day', async (_req, res) => {
   try {
-    const payload = await getNextDayCauseListOverview();
+    const payload = await getNextDayCauseListOverview({ cachedOnly: true });
     res.json(payload);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -615,7 +595,6 @@ setInterval(async () => {
 }, AUTO_SYNC_MS).unref();
 
 scheduleReminderSweep();
-scheduleTodayCauseListAlertSweep();
 scheduleCauseListAlertSweep();
 
 app.listen(PORT, () => {
@@ -679,6 +658,10 @@ function scheduleReminderSweep() {
 
 function scheduleCauseListAlertSweep() {
   const nextRunAt = getNextCauseListAlertRunAt();
+  if (!nextRunAt) {
+    console.log('[cause-list-alerts] no next-day cause-list schedule configured');
+    return;
+  }
   const delay = Math.max(1000, nextRunAt.getTime() - Date.now());
 
   console.log(`[cause-list-alerts] next scheduled sweep at ${nextRunAt.toISOString()}`);
@@ -701,6 +684,10 @@ function scheduleCauseListAlertSweep() {
 
 function scheduleTodayCauseListAlertSweep() {
   const nextRunAt = getNextTodayCauseListAlertRunAt();
+  if (!nextRunAt) {
+    console.log('[cause-list-day0-alerts] no day-0 cause-list schedule configured');
+    return;
+  }
   const delay = Math.max(1000, nextRunAt.getTime() - Date.now());
 
   console.log(`[cause-list-day0-alerts] next scheduled sweep at ${nextRunAt.toISOString()}`);

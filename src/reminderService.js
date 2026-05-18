@@ -10,9 +10,12 @@ const {
 const REMINDER_INTERVAL_MS = Number(process.env.REMINDER_INTERVAL_MS || 60 * 60 * 1000);
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_REMINDER_EMAIL = process.env.DEFAULT_REMINDER_EMAIL || 'info@amitguptaadvocate.com';
-const REMINDER_SEND_HOURS = parseReminderSendHours(process.env.REMINDER_SEND_HOURS || '07:00,07:30');
-const TODAY_CAUSE_LIST_ALERT_SEND_HOURS = parseReminderSendHours(process.env.TODAY_CAUSE_LIST_ALERT_SEND_HOURS || '06:00');
-const CAUSE_LIST_ALERT_SEND_HOURS = parseReminderSendHours(process.env.CAUSE_LIST_ALERT_SEND_HOURS || '19:00,20:00');
+const REMINDER_SEND_HOURS = parseReminderSendHours(process.env.REMINDER_SEND_HOURS || '07:00');
+const TODAY_CAUSE_LIST_ALERT_SEND_HOURS = parseReminderSendHours(
+  process.env.TODAY_CAUSE_LIST_ALERT_SEND_HOURS || '',
+  { allowEmpty: true }
+);
+const CAUSE_LIST_ALERT_SEND_HOURS = parseReminderSendHours(process.env.CAUSE_LIST_ALERT_SEND_HOURS || '20:00');
 const INDIA_OFFSET_MINUTES = 330;
 
 let transporter;
@@ -48,9 +51,9 @@ function getReminderStatus() {
     sendHours: REMINDER_SEND_HOURS.map((slot) => slot.label),
     nextScheduledRunAt: getNextReminderRunAt().toISOString(),
     todayCauseListAlertHours: TODAY_CAUSE_LIST_ALERT_SEND_HOURS.map((slot) => slot.label),
-    nextTodayCauseListAlertRunAt: getNextTodayCauseListAlertRunAt().toISOString(),
+    nextTodayCauseListAlertRunAt: getNextTodayCauseListAlertRunAt()?.toISOString() || '',
     causeListAlertHours: CAUSE_LIST_ALERT_SEND_HOURS.map((slot) => slot.label),
-    nextCauseListAlertRunAt: getNextCauseListAlertRunAt().toISOString()
+    nextCauseListAlertRunAt: getNextCauseListAlertRunAt()?.toISOString() || ''
   };
 }
 
@@ -1012,8 +1015,9 @@ function addIndiaDays(date, count) {
   return createIndiaDate(parts.year, parts.month, parts.day + count, parts.hour, parts.minute, parts.second);
 }
 
-function parseReminderSendHours(value) {
-  const entries = String(value || '07:00,07:30')
+function parseReminderSendHours(value, options = {}) {
+  const allowEmpty = options && options.allowEmpty === true;
+  const entries = String(value || '')
     .split(/[\s,;]+/g)
     .map((entry) => entry.trim())
     .filter(Boolean)
@@ -1029,7 +1033,9 @@ function parseReminderSendHours(value) {
     (left.hour * 60 + left.minute) - (right.hour * 60 + right.minute)
   ));
 
-  return slots.length ? slots : [parseReminderSendSlot('07:00'), parseReminderSendSlot('07:30')];
+  if (slots.length) return slots;
+  if (allowEmpty) return [];
+  return [parseReminderSendSlot('07:00')];
 }
 
 function getNextReminderRunAt(now = new Date()) {
@@ -1048,6 +1054,7 @@ function getNextReminderRunAt(now = new Date()) {
 }
 
 function getNextCauseListAlertRunAt(now = new Date()) {
+  if (!CAUSE_LIST_ALERT_SEND_HOURS.length) return null;
   const parts = getIndiaDateParts(now);
 
   for (let dayOffset = 0; dayOffset < 3; dayOffset += 1) {
@@ -1063,6 +1070,7 @@ function getNextCauseListAlertRunAt(now = new Date()) {
 }
 
 function getNextTodayCauseListAlertRunAt(now = new Date()) {
+  if (!TODAY_CAUSE_LIST_ALERT_SEND_HOURS.length) return null;
   const parts = getIndiaDateParts(now);
 
   for (let dayOffset = 0; dayOffset < 3; dayOffset += 1) {

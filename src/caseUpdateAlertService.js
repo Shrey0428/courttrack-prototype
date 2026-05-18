@@ -5,10 +5,7 @@ const { formatReminderEmails } = require('./reminderEmails');
 let transporter;
 
 const ALERTABLE_EVENT_TYPES = new Set([
-  'filing_added',
   'listing_added',
-  'order_added',
-  'latest_order_uploaded',
   'judgment_published',
   'hearing_date_changed'
 ]);
