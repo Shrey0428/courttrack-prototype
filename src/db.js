@@ -328,6 +328,14 @@ function normalizeCaseHistory(input) {
     rawTables: Array.isArray(input?.rawTables) ? input.rawTables.map(normalizeRawTable) : []
   };
 
+  caseHistory.rawTables = caseHistory.rawTables.map((table) => {
+    if (!/orders/i.test(table.title)) return table;
+    return {
+      ...table,
+      rows: sortRawRowsByDateDesc(table.rows, ['Order Date'])
+    };
+  });
+
   if (!caseHistory.filings.length) {
     caseHistory.filings = deriveFilingsFromRawTables(caseHistory.rawTables);
   }
@@ -340,6 +348,8 @@ function normalizeCaseHistory(input) {
   if (!caseHistory.orders.length) {
     caseHistory.orders = deriveOrdersFromRawTables(caseHistory.rawTables);
   }
+
+  caseHistory.orders = sortOrdersByDateDesc(caseHistory.orders);
 
   return caseHistory;
 }
@@ -474,7 +484,7 @@ function deriveHearingsFromRawTables(rawTables) {
 function deriveOrdersFromRawTables(rawTables) {
   const table = rawTables.find((entry) => /orders/i.test(entry.title));
   if (!table) return [];
-  return table.rows.map((row) => {
+  return sortOrdersByDateDesc(table.rows.map((row) => {
     const lookup = rawCellLookup(row);
     const url = firstLink(row);
     return normalizeOrder({
@@ -484,7 +494,7 @@ function deriveOrdersFromRawTables(rawTables) {
       url,
       sourceUrl: url
     });
-  });
+  }));
 }
 
 function deriveNextHearingDate(payload, caseHistory) {
@@ -599,6 +609,28 @@ function normalizeDateString(value) {
   }
 
   return '';
+}
+
+function sortOrdersByDateDesc(orders) {
+  return (Array.isArray(orders) ? orders.slice() : []).sort((left, right) => {
+    return toSortableDate(right?.date) - toSortableDate(left?.date);
+  });
+}
+
+function sortRawRowsByDateDesc(rows, labels) {
+  const preferredLabels = Array.isArray(labels) ? labels : [];
+  return (Array.isArray(rows) ? rows.slice() : []).sort((left, right) => {
+    return rawRowDateSortValue(right, preferredLabels) - rawRowDateSortValue(left, preferredLabels);
+  });
+}
+
+function rawRowDateSortValue(row, labels) {
+  const lookup = rawCellLookup(row);
+  for (const label of labels) {
+    const value = toSortableDate(lookup[label] || '');
+    if (value) return value;
+  }
+  return 0;
 }
 
 function compareDateStrings(left, right) {
